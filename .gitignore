@@ -79,6 +79,8 @@ docker-compose.override.yml
 .env
 .env.*
 !.env.template
+devcontainer-environment-variables.json
+shell.env
 
 # Secrets and credentials (if not templated)
 *.key
@@ -93,6 +95,7 @@ docker-compose.override.yml
 .devcontainer/.cache/
 .devcontainer/.env.local
 .devcontainer/postCreate.log
+.devcontainer/devcontainer-functions.shc
 
 # Node / Python cache if applicable
 node_modules/
