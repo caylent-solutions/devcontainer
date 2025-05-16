@@ -1,0 +1,119 @@
+# ===============================
+# OS-SPECIFIC FILES
+# ===============================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+VolumeIcon.icns
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.nfs*
+
+# ===============================
+# EDITORS / IDEs
+# ===============================
+
+# Vim / Nano / Emacs
+*.swp
+*.swo
+*.bak
+*.tmp
+*.save
+.*.un~
+*~
+
+# VS Code
+.vscode/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# JetBrains (IntelliJ, PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+out/
+
+# ===============================
+# COMMON LANGUAGES & TOOLS
+# ===============================
+
+# Shell scripts / Make
+*.log
+*.out
+*.err
+
+# Build tools
+build/
+dist/
+tmp/
+temp/
+*.dSYM
+
+# Docker
+**/Dockerfile.*
+**/docker-compose*.yml
+.dockerignore
+docker-compose.override.yml
+
+# ===============================
+# ENVIRONMENT CONFIG
+# ===============================
+
+# Environment variable files
+.env
+.env.*
+!.env.template
+devcontainer-environment-variables.json
+shell.env
+
+# Secrets and credentials (if not templated)
+*.key
+*.pem
+*.crt
+
+# ===============================
+# DEVCONTAINER
+# ===============================
+
+.devcontainer/*.tar.gz
+.devcontainer/.cache/
+.devcontainer/.env.local
+.devcontainer/postCreate.log
+.devcontainer/devcontainer-functions.shc
+
+# Node / Python cache if applicable
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Misc
+coverage/
+*.coverage
+*.pid
+
+# Logs
+*.log
+
+# ===============================
+# GIT FILES
+# ===============================
+*.orig
+*.rej
