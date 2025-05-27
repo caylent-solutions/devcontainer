@@ -24,17 +24,22 @@ if [ -z "${DEFAULT_PYTHON_VERSION:-}" ]; then
   exit_with_error "❌ DEFAULT_PYTHON_VERSION is not set in the environment"
 fi
 
+AWS_CONFIG_ENABLED="${AWS_CONFIG_ENABLED:-true}"
 AWS_PROFILE_MAP_FILE="${WORK_DIR}/.devcontainer/aws-profile-map.json"
 
-if [ ! -f "$AWS_PROFILE_MAP_FILE" ]; then
-  exit_with_error "❌ Missing AWS profile config: $AWS_PROFILE_MAP_FILE"
-fi
+if [ "${AWS_CONFIG_ENABLED,,}" = "true" ]; then
+  if [ ! -f "$AWS_PROFILE_MAP_FILE" ]; then
+    exit_with_error "❌ Missing AWS profile config: $AWS_PROFILE_MAP_FILE (required when AWS_CONFIG_ENABLED=true)"
+  fi
 
-AWS_PROFILE_MAP_JSON=$(<"$AWS_PROFILE_MAP_FILE")
+  AWS_PROFILE_MAP_JSON=$(<"$AWS_PROFILE_MAP_FILE")
 
-if ! jq empty <<< "$AWS_PROFILE_MAP_JSON" >/dev/null 2>&1; then
-  log_error "$AWS_PROFILE_MAP_JSON"
-  exit_with_error "❌ AWS_PROFILE_MAP_JSON is not valid JSON"
+  if ! jq empty <<< "$AWS_PROFILE_MAP_JSON" >/dev/null 2>&1; then
+    log_error "$AWS_PROFILE_MAP_JSON"
+    exit_with_error "❌ AWS_PROFILE_MAP_JSON is not valid JSON"
+  fi
+else
+  log_info "AWS configuration disabled (AWS_CONFIG_ENABLED=${AWS_CONFIG_ENABLED})"
 fi
 
 #################
@@ -76,19 +81,23 @@ EOF
 #################
 # Configure AWS #
 #################
-log_info "Configuring AWS profiles..."
-mkdir -p /home/${CONTAINER_USER}/.aws
+if [ "${AWS_CONFIG_ENABLED,,}" = "true" ]; then
+  log_info "Configuring AWS profiles..."
+  mkdir -p /home/${CONTAINER_USER}/.aws
 
-jq -r 'to_entries[] |
-  "[profile \(.key)]\n" +
-  "sso_start_url = \(.value.sso_start_url)\n" +
-  "sso_region = \(.value.sso_region)\n" +
-  "sso_account_name = \(.value.account_name)\n" +
-  "sso_account_id = \(.value.account_id)\n" +
-  "sso_role_name = \(.value.role_name)\n" +
-  "region = \(.value.region)\n" +
-  "sso_auto_populated = true\n"' <<< "$AWS_PROFILE_MAP_JSON" \
-  > /home/${CONTAINER_USER}/.aws/config
+  jq -r 'to_entries[] |
+    "[profile \(.key)]\n" +
+    "sso_start_url = \(.value.sso_start_url)\n" +
+    "sso_region = \(.value.sso_region)\n" +
+    "sso_account_name = \(.value.account_name)\n" +
+    "sso_account_id = \(.value.account_id)\n" +
+    "sso_role_name = \(.value.role_name)\n" +
+    "region = \(.value.region)\n" +
+    "sso_auto_populated = true\n"' <<< "$AWS_PROFILE_MAP_JSON" \
+    > /home/${CONTAINER_USER}/.aws/config
+else
+  log_info "Skipping AWS profile configuration (AWS_CONFIG_ENABLED=${AWS_CONFIG_ENABLED})"
+fi
 
 #####################
 # Install Base Tools

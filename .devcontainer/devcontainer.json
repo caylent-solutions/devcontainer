@@ -46,6 +46,7 @@
     "5050:5050"
   ],
   "containerEnv": {
+    "AWS_CONFIG_ENABLED":     "${localEnv:AWS_CONFIG_ENABLED}",
     "DEFAULT_GIT_BRANCH":     "${localEnv:DEFAULT_GIT_BRANCH}",
     "DEFAULT_PYTHON_VERSION": "${localEnv:DEFAULT_PYTHON_VERSION}",
     "DEVELOPER_NAME":         "${localEnv:DEVELOPER_NAME}",

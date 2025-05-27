@@ -1,5 +1,6 @@
 {
   "containerEnv": {
+    "AWS_CONFIG_ENABLED":     "true",
     "DEFAULT_GIT_BRANCH":     "main",
     "DEFAULT_PYTHON_VERSION": "3.12.9",
     "DEVELOPER_NAME":         "johndoe",

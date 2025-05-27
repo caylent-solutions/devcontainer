@@ -71,17 +71,20 @@ cp .devcontainer/example-container-env-values.json devcontainer-environment-vari
 ```
 
 Update `devcontainer-environment-variables.json` with your values:
+- `AWS_CONFIG_ENABLED` (default: `true`) - Set to `false` to disable AWS configuration
 - `DEFAULT_GIT_BRANCH` (e.g. `main`)
 - `DEFAULT_PYTHON_VERSION` (e.g. `3.12.9`)
 - Git credentials: `GIT_USER`, `GIT_USER_EMAIL`, `GIT_TOKEN`
-- AWS SSO and account information
+- AWS SSO and account information (required if `AWS_CONFIG_ENABLED=true`)
 - Extra packages: `EXTRA_APT_PACKAGES`
 
 ---
 
-### 2b. Configure AWS Profile Map
+### 2b. Configure AWS Profile Map (Optional)
 
-Copy the example:
+By default, AWS configuration is enabled. If you don't need AWS access, you can disable it by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`.
+
+If AWS configuration is enabled, copy the example:
 ```bash
 cp .devcontainer/example-aws-profile-map.json .devcontainer/aws-profile-map.json
 ```
@@ -102,7 +105,7 @@ Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
 }
 ```
 
-> ⚠️ This file is required for AWS SSO CLI access.
+> ⚠️ This file is required only when AWS configuration is enabled (`AWS_CONFIG_ENABLED=true`).
 
 ---
 
