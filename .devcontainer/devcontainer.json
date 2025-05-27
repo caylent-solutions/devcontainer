@@ -50,6 +50,7 @@
     "DEFAULT_GIT_BRANCH":     "${localEnv:DEFAULT_GIT_BRANCH}",
     "DEFAULT_PYTHON_VERSION": "${localEnv:DEFAULT_PYTHON_VERSION}",
     "DEVELOPER_NAME":         "${localEnv:DEVELOPER_NAME}",
+    "DEVCONTAINER":           "true",
     "EXTRA_APT_PACKAGES":     "${localEnv:EXTRA_APT_PACKAGES}",
     "GIT_PROVIDER_URL":       "${localEnv:GIT_PROVIDER_URL}",
     "GIT_TOKEN":              "${localEnv:GIT_TOKEN}",
