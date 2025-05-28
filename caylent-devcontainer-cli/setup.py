@@ -28,7 +28,7 @@ setup(
         "wheel~=0.40",
         "black~=24.0",
         "flake8~=7.0",
-        "isort~=5.0",
+        "isort~=6.0",
         "pytest~=7.0",
         "pytest-cov~=4.0",
     ],
