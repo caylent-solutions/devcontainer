@@ -117,3 +117,8 @@ coverage/
 # ===============================
 *.orig
 *.rej
+
+# ===============================
+# Python FILES
+# ===============================
+caylent-devcontainer-cli/src/caylent_devcontainer_cli.egg-info
