@@ -35,12 +35,14 @@ def main():
     args = parser.parse_args()
 
     # Show banner
-    from caylent_devcontainer_cli.utils.ui import show_banner
+    from caylent_devcontainer_cli.utils.ui import log
 
-    show_banner()
+    log("INFO", f"Welcome to {CLI_NAME} v{__version__}")
 
     if not hasattr(args, "func"):
         parser.print_help()
+        import sys
+
         sys.exit(1)
 
     # Set global AUTO_YES flag if needed

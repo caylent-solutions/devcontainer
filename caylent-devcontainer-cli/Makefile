@@ -1,24 +1,22 @@
-# Caylent Devcontainer CLI Makefile
-
-.PHONY: install lint test clean build
+.PHONY: install lint format test clean build
 
 install:
 	pip install -e .
 
 lint:
-	flake8 --config=.flake8 src tests
 	black --check src tests
 	isort --check-only src tests
+	flake8 src tests
 
 format:
 	black src tests
 	isort src tests
 
 test:
-	pytest tests/unit -v --cov=caylent_devcontainer_cli --cov-report=term-missing
+	pytest tests -v --cov=src --cov-report=term-missing
 
 clean:
-	rm -rf build/ dist/ *.egg-info/ .pytest_cache/ .coverage htmlcov/
+	rm -rf build dist *.egg-info __pycache__ .pytest_cache .coverage
 
 build:
-	python -m build
+	python setup.py sdist bdist_wheel

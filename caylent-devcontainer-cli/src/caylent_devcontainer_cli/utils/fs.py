@@ -29,7 +29,8 @@ def generate_exports(env_dict: Dict[str, Any], export_prefix: bool = True) -> Li
             val = json.dumps(value)
         else:
             val = str(value)
-        line = f"{'export ' if export_prefix else ''}{key}={shlex.quote(val)}"
+        prefix = "export " if export_prefix else ""
+        line = f"{prefix}{key}='{val}'"
         lines.append(line)
     return lines
 
