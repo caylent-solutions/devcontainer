@@ -29,14 +29,9 @@ htmlcov/
 .hypothesis/
 .coverage.*
 
-# Environment files
-shell.env
-devcontainer-environment-variables.json
-aws-profile-map.json
-
 # IDE files
-.idea
-.vscode
+.idea/
+.vscode/
 *.swp
 *.swo
 *~

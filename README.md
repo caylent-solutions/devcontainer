@@ -14,11 +14,11 @@ This repository provides the **base development container** configuration used a
 
 ---
 
-## 🧰 What’s Included
+## 🧰 What's Included
 
 - `devcontainer.json` — VS Code container definition
 - `.devcontainer.postcreate.sh` — container setup script
-- `generate-shell-exports.sh` / `generate-shell-exports.py` — transforms env JSON into shell exports
+- `cdevcontainer` — Caylent Devcontainer CLI tool for environment management
 - `example-aws-profile-map.json` — declarative AWS SSO profile config template
 - Git, AWS CLI, Docker, Python, `asdf`, aliases, shell profile injection
 - Extension support for Amazon Q and GitHub Copilot
@@ -44,13 +44,13 @@ These extensions are auto-installed on container start.
 - [VS Code](https://code.visualstudio.com/Download)
 - [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
 - [Homebrew](https://brew.sh/) — optional
-- Python 3.12.9 - [Installation Guide](PYTHON_INSTALL.md#for-macos-using-asdf)
+- Python 3.12.9 - [Installation Guide](.docs/PYTHON_INSTALL.md#for-macos-using-asdf)
 
 ### For Windows
 - [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
 - [VS Code](https://code.visualstudio.com/Download)
-- Python 3.12.9 - [Installation Guide](PYTHON_INSTALL.md#for-windows-using-windows-store-or-official-installer)
+- Python 3.12.9 - [Installation Guide](.docs/PYTHON_INSTALL.md#for-windows-using-windows-store-or-official-installer)
 
 ---
 
@@ -64,9 +64,24 @@ cp -r .devcontainer ../your-project-dir/
 cd ../your-project-dir
 ```
 
+### 2. Install the CLI Tool
+
+First, install the Caylent Devcontainer CLI:
+
+```bash
+# Install from GitHub
+pip install git+https://github.com/caylent-solutions/devcontainer.git#subdirectory=caylent-devcontainer-cli
+```
+
+After installation, you can run the CLI from anywhere:
+
+```bash
+cdevcontainer --help
+```
+
 ---
 
-### 2a. Customize Your Developer Environment
+### 3. Customize Your Developer Environment
 
 ```bash
 cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
@@ -78,13 +93,37 @@ Update `devcontainer-environment-variables.json` with your values:
 - `DEFAULT_PYTHON_VERSION` (e.g. `3.12.9`)
 - Git credentials: `GIT_USER`, `GIT_USER_EMAIL`, `GIT_TOKEN`
 - AWS SSO and account information (required if `AWS_CONFIG_ENABLED=true`)
-- Extra packages: `EXTRA_APT_PACKAGES`
+- Extra Ubuntu LTS packages: `EXTRA_APT_PACKAGES`
+
+#### Client/Project Templates
+
+For working with multiple projects that share similar configurations:
+
+```bash
+# Save current environment as a template
+cdevcontainer template save client1
+
+# List available templates
+cdevcontainer template list
+
+# Load a template into a new project
+cd /path/to/new-project
+cdevcontainer template load client1
+```
+
+When loading a template:
+1. The CLI copies the template from `~/.devcontainer-templates/client1.json` 
+2. It creates a new `devcontainer-environment-variables.json` file in your project
+3. This file contains all the environment settings from the template (Git credentials, AWS settings, etc.)
+4. You can then run `cdevcontainer code` to use these settings with your project
+
+This allows you to maintain consistent configurations across multiple projects for the same client.
 
 ---
 
-### 2b. Configure AWS Profile Map (Optional)
+### 4. Configure AWS Profile Map (Optional)
 
-By default, AWS configuration is enabled. If you don't need AWS access, you can disable it by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`.
+By default, AWS configuration is enabled. If you don't need AWS access, you can disable it by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`. This is completely optional and not required for using Amazon Q.
 
 If AWS configuration is enabled, copy the example:
 ```bash
@@ -111,27 +150,40 @@ Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
 
 ---
 
-### 3. Generate `shell.env`
+### 5. Setting Up Your Environment
 
 ```bash
-.devcontainer/generate-shell-exports.py export devcontainer-environment-variables.json --output shell.env
-source shell.env
+# Launch VS Code for the current project
+cdevcontainer code
+
+# Launch VS Code for a specific project
+cdevcontainer code /path/to/your-project
 ```
 
-To persist:
+This will:
+- Generate `shell.env` from your `devcontainer-environment-variables.json`
+- Load the environment variables
+- Launch VS Code
+- Display a confirmation message
+
+To skip all confirmation prompts, use the `-y` or `--yes` flag:
+
 ```bash
-echo "source $(pwd)/shell.env" >> ~/.zshrc
+cdevcontainer code -y
 ```
 
----
+> ⚠️ **Note**: After VS Code launches, you'll need to accept the prompt to reopen in container.
 
-### 4. Launch in VS Code
-
-```bash
-code .
-```
-
-Accept the prompt to reopen in container.
+> 💡 **Pro tip for multiple projects**: Use a dedicated terminal for each project:
+> ```bash
+> # In terminal 1 (for project A)
+> cdevcontainer code /path/to/project-a
+> 
+> # In terminal 2 (for project B)
+> cdevcontainer code /path/to/project-b
+> ```
+>
+> This approach prevents environment variable conflicts when working with multiple projects simultaneously.
 
 ---
 
@@ -145,9 +197,11 @@ Accept the prompt to reopen in container.
 
 ### 🤖 Amazon Q
 
-- Open the Amazon Q sidebar (left bar in VS Code)
-- Click **Sign in** and follow the browser flow using your **AWS Builder ID** or **IAM Identity Center**
-- You must have authenticated to the CLI via `aws sso login` first
+- Open the Amazon Q sidebar (left bar in VS Code) or use Command+Shift+P and type "AmazonQ: Open Chat"
+- Click **Sign in** and follow the browser flow
+- Enter your SSO start URL, select your region and Pro account
+- Authentication will complete via browser
+- No AWS profile configuration is required if you only want to use Amazon Q
 
 ---
 
@@ -190,6 +244,19 @@ git commit -m "Add Python version pin for devcontainer"
 ```
 
 Then rebuild the container.
+
+---
+
+## 🔄 Rebuilding the Devcontainer
+
+When you make changes to the devcontainer configuration (such as modifying `devcontainer.json`, `devcontainer-environment-variables.json`, or `.tool-versions`), you'll need to rebuild the container for changes to take effect:
+
+1. A popup will typically appear in VS Code prompting you to rebuild when configuration files change
+2. Alternatively, you can manually rebuild by:
+   - Opening the Command Palette (Command+Shift+P or Ctrl+Shift+P)
+   - Typing "Dev Containers: Rebuild Container" and selecting it
+
+> ⚠️ **Important**: Always rebuild the container after changing any devcontainer configuration files to ensure your changes are applied.
 
 ---
 
@@ -238,19 +305,26 @@ JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](http
 | `.devcontainer/example-aws-profile-map.json` | AWS profile template |
 | `.devcontainer/aws-profile-map.json` | Your active AWS profiles |
 | `.devcontainer/example-container-env-values.json` | Developer config example |
-| `.devcontainer/generate-shell-exports.sh|.py` | Converts JSON to shell env exports |
 
 ---
 
 ## 🧪 Validate Your Config
 
 ```bash
-.devcontainer/generate-shell-exports.sh devcontainer-environment-variables.json
+cdevcontainer env export devcontainer-environment-variables.json -o /tmp/test-env.sh
 ```
 
-Or using Python:
-```bash
-python .devcontainer/generate-shell-exports.py export devcontainer-environment-variables.json
+This will validate your configuration file and show any errors. For example:
+
+```
+[ERR] Error loading devcontainer-environment-variables.json: Expecting property name enclosed in double quotes
+[ERR] JSON must contain a 'containerEnv' object.
+```
+
+If the validation succeeds, you'll see:
+
+```
+[OK] Wrote 12 exports to /tmp/test-env.sh
 ```
 
 ---
@@ -264,15 +338,41 @@ python .devcontainer/generate-shell-exports.py export devcontainer-environment-v
 
 ---
 
+## 🛠️ CLI Reference
+
+For detailed information about the Caylent Devcontainer CLI, see the [CLI documentation](caylent-devcontainer-cli/README.md).
+
+---
+
 ## 🤝 Contributing
 
-### If Public (Open Source)
+### Development Setup
+
+To set up your development environment:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/caylent-solutions/devcontainer.git
+   cd devcontainer
+   ```
+
+2. Follow the [Quick Start](#-quick-start) instructions (steps 2-5) to set up the devcontainer environment.
+
+3. For CLI development, install the package in development mode:
+   ```bash
+   cd caylent-devcontainer-cli
+   pip install -e .
+   ```
+
+### Contribution Guidelines
+
+#### If Public (Open Source)
 
 1. Fork the repo on GitHub
 2. Create a feature branch: `git checkout -b feat/my-change`
 3. Push and open a Pull Request
 
-### If Caylent Internal
+#### If Caylent Internal
 
 1. Pull `main`: `git checkout main && git pull`
 2. Create a new branch: `git checkout -b feat/thing`
