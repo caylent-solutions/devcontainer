@@ -1,0 +1,11 @@
+# This file defines code owners for the repository
+# Code owners will be automatically requested for review on pull requests
+
+# Default owners for everything in the repo
+* @matt-dresden-caylent
+
+# CLI specific code
+/caylent-devcontainer-cli/ @matt-dresden-caylent
+
+# GitHub Actions workflows
+/.github/workflows/ @matt-dresden-caylent
