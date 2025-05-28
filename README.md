@@ -60,8 +60,9 @@ These extensions are auto-installed on container start.
 
 First, install the Caylent Devcontainer CLI:
 
+Install a specific version (recommended)
+
 ```
-# Install a specific version (recommended)
 pip install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
 ```
 
