@@ -39,7 +39,7 @@ install_asdf_plugin() {
     log_info "Plugin '${plugin}' already installed"
   else
     log_info "Installing asdf plugin: ${plugin}"
-    if ! asdf plugin add "${plugin}" > /dev/null 2>&1; then
+    if ! asdf plugin add "${plugin}"; then
       log_warn "❌ Failed to add asdf plugin: ${plugin}"
       return 1
     fi

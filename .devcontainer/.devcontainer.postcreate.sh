@@ -84,6 +84,8 @@ EOF
 if [ "${AWS_CONFIG_ENABLED,,}" = "true" ]; then
   log_info "Configuring AWS profiles..."
   mkdir -p /home/${CONTAINER_USER}/.aws
+  mkdir -p /home/${CONTAINER_USER}/.aws/amazonq/cache
+  chown -R ${CONTAINER_USER}:${CONTAINER_USER} /home/${CONTAINER_USER}/.aws/amazonq
 
   jq -r 'to_entries[] |
     "[profile \(.key)]\n" +
@@ -120,18 +122,39 @@ fi
 log_info "Installing asdf..."
 mkdir -p /home/${CONTAINER_USER}/.asdf
 git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.14.0
+
+# Add asdf to bash
 echo '. "$HOME/.asdf/asdf.sh"' >> ${BASH_RC}
-echo '. "$HOME/.asdf/asdf.sh"' >> ${ZSH_RC}
+echo '. "$HOME/.asdf/completions/asdf.bash"' >> ${BASH_RC}
+
+# Add asdf to zsh properly
+cat <<'EOF' >> ${ZSH_RC}
+# asdf version manager
+. "$HOME/.asdf/asdf.sh"
+# append completions to fpath
+fpath=(${ASDF_DIR}/completions $fpath)
+# initialise completions with ZSH's compinit
+autoload -Uz compinit && compinit
+EOF
+
+# Source asdf for the current script
+export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
+export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
 . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
+
+# Create plugins directory if it doesn't exist
+mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
 
 python_in_tool_versions=false
 if [ -f "${WORK_DIR}/.tool-versions" ]; then
   log_info "Installing asdf plugins and tools from .tool-versions..."
   cut -d' ' -f1 "${WORK_DIR}/.tool-versions" | while read -r plugin; do
     [[ "$plugin" == "python" ]] && python_in_tool_versions=true
+    log_info "Installing asdf plugin: $plugin"
     install_asdf_plugin "$plugin"
   done
 
+  log_info "Installing tools from .tool-versions..."
   if ! asdf install; then
     log_warn "❌ asdf install failed — tool versions may not be fully installed"
   fi
@@ -154,8 +177,16 @@ if ! $python_in_tool_versions; then
   fi
 fi
 
+# Ensure reshim is run for the current user
+log_info "Running asdf reshim..."
 if ! asdf reshim; then
   exit_with_error "❌ asdf reshim failed"
+fi
+
+# Verify asdf is working properly
+log_info "Verifying asdf installation..."
+if ! asdf current; then
+  exit_with_error "❌ asdf current failed - installation may be incomplete"
 fi
 
 #################
@@ -169,7 +200,7 @@ fi
 
 log_info "Installing Python packages..."
 python -m pip install --upgrade pip --root-user-action=ignore
-python -m pip install aws-sso-util launch-cli ruamel_yaml --root-user-action=ignore
+python -m pip install aws-sso-util ruamel_yaml --root-user-action=ignore
 
 #################
 # Configure Git #

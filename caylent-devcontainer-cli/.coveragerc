@@ -1,0 +1,6 @@
+[run]
+omit =
+    # Exclude template.py from coverage requirements
+    */commands/template.py
+    # Exclude install.py from coverage requirements
+    */commands/install.py
