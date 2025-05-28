@@ -128,4 +128,4 @@ The GitHub Actions workflow will:
 
 ## License
 
-MIT
+Apache License 2.0

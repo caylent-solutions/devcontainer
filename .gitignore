@@ -28,6 +28,8 @@ htmlcov/
 .nox/
 .hypothesis/
 .coverage.*
+coverage.json
+coverage.xml
 
 # Environment files
 shell.env
