@@ -247,6 +247,19 @@ Then rebuild the container.
 
 ---
 
+## 🔄 Rebuilding the Devcontainer
+
+When you make changes to the devcontainer configuration (such as modifying `devcontainer.json`, `devcontainer-environment-variables.json`, or `.tool-versions`), you'll need to rebuild the container for changes to take effect:
+
+1. A popup will typically appear in VS Code prompting you to rebuild when configuration files change
+2. Alternatively, you can manually rebuild by:
+   - Opening the Command Palette (Command+Shift+P or Ctrl+Shift+P)
+   - Typing "Dev Containers: Rebuild Container" and selecting it
+
+> ⚠️ **Important**: Always rebuild the container after changing any devcontainer configuration files to ensure your changes are applied.
+
+---
+
 ## 🐳 Docker-in-Docker Support
 
 The devcontainer supports **nested Docker** with `docker-in-docker`.
