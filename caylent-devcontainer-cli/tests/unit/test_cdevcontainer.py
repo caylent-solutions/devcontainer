@@ -177,7 +177,7 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 
     cli.main()
 
-    mock_log.assert_any_call("INFO", f"Welcome to {cli.CLI_NAME} v{cli.__version__}")
+    mock_log.assert_any_call("INFO", f"Welcome to {cli.CLI_NAME} {cli.__version__}")
     mock_handle_code.assert_called_once_with(mock_args)
 
 

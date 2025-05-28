@@ -3,7 +3,7 @@
 import argparse
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.commands import code, env, install, template
+from caylent_devcontainer_cli.commands import code, env, install, setup, template
 
 # Constants
 CLI_NAME = "Caylent Devcontainer CLI"
@@ -19,7 +19,7 @@ def main():
 
     # Add global options
     parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
-    parser.add_argument("-v", "--version", action="version", version=f"{CLI_NAME} v{__version__}")
+    parser.add_argument("-v", "--version", action="version", version=f"{CLI_NAME} {__version__}")
 
     # Create subparsers
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
@@ -29,6 +29,7 @@ def main():
     env.register_command(subparsers)
     template.register_command(subparsers)
     install.register_command(subparsers)
+    setup.register_command(subparsers)
 
     # Parse arguments
     args = parser.parse_args()
@@ -36,7 +37,7 @@ def main():
     # Show banner
     from caylent_devcontainer_cli.utils.ui import log
 
-    log("INFO", f"Welcome to {CLI_NAME} v{__version__}")
+    log("INFO", f"Welcome to {CLI_NAME} {__version__}")
 
     if not hasattr(args, "func"):
         parser.print_help()

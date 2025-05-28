@@ -8,8 +8,6 @@ with open("README.md", encoding="utf-8") as f:
 
 # Get version from git tag if available, otherwise use a default
 version = os.environ.get("GITHUB_REF_NAME", "0.1.0")
-if version.startswith("v"):
-    version = version[1:]
 
 setup(
     name="caylent-devcontainer-cli",
@@ -31,6 +29,7 @@ setup(
         "isort~=6.0",
         "pytest~=7.0",
         "pytest-cov~=4.0",
+        "questionary~=2.0.0",
     ],
     entry_points={
         "console_scripts": [
