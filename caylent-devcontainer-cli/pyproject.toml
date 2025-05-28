@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools~=68.0", "wheel~=0.40"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
-line-length = 100
+line-length = 120
 target-version = ["py38"]
 
 [tool.isort]
 profile = "black"
-line_length = 100
+line_length = 120
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

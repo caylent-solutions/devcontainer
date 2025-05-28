@@ -1,7 +1,7 @@
 """Caylent Devcontainer CLI package."""
 
-import os
 import importlib.metadata
+import os
 
 try:
     # Try to get version from package metadata

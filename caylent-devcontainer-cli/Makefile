@@ -6,7 +6,7 @@ install:
 	pip install -e .
 
 lint:
-	flake8 src tests
+	flake8 --config=.flake8 src tests
 	black --check src tests
 	isort --check-only src tests
 

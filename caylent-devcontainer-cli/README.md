@@ -11,11 +11,7 @@ A command-line tool for managing Caylent devcontainers.
 
 ## Installation
 
-### Install from GitHub
-
-```bash
-pip install git+https://github.com/caylent-solutions/devcontainer.git#subdirectory=caylent-devcontainer-cli
-```
+For detailed installation instructions, please refer to the [Quick Start section in the main README](../README.md#-quick-start).
 
 ## Usage
 
@@ -52,13 +48,15 @@ cdevcontainer template list
 cdevcontainer template load client1
 ```
 
-### Installation management
+### Self-management
 
 ```bash
-# Install the CLI tool to your PATH
+# Fix PATH issues or reinstall symlinks after code changes
+# Use when: the command isn't found, you've updated the CLI code, or changed Python environments
 cdevcontainer install
 
-# Uninstall the CLI tool
+# Completely remove the CLI tool and its symlinks from your system
+# Use when: you no longer need the tool or want to perform a clean reinstallation
 cdevcontainer uninstall
 ```
 
@@ -77,7 +75,7 @@ make install
 # Run linting checks
 make lint
 
-# Format the code
+# Auto-fix linting issues
 make format
 
 # Run unit tests with coverage
@@ -89,6 +87,11 @@ make clean
 # Build the package
 make build
 ```
+
+### Note on Tests
+
+The test suite is currently being updated. Some tests may fail due to changes in the codebase structure. 
+If you're contributing, please ensure your changes don't break existing functionality.
 
 ## Versioning
 

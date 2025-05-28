@@ -23,7 +23,15 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     python_requires=">=3.8",
-    install_requires=[],
+    install_requires=[
+        "setuptools~=68.0",
+        "wheel~=0.40",
+        "black~=24.0",
+        "flake8~=7.0",
+        "isort~=5.0",
+        "pytest~=7.0",
+        "pytest-cov~=4.0",
+    ],
     entry_points={
         "console_scripts": [
             "cdevcontainer=caylent_devcontainer_cli.cli:main",
