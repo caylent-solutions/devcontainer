@@ -29,13 +29,9 @@ htmlcov/
 .hypothesis/
 .coverage.*
 
-# Environment files
-shell.env
-devcontainer-environment-variables.json
-
 # IDE files
-.idea
-.vscode
+.idea/
+.vscode/
 *.swp
 *.swo
 *~
