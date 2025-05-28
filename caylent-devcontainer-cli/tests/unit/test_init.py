@@ -16,8 +16,9 @@ def test_version_from_package():
         with patch.dict("sys.modules"):
             if "caylent_devcontainer_cli" in sys.modules:
                 del sys.modules["caylent_devcontainer_cli"]
-            
+
             from caylent_devcontainer_cli import __version__
+
             assert __version__ == "1.2.3"
 
 
@@ -30,8 +31,9 @@ def test_version_from_env():
             with patch.dict("sys.modules"):
                 if "caylent_devcontainer_cli" in sys.modules:
                     del sys.modules["caylent_devcontainer_cli"]
-                
+
                 from caylent_devcontainer_cli import __version__
+
                 assert __version__ == "2.3.4"
 
 
@@ -44,6 +46,7 @@ def test_version_default():
             with patch.dict("sys.modules"):
                 if "caylent_devcontainer_cli" in sys.modules:
                     del sys.modules["caylent_devcontainer_cli"]
-                
+
                 from caylent_devcontainer_cli import __version__
+
                 assert __version__ == "0.1.0"

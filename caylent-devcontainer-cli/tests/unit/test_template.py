@@ -31,9 +31,9 @@ def test_handle_template_save():
         args = MagicMock()
         args.project_root = "/test/path"
         args.name = "test-template"
-        
+
         handle_template_save(args)
-        
+
         mock_save.assert_called_once_with("/test/path", "test-template")
 
 
@@ -42,18 +42,18 @@ def test_handle_template_load():
         args = MagicMock()
         args.project_root = "/test/path"
         args.name = "test-template"
-        
+
         handle_template_load(args)
-        
+
         mock_load.assert_called_once_with("/test/path", "test-template")
 
 
 def test_handle_template_list():
     with patch("caylent_devcontainer_cli.commands.template.list_templates") as mock_list:
         args = MagicMock()
-        
+
         handle_template_list(args)
-        
+
         mock_list.assert_called_once()
 
 
@@ -63,12 +63,12 @@ def test_handle_template_list():
 @patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
 def test_save_template(mock_ensure, mock_copy, mock_confirm, mock_exists, capsys):
     save_template("/test/path", "test-template")
-    
+
     mock_ensure.assert_called_once()
     assert mock_exists.call_count >= 1
     mock_confirm.assert_called_once()
     mock_copy.assert_called_once()
-    
+
     captured = capsys.readouterr()
     assert "Saving template" in captured.err or "Template saved" in captured.err
 
@@ -78,11 +78,11 @@ def test_save_template(mock_ensure, mock_copy, mock_confirm, mock_exists, capsys
 @patch("shutil.copy2")
 def test_load_template(mock_copy, mock_confirm, mock_exists, capsys):
     load_template("/test/path", "test-template")
-    
+
     mock_exists.assert_called()
     mock_confirm.assert_called_once()
     mock_copy.assert_called_once()
-    
+
     captured = capsys.readouterr()
     assert "Loading template" in captured.err or "Template" in captured.err
 
@@ -91,7 +91,7 @@ def test_load_template(mock_copy, mock_confirm, mock_exists, capsys):
 @patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
 def test_list_templates(mock_ensure, mock_listdir, capsys):
     list_templates()
-    
+
     mock_ensure.assert_called_once()
     captured = capsys.readouterr()
     assert "Available templates" in captured.out
@@ -104,7 +104,7 @@ def test_list_templates(mock_ensure, mock_listdir, capsys):
 @patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
 def test_list_templates_empty(mock_ensure, mock_listdir, capsys):
     list_templates()
-    
+
     mock_ensure.assert_called_once()
     captured = capsys.readouterr()
     assert "No templates found" in captured.out

@@ -8,11 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 import pytest
 
-from caylent_devcontainer_cli.commands.template import (
-    list_templates,
-    load_template,
-    save_template,
-)
+from caylent_devcontainer_cli.commands.template import list_templates, load_template, save_template
 
 
 @patch("os.path.exists", side_effect=[True, True, True])
@@ -28,10 +24,10 @@ def test_save_template_cancel(mock_confirm, mock_exists, capsys):
 def test_save_template_error(mock_confirm, mock_copy, mock_exists, capsys):
     with pytest.raises(SystemExit):
         save_template("/test/path", "test-template")
-    
+
     mock_confirm.assert_called_once()
     mock_copy.assert_called_once()
-    
+
     captured = capsys.readouterr()
     assert "Failed to save template" in captured.err
 
@@ -40,7 +36,7 @@ def test_save_template_error(mock_confirm, mock_copy, mock_exists, capsys):
 def test_load_template_not_found(mock_exists, capsys):
     with pytest.raises(SystemExit):
         load_template("/test/path", "test-template")
-    
+
     captured = capsys.readouterr()
     assert "not found" in captured.err
 
@@ -50,7 +46,7 @@ def test_load_template_not_found(mock_exists, capsys):
 def test_load_template_cancel(mock_confirm, mock_exists, capsys):
     with pytest.raises(SystemExit):
         load_template("/test/path", "test-template")
-    
+
     mock_confirm.assert_called_once()
     # The output is captured by pytest before we can check it
     # So we'll just check that confirm_action was called
@@ -62,10 +58,10 @@ def test_load_template_cancel(mock_confirm, mock_exists, capsys):
 def test_load_template_error(mock_confirm, mock_copy, mock_exists, capsys):
     with pytest.raises(SystemExit):
         load_template("/test/path", "test-template")
-    
+
     mock_confirm.assert_called_once()
     mock_copy.assert_called_once()
-    
+
     captured = capsys.readouterr()
     assert "Failed to load template" in captured.err
 

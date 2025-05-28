@@ -7,14 +7,10 @@ from unittest.mock import MagicMock, mock_open, patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import json
+
 import pytest
 
-from caylent_devcontainer_cli.utils.fs import (
-    find_project_root,
-    generate_exports,
-    generate_shell_env,
-    load_json_config,
-)
+from caylent_devcontainer_cli.utils.fs import find_project_root, generate_exports, generate_shell_env, load_json_config
 
 
 @patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST_VAR": "test_value"}}'))
@@ -31,14 +27,14 @@ def test_load_json_config_invalid():
 
 def test_generate_exports():
     env_dict = {"TEST_VAR": "test_value", "TEST_JSON": {"key": "value"}, "TEST_LIST": [1, 2, 3]}
-    
+
     # Test with export_prefix=True
     lines = generate_exports(env_dict, export_prefix=True)
     assert len(lines) == 3
     assert "export TEST_VAR='test_value'" in lines
     assert "export TEST_JSON='" in lines[1]
     assert "export TEST_LIST='" in lines[2]
-    
+
     # Test with export_prefix=False
     lines = generate_exports(env_dict, export_prefix=False)
     assert len(lines) == 3
