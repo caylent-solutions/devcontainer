@@ -1,7 +1,6 @@
 """Main CLI entry point for Caylent Devcontainer CLI."""
 
 import argparse
-import sys
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands import code, env, install, template
@@ -41,9 +40,9 @@ def main():
 
     if not hasattr(args, "func"):
         parser.print_help()
-        import sys
+        import sys as _sys
 
-        sys.exit(1)
+        _sys.exit(1)
 
     # Set global AUTO_YES flag if needed
     if hasattr(args, "yes") and args.yes:

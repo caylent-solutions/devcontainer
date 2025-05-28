@@ -6,10 +6,7 @@ from unittest.mock import MagicMock, patch
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-import pytest
-
 from caylent_devcontainer_cli import cli
-from caylent_devcontainer_cli.utils.ui import set_auto_yes
 
 
 def test_main_with_auto_yes():

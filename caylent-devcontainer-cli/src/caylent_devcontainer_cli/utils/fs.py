@@ -2,7 +2,6 @@
 
 import json
 import os
-import shlex
 from typing import Any, Dict, List
 
 from caylent_devcontainer_cli.utils.ui import confirm_action, log

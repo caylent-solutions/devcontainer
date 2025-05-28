@@ -6,8 +6,6 @@ from unittest.mock import patch
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-import pytest
-
 
 @patch("importlib.metadata.PackageNotFoundError", ImportError)  # For Python < 3.8 compatibility
 def test_version_from_package():
