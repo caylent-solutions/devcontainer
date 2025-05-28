@@ -123,7 +123,7 @@ This allows you to maintain consistent configurations across multiple projects f
 
 ### 4. Configure AWS Profile Map (Optional)
 
-By default, AWS configuration is enabled. If you don't need AWS access, you can disable it by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`. However, even if you don't plan to use AWS resources directly in your project, configuring at least one AWS profile is recommended if you want to use the Amazon Q plugin, as it requires AWS authentication. In this case, you should configure at least one AWS account profile (set as default) that allows you to authenticate with AWS SSO.
+By default, AWS configuration is enabled. If you don't need AWS access, you can disable it by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`. This is completely optional and not required for using Amazon Q.
 
 If AWS configuration is enabled, copy the example:
 ```bash
@@ -197,10 +197,11 @@ cdevcontainer code -y
 
 ### 🤖 Amazon Q
 
-- Open the Amazon Q sidebar (left bar in VS Code)
-- Click **Sign in** and follow the browser flow using your **AWS Builder ID** or **IAM Identity Center**
-- You must have authenticated to the CLI via `aws sso login` first
-- **Note**: This devcontainer must have at least one AWS profile configured that grants access to Amazon Q service. If you haven't configured AWS profiles yet, refer to the [Configure AWS Profile Map](#4-configure-aws-profile-map-optional) section above.
+- Open the Amazon Q sidebar (left bar in VS Code) or use Command+Shift+P and type "AmazonQ: Open Chat"
+- Click **Sign in** and follow the browser flow
+- Enter your SSO start URL, select your region and Pro account
+- Authentication will complete via browser
+- No AWS profile configuration is required if you only want to use Amazon Q
 
 ---
 

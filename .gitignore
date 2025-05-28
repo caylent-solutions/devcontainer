@@ -32,6 +32,7 @@ htmlcov/
 # Environment files
 shell.env
 devcontainer-environment-variables.json
+aws-profile-map.json
 
 # IDE files
 .idea

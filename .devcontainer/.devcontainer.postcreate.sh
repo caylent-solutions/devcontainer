@@ -84,6 +84,8 @@ EOF
 if [ "${AWS_CONFIG_ENABLED,,}" = "true" ]; then
   log_info "Configuring AWS profiles..."
   mkdir -p /home/${CONTAINER_USER}/.aws
+  mkdir -p /home/${CONTAINER_USER}/.aws/amazonq/cache
+  chown -R ${CONTAINER_USER}:${CONTAINER_USER} /home/${CONTAINER_USER}/.aws/amazonq
 
   jq -r 'to_entries[] |
     "[profile \(.key)]\n" +
