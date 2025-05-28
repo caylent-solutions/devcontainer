@@ -44,13 +44,13 @@ These extensions are auto-installed on container start.
 - [VS Code](https://code.visualstudio.com/Download)
 - [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
 - [Homebrew](https://brew.sh/) — optional
-- Python 3.12.9 - [Installation Guide](PYTHON_INSTALL.md#for-macos-using-asdf)
+- Python 3.12.9 - [Installation Guide](.docs/PYTHON_INSTALL.md#for-macos-using-asdf)
 
 ### For Windows
 - [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
 - [VS Code](https://code.visualstudio.com/Download)
-- Python 3.12.9 - [Installation Guide](PYTHON_INSTALL.md#for-windows-using-windows-store-or-official-installer)
+- Python 3.12.9 - [Installation Guide](.docs/PYTHON_INSTALL.md#for-windows-using-windows-store-or-official-installer)
 
 ---
 
