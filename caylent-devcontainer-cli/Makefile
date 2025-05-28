@@ -1,4 +1,4 @@
-.PHONY: install lint format test clean build
+.PHONY: install lint format test clean build coverage
 
 install:
 	pip install -e .
@@ -15,8 +15,12 @@ format:
 test:
 	pytest tests -v --cov=src --cov-report=term-missing
 
+coverage:
+	pytest tests --cov=src --cov-report=html
+	@echo "Coverage report generated in htmlcov/index.html"
+
 clean:
-	rm -rf build dist *.egg-info __pycache__ .pytest_cache .coverage
+	rm -rf build dist *.egg-info __pycache__ .pytest_cache .coverage htmlcov
 
 build:
 	python setup.py sdist bdist_wheel
