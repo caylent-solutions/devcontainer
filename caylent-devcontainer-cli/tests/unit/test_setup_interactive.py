@@ -194,16 +194,25 @@ def test_save_template_to_file(mock_file, mock_makedirs, mock_exists):
 @patch("os.path.exists", return_value=True)
 @patch("builtins.open", new_callable=mock_open, read_data='{"env_values": {}}')
 def test_load_template_from_file(mock_file, mock_exists):
-    result = load_template_from_file("test-template")
+    # Update the expected result to include cli_version
+    with patch("caylent_devcontainer_cli.__version__", "0.1.0"), patch("json.load", return_value={"env_values": {}}):
+        result = load_template_from_file("test-template")
 
-    assert result == {"env_values": {}}
+    # The function adds cli_version to the loaded data
+    expected = {"env_values": {}, "cli_version": "0.1.0"}
+    assert result == expected
     mock_file.assert_called_once()
 
 
 @patch("os.path.exists", return_value=False)
 def test_load_template_from_file_not_found(mock_exists):
-    with pytest.raises(SystemExit):
-        load_template_from_file("non-existent")
+    with patch("sys.exit") as mock_exit:
+        try:
+            load_template_from_file("non-existent")
+        except FileNotFoundError:
+            pass  # Expected exception
+        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(1)
 
 
 @patch("os.path.exists", return_value=False)

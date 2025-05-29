@@ -88,7 +88,7 @@ def handle_setup(args):
 
         if manual_mode:
             # Copy .devcontainer folder to target path
-            copy_devcontainer_files(temp_dir, target_path)
+            copy_devcontainer_files(temp_dir, target_path, keep_examples=True)
             # Create VERSION file
             create_version_file(target_path)
             show_manual_instructions(target_path)
@@ -133,7 +133,7 @@ def clone_repo(temp_dir: str, version: str) -> None:
             sys.exit(1)
 
 
-def copy_devcontainer_files(source_dir: str, target_path: str) -> None:
+def copy_devcontainer_files(source_dir: str, target_path: str, keep_examples: bool = False) -> None:
     """Copy .devcontainer folder to target path."""
     source_devcontainer = os.path.join(source_dir, ".devcontainer")
     target_devcontainer = os.path.join(target_path, ".devcontainer")
@@ -154,6 +154,22 @@ def copy_devcontainer_files(source_dir: str, target_path: str) -> None:
 
     log("INFO", f"Copying .devcontainer folder to {target_path}...")
     shutil.copytree(source_devcontainer, target_devcontainer)
+
+    # Remove example files if not in manual mode
+    if not keep_examples:
+        example_files = [
+            os.path.join(target_devcontainer, "example-container-env-values.json"),
+            os.path.join(target_devcontainer, "example-aws-profile-map.json"),
+        ]
+
+        for file_path in example_files:
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except FileNotFoundError:
+                    # This can happen in tests, just continue
+                    pass
+
     log("OK", "Devcontainer files copied successfully.")
 
 

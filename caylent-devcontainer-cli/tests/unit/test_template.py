@@ -55,40 +55,51 @@ def test_handle_template_list():
         mock_list.assert_called_once()
 
 
-@patch("os.path.exists", side_effect=[True, True])
-@patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True)
-@patch("shutil.copy2")
-@patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
-def test_save_template(mock_ensure, mock_copy, mock_confirm, mock_exists, capsys):
-    save_template("/test/path", "test-template")
+def test_save_template():
+    mock_env_data = {"key": "value"}
+    mock_file = MagicMock()
 
-    mock_ensure.assert_called_once()
-    assert mock_exists.call_count >= 1
-    mock_confirm.assert_called_once()
-    mock_copy.assert_called_once()
+    with patch("builtins.open", mock_file), patch("os.path.exists", return_value=True), patch(
+        "json.load", return_value=mock_env_data
+    ), patch("json.dump") as mock_dump, patch(
+        "caylent_devcontainer_cli.commands.template.confirm_action", return_value=True
+    ), patch(
+        "caylent_devcontainer_cli.commands.template.ensure_templates_dir"
+    ):
 
-    captured = capsys.readouterr()
-    assert "Saving template" in captured.err or "Template saved" in captured.err
+        save_template("/test/path", "test-template")
+
+        # Verify json.dump was called with the env_data that includes cli_version
+        mock_dump.assert_called_once()
+        # First arg is the data dict, second arg is the file object
+        saved_data = mock_dump.call_args[0][0]
+        assert "cli_version" in saved_data
 
 
-@patch("os.path.exists", side_effect=[True, True])
-@patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True)
-@patch("shutil.copy2")
-def test_load_template(mock_copy, mock_confirm, mock_exists, capsys):
-    load_template("/test/path", "test-template")
+def test_load_template():
+    mock_template_data = {"key": "value"}
+    mock_file = MagicMock()
 
-    mock_exists.assert_called()
-    mock_confirm.assert_called_once()
-    mock_copy.assert_called_once()
+    with patch("builtins.open", mock_file), patch("os.path.exists", return_value=True), patch(
+        "json.load", return_value=mock_template_data
+    ), patch("json.dump") as mock_dump, patch(
+        "caylent_devcontainer_cli.commands.template.confirm_action", return_value=True
+    ):
 
-    captured = capsys.readouterr()
-    assert "Loading template" in captured.err or "Template" in captured.err
+        load_template("/test/path", "test-template")
+
+        # Verify json.dump was called with the template data
+        mock_dump.assert_called_once()
+        # First arg is the data dict, second arg is the file object
+        loaded_data = mock_dump.call_args[0][0]
+        assert loaded_data == mock_template_data
 
 
 @patch("os.listdir", return_value=["template1.json", "template2.json", "not-a-template.txt"])
 @patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
 def test_list_templates(mock_ensure, mock_listdir, capsys):
-    list_templates()
+    with patch("builtins.open", MagicMock()), patch("json.load", return_value={"cli_version": "1.0.0"}):
+        list_templates()
 
     mock_ensure.assert_called_once()
     captured = capsys.readouterr()

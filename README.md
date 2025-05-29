@@ -1,5 +1,24 @@
 # Caylent Devcontainer Base
 
+## 📑 Table of Contents
+
+- [🚀 Overview](#-overview)
+- [🧰 What's Included](#-whats-included)
+- [💡 Built-In Tooling](#-built-in-tooling)
+- [🖥 Prerequisites](#-prerequisites)
+- [🪄 Quick Start](#-quick-start)
+- [🧩 Post-Launch Setup](#-post-launch-setup)
+- [🐍 Python Install Logic](#-python-install-logic)
+- [🔄 Rebuilding the Devcontainer](#-rebuilding-the-devcontainer)
+- [🐳 Docker-in-Docker Support](#-docker-in-docker-support)
+- [📡 Debug Ports](#-debug-ports)
+- [🧩 JetBrains Compatibility](#-jetbrains-compatibility)
+- [📁 File Reference](#-file-reference)
+- [🧪 Validate Your Config](#-validate-your-config)
+- [🧼 Git Hygiene](#-git-hygiene)
+- [🛠️ CLI Reference](#️-cli-reference)
+- [🤝 Contributing](#-contributing)
+
 ## 🚀 Overview
 
 This repository provides the **base development container** configuration used across Caylent engineering projects. It is designed to be:
@@ -151,6 +170,12 @@ cdevcontainer template list
 # Load a template into a new project
 cd /path/to/new-project
 cdevcontainer template load client1
+
+# Delete one or more templates
+cdevcontainer template delete template1 template2
+
+# Upgrade a template to the current CLI version
+cdevcontainer template upgrade my-template
 ```
 
 When loading a template:
@@ -160,6 +185,17 @@ When loading a template:
 4. You can then run `cdevcontainer code` to use these settings with your project
 
 This allows you to maintain consistent configurations across multiple projects for the same client.
+
+#### Template Version Compatibility
+
+Templates are saved with version information that tracks which CLI version created them. When loading a template created with an older version of the CLI, the tool automatically detects version mismatches and provides options:
+
+- **Upgrade the template**: Updates the template to the current CLI format while preserving settings
+- **Create a new template**: Starts fresh with the current CLI version
+- **Use anyway**: Attempts to use the template as-is (may cause issues)
+- **Exit**: Cancels the operation without making changes
+
+This version checking ensures templates remain compatible as the CLI evolves.
 
 ---
 
@@ -417,6 +453,8 @@ cdevcontainer code [/path/to/your/project]
 cdevcontainer template list
 cdevcontainer template save my-template
 cdevcontainer template load my-template
+cdevcontainer template delete template1 template2
+cdevcontainer template upgrade my-template
 
 # Manage environment variables
 cdevcontainer env export input.json -o output.sh

@@ -97,7 +97,7 @@ def test_copy_devcontainer_files(mock_exists, mock_copytree):
 
 
 @patch("shutil.copytree")
-@patch("os.path.exists", return_value=True)
+@patch("os.path.exists", side_effect=[True, False, False])
 @patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True)
 @patch("shutil.rmtree")
 def test_copy_devcontainer_files_overwrite(mock_rmtree, mock_confirm, mock_exists, mock_copytree):

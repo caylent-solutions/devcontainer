@@ -2,6 +2,21 @@
 
 A command-line tool for managing Caylent devcontainer environments.
 
+## Table of Contents
+
+1. [Installation](#installation)
+2. [Usage](#usage)
+   - [Commands](#commands)
+   - [Setting Up a Devcontainer](#setting-up-a-devcontainer)
+   - [Managing Templates](#managing-templates)
+   - [Launching VS Code](#launching-vs-code)
+3. [Development](#development)
+   - [Setup](#setup)
+   - [Testing](#testing)
+   - [Linting and Formatting](#linting-and-formatting)
+   - [Building and Publishing](#building-and-publishing)
+4. [License](#license)
+
 ## Installation
 
 ```bash
@@ -56,7 +71,19 @@ cdevcontainer template list
 
 # Load a template into a project
 cdevcontainer template load my-template
+
+# Delete one or more templates
+cdevcontainer template delete template1 template2
+
+# Upgrade a template to the current CLI version
+cdevcontainer template upgrade my-template
 ```
+
+When using templates created with older versions of the CLI, the tool will automatically detect version mismatches and provide options to:
+- Upgrade the profile to the current version
+- Create a new profile from scratch
+- Try to use the profile anyway (with a warning)
+- Exit without making changes
 
 ### Launching VS Code
 
