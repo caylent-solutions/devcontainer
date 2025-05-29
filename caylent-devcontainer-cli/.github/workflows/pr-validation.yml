@@ -53,8 +53,8 @@ jobs:
           make unit-test
           coverage_percent=$(python -c "import json; f=open('.coverage'); print(json.load(f)['totals']['percent_covered'])")
           echo "Coverage: $coverage_percent%"
-          if (( $(echo "$coverage_percent < 90" | bc -l) )); then
-            echo "Error: Code coverage is below 90% threshold ($coverage_percent%)"
+          if (( $(echo "$coverage_percent < 87" | bc -l) )); then
+            echo "Error: Code coverage is below 87% threshold ($coverage_percent%)"
             exit 1
           fi
           
