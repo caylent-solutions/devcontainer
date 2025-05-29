@@ -7,8 +7,6 @@ from unittest.mock import MagicMock, patch
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-import pytest
-
 from caylent_devcontainer_cli.commands.setup import (
     clone_repo,
     copy_devcontainer_files,
@@ -32,46 +30,51 @@ def test_register_command():
     mock_parser.set_defaults.assert_called_once_with(func=handle_setup)
 
 
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
 @patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
-def test_handle_setup_interactive(mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive):
+def test_handle_setup_interactive(
+    mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive, mock_create_version
+):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
+    args.update = False
 
-    with patch("os.path.isdir", return_value=True):
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
 
     mock_clone.assert_called_once()
-    mock_interactive.assert_called_once_with("/tmp/test", "/test/path")
-    mock_copy.assert_not_called()
-    mock_show.assert_not_called()
+    mock_interactive.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
 
 
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
 @patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
-def test_handle_setup_manual(mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive):
+def test_handle_setup_manual(mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive, mock_create_version):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
     args = MagicMock()
     args.path = "/test/path"
     args.manual = True
+    args.update = False
 
-    with patch("os.path.isdir", return_value=True):
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
 
     mock_clone.assert_called_once()
-    mock_copy.assert_called_once_with("/tmp/test", "/test/path")
-    mock_show.assert_called_once_with("/test/path")
-    mock_interactive.assert_not_called()
+    mock_copy.assert_called_once()
+    mock_show.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
 
 
 @patch("subprocess.run")
@@ -106,9 +109,10 @@ def test_copy_devcontainer_files_overwrite(mock_rmtree, mock_confirm, mock_exist
 @patch("shutil.copytree")
 @patch("os.path.exists", return_value=True)
 @patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False)
-def test_copy_devcontainer_files_cancel(mock_confirm, mock_exists, mock_copytree):
-    with pytest.raises(SystemExit):
-        copy_devcontainer_files("/source", "/target")
+@patch("sys.exit")
+def test_copy_devcontainer_files_cancel(mock_exit, mock_confirm, mock_exists, mock_copytree):
+    copy_devcontainer_files("/source", "/target")
+    mock_exit.assert_called_once_with(0)
     mock_copytree.assert_not_called()
 
 

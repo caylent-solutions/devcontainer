@@ -35,6 +35,9 @@ cdevcontainer setup-devcontainer /path/to/your/project
 
 # Manual setup (skip interactive prompts)
 cdevcontainer setup-devcontainer --manual /path/to/your/project
+
+# Update existing devcontainer files to the current CLI version
+cdevcontainer setup-devcontainer --update /path/to/your/project
 ```
 
 The interactive setup will guide you through:
