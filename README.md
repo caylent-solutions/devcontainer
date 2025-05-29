@@ -94,6 +94,14 @@ If you prefer to set up manually, use the `--manual` flag:
 cdevcontainer setup-devcontainer --manual /path/to/your/project
 ```
 
+To update an existing devcontainer setup to the latest version:
+
+```bash
+cdevcontainer setup-devcontainer --update /path/to/your/project
+```
+
+> 💡 **Pro tip**: Consider committing the `.devcontainer` directory to your repository (excluding sensitive files) to speed up environment setup for your team. See the [Git Hygiene](#-git-hygiene) section for details.
+
 ---
 
 ### 3. Customize Your Developer Environment
@@ -373,6 +381,21 @@ If the validation succeeds, you'll see:
 - ✅ Use `.tool-versions` to ensure reproducibility
 - ✅ Use `aws-profile-map.json` to declare AWS SSO profiles
 - `.gitignore` excludes common temp files, IDE config, and secrets
+
+> 💡 **Pro tip**: You can commit the `.devcontainer` directory to your repository for faster team onboarding. Add these lines to your `.gitignore`:
+> ```
+> # Devcontainer - commit structure but not secrets
+> devcontainer-environment-variables.json
+> .devcontainer/aws-profile-map.json
+> shell.env
+> ```
+> 
+> This approach lets you version control the devcontainer configuration while excluding sensitive information. When you need to update the devcontainer, run:
+> ```bash
+> cdevcontainer setup-devcontainer --update .
+> git add .devcontainer
+> git commit -m "chore: Update devcontainer to version X.Y.Z"
+> ```
 
 ---
 
