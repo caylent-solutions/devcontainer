@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Get the root directory of the git repository
+ROOT_DIR=$(git rev-parse --show-toplevel)
+
+# Run pre-commit hooks
+pre-commit run --all-files
+
+# If we're in the CLI subdirectory, run format
+if git diff --cached --name-only | grep -q "^caylent-devcontainer-cli/"; then
+  echo "Running format for CLI changes..."
+  cd "$ROOT_DIR/caylent-devcontainer-cli" && make format
+  # Stage the formatted files
+  git add $(git diff --cached --name-only | grep "^caylent-devcontainer-cli/")
+fi

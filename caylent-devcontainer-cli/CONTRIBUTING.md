@@ -17,7 +17,19 @@ The recommended way to set up your development environment is to use the devcont
    cd devcontainer
    ```
 
-3. Launch VS Code with the devcontainer:
+3. Set up git hooks to ensure code quality:
+   ```bash
+   make configure
+   ```
+   
+   This will:
+   - Install pre-commit using asdf (or pip if asdf is not available)
+   - Set up git hooks that:
+     - Prevent secrets from being committed (AWS credentials, private keys)
+     - Automatically format code in the CLI subdirectory
+     - Ensure tests and linting pass before pushing CLI changes
+
+4. Launch VS Code with the devcontainer:
    ```bash
    # If you already have the CLI installed
    cdevcontainer code .
@@ -26,7 +38,7 @@ The recommended way to set up your development environment is to use the devcont
    code .
    ```
 
-4. For CLI development, install the package in development mode:
+5. For CLI development, install the package in development mode:
    ```bash
    cd caylent-devcontainer-cli
    make install
