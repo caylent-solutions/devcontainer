@@ -140,7 +140,10 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
             "https://github.com/caylent-solutions/devcontainer#4-configure-aws-profile-map-optional"
         )
         aws_profile_map_json = questionary.text(
-            "\nEnter AWS profile map JSON:", multiline=True, validate=JsonValidator()
+            "\nEnter AWS profile map JSON:",
+            multiline=True,
+            validate=JsonValidator(),
+            instruction="(Finish with 'Esc then Enter')",
         ).ask()
 
         return json.loads(aws_profile_map_json)
