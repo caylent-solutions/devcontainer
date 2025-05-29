@@ -35,7 +35,6 @@ coverage.json
 shell.env
 devcontainer-environment-variables.json
 aws-profile-map.json
-.devcontainer/aws-profile-map.json
 
 # Virtual environments
 venv/
@@ -44,8 +43,8 @@ env/
 .env/
 
 # IDE files
-.idea/
-.vscode/
+.idea
+.vscode
 *.swp
 *.swo
 *~

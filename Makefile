@@ -10,3 +10,4 @@ install-hooks:
 	@echo "Git hooks installed successfully!"
 	@echo "Pre-commit hook will check for secrets and run formatting"
 	@echo "Pre-push hook will run tests and linting for CLI changes"
+	
