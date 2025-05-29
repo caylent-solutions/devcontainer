@@ -2,8 +2,12 @@
 requires = ["setuptools~=68.0", "wheel~=0.40"]
 build-backend = "setuptools.build_meta"
 
-[project.dependencies]
-semver = "^3.0.0"
+[project]
+name = "caylent-devcontainer-cli"
+dynamic = ["version"]
+dependencies = [
+    "semver>=3.0.0",
+]
 
 [tool.black]
 line-length = 120

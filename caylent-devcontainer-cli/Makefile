@@ -2,6 +2,7 @@
 
 install:
 	pip install -e .
+	pip install -r requirements.txt
 
 lint:
 	black --check src tests
