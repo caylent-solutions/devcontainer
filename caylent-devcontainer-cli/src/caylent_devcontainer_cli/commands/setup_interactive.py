@@ -175,6 +175,7 @@ def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
 
     with open(template_path, "w") as f:
         json.dump(template_data, f, indent=2)
+        f.write("\n")  # Add newline at end of file
 
     log("OK", f"Template saved to {template_path}")
 
@@ -209,6 +210,7 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
     env_file_path = os.path.join(target_path, "devcontainer-environment-variables.json")
     with open(env_file_path, "w") as f:
         json.dump(template_data["env_values"], f, indent=2)
+        f.write("\n")  # Add newline at end of file
 
     log("OK", f"Environment variables saved to {env_file_path}")
 
@@ -217,6 +219,7 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
         aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
         with open(aws_map_path, "w") as f:
             json.dump(template_data["aws_profile_map"], f, indent=2)
+            f.write("\n")  # Add newline at end of file
 
         log("OK", f"AWS profile map saved to {aws_map_path}")
 
