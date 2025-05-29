@@ -268,8 +268,8 @@ Or open the Source Control tab in VS Code to confirm the repo is accessible.
 
 ## 🐍 Python Install Logic
 
-- `.tool-versions` present? → installs pinned Python version
-- Not present? → installs version from:
+- `.tool-versions` present with Python? → installs that pinned Python version
+- Not present or no Python entry? → installs fallback version from:
 ```json
 "DEFAULT_PYTHON_VERSION": "3.12.9"
 ```

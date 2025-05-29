@@ -166,7 +166,7 @@ fi
 install_asdf_plugin "python"
 
 if ! $python_in_tool_versions; then
-  log_info "Installing Python ${DEFAULT_PYTHON_VERSION} via asdf (from env var)..."
+  log_info "Installing Python ${DEFAULT_PYTHON_VERSION} via asdf (fallback version)..."
 
   if ! asdf install python "$DEFAULT_PYTHON_VERSION"; then
     exit_with_error "❌ Failed to install python $DEFAULT_PYTHON_VERSION"
