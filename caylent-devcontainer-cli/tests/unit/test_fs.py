@@ -51,8 +51,9 @@ def test_generate_shell_env(mock_confirm, mock_exists, mock_load_json):
 
 
 @patch("os.path.exists", return_value=False)
-@patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value={"not_containerEnv": {}})
-def test_generate_shell_env_invalid_json(mock_load_json, mock_exists):
+@patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value={"invalid": []})
+@patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True)
+def test_generate_shell_env_invalid_json(mock_confirm, mock_load_json, mock_exists):
     with pytest.raises(SystemExit):
         generate_shell_env("test_file.json", "output_file.sh")
 

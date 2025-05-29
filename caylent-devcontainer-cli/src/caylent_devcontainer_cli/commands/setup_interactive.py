@@ -209,10 +209,11 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
     log("INFO", f"Copying .devcontainer folder to {target_path}...")
     shutil.copytree(source_devcontainer, target_devcontainer)
 
-    # Create environment variables file
+    # Create environment variables file with containerEnv structure
     env_file_path = os.path.join(target_path, "devcontainer-environment-variables.json")
     with open(env_file_path, "w") as f:
-        json.dump(template_data["env_values"], f, indent=2)
+        container_env = {"containerEnv": template_data["env_values"]}
+        json.dump(container_env, f, indent=2)
         f.write("\n")  # Add newline at end of file
 
     log("OK", f"Environment variables saved to {env_file_path}")

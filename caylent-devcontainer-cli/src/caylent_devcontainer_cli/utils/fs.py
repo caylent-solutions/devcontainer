@@ -39,13 +39,19 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
     log("INFO", f"Reading configuration from {json_file}")
     data = load_json_config(json_file)
 
-    if "containerEnv" not in data or not isinstance(data["containerEnv"], dict):
-        log("ERR", "JSON must contain a 'containerEnv' object.")
+    # Only support containerEnv format
+    if "containerEnv" in data and isinstance(data["containerEnv"], dict):
+        env_data = data["containerEnv"]
+    else:
+        log(
+            "ERR",
+            f"Invalid JSON format in {json_file}. The file must contain a 'containerEnv' object.",
+        )
         import sys
 
         sys.exit(1)
 
-    lines = generate_exports(data["containerEnv"], export_prefix=not no_export)
+    lines = generate_exports(env_data, export_prefix=not no_export)
 
     # Ask for confirmation before writing to file
     if os.path.exists(output_file):
