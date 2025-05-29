@@ -157,7 +157,7 @@ def test_create_template_interactive_with_aws(mock_aws, mock_env):
 
     result = create_template_interactive()
 
-    assert result["env_values"] == {"AWS_CONFIG_ENABLED": "true"}
+    assert result["containerEnv"] == {"AWS_CONFIG_ENABLED": "true"}
     assert result["aws_profile_map"] == {"default": {"region": "us-west-2"}}
     mock_env.assert_called_once()
     mock_aws.assert_called_once()
@@ -169,7 +169,7 @@ def test_create_template_interactive_without_aws(mock_env):
 
     result = create_template_interactive()
 
-    assert result["env_values"] == {"AWS_CONFIG_ENABLED": "false"}
+    assert result["containerEnv"] == {"AWS_CONFIG_ENABLED": "false"}
     assert result["aws_profile_map"] == {}
     mock_env.assert_called_once()
 

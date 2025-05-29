@@ -157,10 +157,11 @@ def create_template_interactive() -> Dict[str, Any]:
 
     # Environment values
     log("INFO", "Configuring environment variables...")
-    template["env_values"] = prompt_env_values()
+    env_values = prompt_env_values()
+    template["containerEnv"] = env_values
 
     # AWS profile map
-    if template["env_values"]["AWS_CONFIG_ENABLED"] == "true":
+    if env_values["AWS_CONFIG_ENABLED"] == "true":
         log("INFO", "Configuring AWS profiles...")
         template["aws_profile_map"] = prompt_aws_profile_map()
     else:
@@ -209,17 +210,27 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
     log("INFO", f"Copying .devcontainer folder to {target_path}...")
     shutil.copytree(source_devcontainer, target_devcontainer)
 
-    # Create environment variables file with containerEnv structure
+    # Create environment variables file
     env_file_path = os.path.join(target_path, "devcontainer-environment-variables.json")
     with open(env_file_path, "w") as f:
-        container_env = {"containerEnv": template_data["env_values"]}
-        json.dump(container_env, f, indent=2)
+        # Use containerEnv directly from template or create it if using old format
+        if "containerEnv" in template_data:
+            env_data = template_data
+        else:
+            # Handle old format templates for backward compatibility
+            env_data = {"containerEnv": template_data.get("env_values", {})}
+
+        json.dump(env_data, f, indent=2)
         f.write("\n")  # Add newline at end of file
 
     log("OK", f"Environment variables saved to {env_file_path}")
 
     # Create AWS profile map if needed
-    if template_data["env_values"]["AWS_CONFIG_ENABLED"] == "true" and template_data["aws_profile_map"]:
+    aws_config_enabled = template_data.get("containerEnv", {}).get(
+        "AWS_CONFIG_ENABLED", template_data.get("env_values", {}).get("AWS_CONFIG_ENABLED", "false")
+    )
+
+    if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
         aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
         with open(aws_map_path, "w") as f:
             json.dump(template_data["aws_profile_map"], f, indent=2)

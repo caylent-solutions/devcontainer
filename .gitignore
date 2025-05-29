@@ -16,33 +16,26 @@ parts/
 sdist/
 var/
 wheels/
-*.egg-info
+*.egg-info/
 .installed.cfg
 *.egg
 
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-.nox/
-.hypothesis/
-.coverage.*
-coverage.json
-coverage.xml
-
-# Environment files
-shell.env
-devcontainer-environment-variables.json
-aws-profile-map.json
+# Virtual environments
+venv/
+ENV/
+env/
+.env/
 
 # IDE files
-.idea
-.vscode
+.idea/
+.vscode/
 *.swp
 *.swo
-*~
 
-# OS files
-.DS_Store
-Thumbs.db
+# Devcontainer files
+shell.env
+devcontainer-environment-variables.json
+.devcontainer/aws-profile-map.json
+
+# Test files
+output_file.sh
