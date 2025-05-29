@@ -58,7 +58,7 @@ def test_create_version_file(mock_file):
     create_version_file(target_path)
 
     mock_file.assert_called_once_with(os.path.join(target_path, ".devcontainer", "VERSION"), "w")
-    mock_file().write.assert_called_once_with(__version__)
+    mock_file().write.assert_called_once_with(__version__ + "\n")
 
 
 @patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True)

@@ -103,7 +103,7 @@ def create_version_file(target_path: str) -> None:
     """Create a VERSION file in the .devcontainer directory."""
     version_file = os.path.join(target_path, ".devcontainer", "VERSION")
     with open(version_file, "w") as f:
-        f.write(__version__)
+        f.write(__version__ + "\n")  # Add newline
     log("INFO", f"Created VERSION file with version {__version__}")
 
 
