@@ -39,3 +39,4 @@ devcontainer-environment-variables.json
 
 # Test files
 output_file.sh
+coverage.json
