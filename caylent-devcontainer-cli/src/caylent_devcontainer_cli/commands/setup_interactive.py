@@ -123,27 +123,29 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
     if questionary.confirm("Do you want to configure AWS profiles?", default=True).ask():
         print("\nEnter your AWS profile configuration in JSON format.")
         print("Example:")
-        print(
-            """{
-  "default": {
-    "region": "us-west-2",
-    "sso_start_url": "https://example.awsapps.com/start",
-    "sso_region": "us-west-2",
-    "account_name": "example-dev-account",
-    "account_id": "123456789012",
-    "role_name": "DeveloperAccess"
-  }
-}"""
-        )
+        # Split the example into multiple lines to avoid linting issues
+        print("{")
+        print('  "default": {')
+        print('    "region": "us-west-2",')
+        print('    "sso_start_url": "https://example.awsapps.com/start",')
+        print('    "sso_region": "us-west-2",')
+        print('    "account_name": "example-dev-account",')
+        print('    "account_id": "123456789012",')
+        print('    "role_name": "DeveloperAccess"')
+        print("  }")
+        print("}")
+
         print(
             "\nFor more information, see: "
             "https://github.com/caylent-solutions/devcontainer#4-configure-aws-profile-map-optional"
         )
+
+        # Add a newline before the prompt to make it clearer where to start typing
+        print("\nEnter AWS profile map JSON: (Finish with 'Esc then Enter')")
         aws_profile_map_json = questionary.text(
-            "\nEnter AWS profile map JSON:",
+            "",  # Empty prompt since we already printed the instruction
             multiline=True,
             validate=JsonValidator(),
-            instruction="(Finish with 'Esc then Enter')",
         ).ask()
 
         return json.loads(aws_profile_map_json)
@@ -226,9 +228,10 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
     log("OK", f"Environment variables saved to {env_file_path}")
 
     # Create AWS profile map if needed
-    aws_config_enabled = template_data.get("containerEnv", {}).get(
-        "AWS_CONFIG_ENABLED", template_data.get("env_values", {}).get("AWS_CONFIG_ENABLED", "false")
-    )
+    # Check both containerEnv and env_values for backward compatibility
+    container_env = template_data.get("containerEnv", {})
+    env_values = template_data.get("env_values", {})
+    aws_config_enabled = container_env.get("AWS_CONFIG_ENABLED", env_values.get("AWS_CONFIG_ENABLED", "false"))
 
     if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
         aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
