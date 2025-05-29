@@ -6,8 +6,6 @@ from unittest.mock import MagicMock, patch
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-import pytest
-
 from caylent_devcontainer_cli.utils.fs import generate_shell_env
 
 
