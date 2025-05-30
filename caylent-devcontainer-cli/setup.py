@@ -7,7 +7,11 @@ with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
 
 # Get version from git tag if available, otherwise use a default
+# Get version from git tag if available, otherwise use a default
 version = os.environ.get("GITHUB_REF_NAME", "0.1.0")
+# Ensure version is valid according to PEP 440
+if not version or "/" in version or "-" in version:
+    version = "0.1.0"
 
 setup(
     name="caylent-devcontainer-cli",
