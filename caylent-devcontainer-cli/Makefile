@@ -48,7 +48,6 @@ build:
 	python -m build
 
 distcheck:
-	python -m pip install twine
 	twine check dist/*
 
 publish: clean build distcheck
