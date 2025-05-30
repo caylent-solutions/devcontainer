@@ -215,7 +215,7 @@ jobs:
         id: semantic-release
         run: |
           cd caylent-devcontainer-cli
-          python -m semantic_release version --noop
+          python -m semantic_release version --no-commit
           NEW_VERSION=$(python -m semantic_release version --print)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
