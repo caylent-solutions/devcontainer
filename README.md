@@ -479,6 +479,7 @@ To set up your development environment:
    ```bash
    git clone https://github.com/caylent-solutions/devcontainer.git
    cd devcontainer
+   make configure
    ```
 
 2. Follow the [Quick Start](#-quick-start) instructions (steps 2-5) to set up the devcontainer environment.
@@ -486,7 +487,7 @@ To set up your development environment:
 3. For CLI development, install the package in development mode:
    ```bash
    cd caylent-devcontainer-cli
-   pip install -e .
+   make install
    ```
 
 ### Contribution Guidelines
