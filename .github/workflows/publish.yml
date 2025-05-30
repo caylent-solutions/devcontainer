@@ -61,6 +61,33 @@ jobs:
           cd caylent-devcontainer-cli
           make build
 
+      - name: Send PyPI approval request to Slack
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "🔔 PyPI Publish Approval Required",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🔔 PyPI Publish Approval Required"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "A new version is ready to be published to PyPI.\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Please review and approve the deployment>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

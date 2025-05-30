@@ -6,10 +6,7 @@ from unittest.mock import mock_open, patch
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from caylent_devcontainer_cli.commands.setup_interactive import (
-    apply_template,
-    save_template_to_file,
-)
+from caylent_devcontainer_cli.commands.setup_interactive import apply_template, save_template_to_file
 
 
 @patch("os.path.exists", return_value=False)

@@ -85,6 +85,62 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make coverage-text
+      
+      - name: Send success notification to Slack
+        if: success()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "✅ Main Branch Validation Successful",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "✅ Main Branch Validation Successful"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The main branch validation workflow completed successfully.\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View the workflow run>\n\nPlease perform manual QA testing and approve the release when ready."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Send failure notification to Slack
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "❌ Main Branch Validation Failed",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ Main Branch Validation Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The main branch validation workflow failed.\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View the failure details>\n\nPlease fix the issues and try again."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
   codeql:
     name: CodeQL Analysis
@@ -107,3 +163,51 @@ jobs:
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:python"
+  
+  manual-approval:
+    name: Manual QA Approval
+    needs: [validate, codeql]
+    runs-on: ubuntu-latest
+    environment:
+      name: qa-approval
+      url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    
+    steps:
+      - name: QA Approval
+        run: echo "QA has been approved"
+  
+  create-release:
+    name: Create Release
+    needs: manual-approval
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      - name: Install python-semantic-release
+        run: pip install python-semantic-release
+      
+      - name: Determine version bump
+        id: semantic-release
+        run: |
+          cd caylent-devcontainer-cli
+          python -m semantic_release version --noop
+          NEW_VERSION=$(python -m semantic_release version --print)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Create tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
+          git push origin ${{ steps.semantic-release.outputs.new_version }}

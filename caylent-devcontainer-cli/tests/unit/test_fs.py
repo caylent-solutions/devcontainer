@@ -8,12 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 import pytest
 
-from caylent_devcontainer_cli.utils.fs import (
-    find_project_root,
-    generate_exports,
-    generate_shell_env,
-    load_json_config,
-)
+from caylent_devcontainer_cli.utils.fs import find_project_root, generate_exports, generate_shell_env, load_json_config
 
 
 @patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST_VAR": "test_value"}}'))
