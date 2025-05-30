@@ -66,8 +66,15 @@ jobs:
         with:
           payload: |
             {
-              "text": "🔔 PyPI Publish Approval Required",
+              "text": "<!here> 🔔 PyPI Publish Approval Required",
               "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!here> *Action Required: Approve PyPI Publish*"
+                  }
+                },
                 {
                   "type": "header",
                   "text": {
@@ -87,7 +94,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

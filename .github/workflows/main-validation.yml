@@ -9,46 +9,46 @@ jobs:
   validate:
     name: Validate Main
     runs-on: ubuntu-24.04
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Install system dependencies for Python build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev 
-          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl 
-          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev 
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
+          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
+          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
           sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
-      
+
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
-      
+
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
           cat .tool-versions | cut -d' ' -f1 | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
-      
+
       - name: Install CLI
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make install
-      
+
       - name: Lint
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make lint
-      
+
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make build
-      
+
       - name: Run unit tests with coverage threshold
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
@@ -61,18 +61,18 @@ jobs:
             echo "Error: Code coverage is below 85% threshold ($coverage_percent%)"
             exit 1
           fi
-          
+
       - name: Run functional tests
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make functional-test || echo "Functional tests failed but continuing workflow"
-      
+
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make coverage
           make coverage-json
-      
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -80,20 +80,27 @@ jobs:
           path: |
             caylent-devcontainer-cli/htmlcov/
             caylent-devcontainer-cli/coverage.json
-      
+
       - name: Print coverage summary
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make coverage-text
-      
+
       - name: Send success notification to Slack
         if: success()
         uses: slackapi/slack-github-action@v1.25.0
         with:
           payload: |
             {
-              "text": "✅ Main Branch Validation Successful",
+              "text": "<!here> ✅ Main Branch Validation Successful",
               "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!here> *QA Testing Needed*"
+                  }
+                },
                 {
                   "type": "header",
                   "text": {
@@ -113,15 +120,22 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-      
+
       - name: Send failure notification to Slack
         if: failure()
         uses: slackapi/slack-github-action@v1.25.0
         with:
           payload: |
             {
-              "text": "❌ Main Branch Validation Failed",
+              "text": "<!here> ❌ Main Branch Validation Failed",
               "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!here> *Action Required: Build Failed*"
+                  }
+                },
                 {
                   "type": "header",
                   "text": {
@@ -163,7 +177,7 @@ jobs:
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:python"
-  
+
   manual-approval:
     name: Manual QA Approval
     needs: [validate, codeql]
@@ -171,32 +185,32 @@ jobs:
     environment:
       name: qa-approval
       url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-    
+
     steps:
       - name: QA Approval
         run: echo "QA has been approved"
-  
+
   create-release:
     name: Create Release
     needs: manual-approval
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
-      
+
       - name: Install python-semantic-release
         run: pip install python-semantic-release
-      
+
       - name: Determine version bump
         id: semantic-release
         run: |
@@ -204,7 +218,7 @@ jobs:
           python -m semantic_release version --noop
           NEW_VERSION=$(python -m semantic_release version --print)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-      
+
       - name: Create tag
         run: |
           git config --global user.name "GitHub Actions"
