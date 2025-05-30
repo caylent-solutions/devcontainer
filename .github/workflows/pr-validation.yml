@@ -54,10 +54,6 @@ jobs:
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make lint
       
-      - name: Install build module
-        run: |
-          pip install build
-          
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
