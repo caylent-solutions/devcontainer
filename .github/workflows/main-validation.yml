@@ -38,6 +38,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make install
+          asdf reshim
 
       - name: Lint
         run: |
@@ -214,30 +215,34 @@ jobs:
           asdf reshim
 
       - name: Install CLI and dependencies
+        working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         run: |
-          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           pip install --upgrade pip
           make install
-      - name: Create CHANGELOG if needed
-        run: |
-          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          if [ ! -f CHANGELOG.md ]; then
-            echo "# Changelog" > CHANGELOG.md
-            echo "" >> CHANGELOG.md
-            echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
-          fi
+          asdf reshim
 
-      - name: Determine version bump
+      - name: Bump version and update changelog
         id: semantic-release
+        working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          python -m semantic_release version --no-commit
+          python -m semantic_release version
+          python -m semantic_release changelog
           NEW_VERSION=$(python -m semantic_release version --print)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create tag
+      - name: Commit changelog and version bump
+        working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
+          git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
+          git push origin HEAD
+
+      - name: Create Git tag
+        run: |
           git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
           git push origin ${{ steps.semantic-release.outputs.new_version }}
+
