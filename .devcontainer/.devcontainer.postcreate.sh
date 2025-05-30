@@ -106,7 +106,7 @@ fi
 #####################
 log_info "Installing core packages..."
 sudo apt-get update
-sudo apt-get install -y curl vim git jq yq nmap sipcalc wget unzip zip
+sudo apt-get install -y curl vim git jq yq nmap sipcalc wget unzip zip twine
 
 ##############################
 # Install Optional Extra Tools
