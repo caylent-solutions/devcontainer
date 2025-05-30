@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Get the root directory of the git repository
+ROOT_DIR=$(git rev-parse --show-toplevel)
+
+# Run pre-commit hooks
+pre-commit run --all-files
+
+# Validate JSON files outside caylent-devcontainer-cli/
+echo "Validating JSON files outside caylent-devcontainer-cli/..."
+for file in $(git diff --cached --name-only | grep -v "^caylent-devcontainer-cli/" | grep "\.json$"); do
+  echo "Validating $file"
+  if ! jq . "$file" > /dev/null 2>&1; then
+    echo "❌ Invalid JSON in $file"
+    exit 1
+  fi
+  echo "✅ $file is valid JSON"
+done
+
+# If we're in the CLI subdirectory, run format
+if git diff --cached --name-only | grep -q "^caylent-devcontainer-cli/"; then
+  echo "Running format for CLI changes..."
+  cd "$ROOT_DIR/caylent-devcontainer-cli" && make format
+  # Stage the formatted files - safely
+  for file in $(git diff --cached --name-only | grep "^caylent-devcontainer-cli/"); do
+    if [ -f "$file" ]; then
+      git add "$file"
+    fi
+  done
+fi

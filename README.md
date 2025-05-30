@@ -1,14 +1,33 @@
 # Caylent Devcontainer Base
 
+## 📑 Table of Contents
+
+- [🚀 Overview](#-overview)
+- [🧰 What's Included](#-whats-included)
+- [💡 Built-In Tooling](#-built-in-tooling)
+- [🖥 Prerequisites](#-prerequisites)
+- [🪄 Quick Start](#-quick-start)
+- [🧩 Post-Launch Setup](#-post-launch-setup)
+- [🐍 Python Install Logic](#-python-install-logic)
+- [🔄 Rebuilding the Devcontainer](#-rebuilding-the-devcontainer)
+- [🐳 Docker-in-Docker Support](#-docker-in-docker-support)
+- [📡 Debug Ports](#-debug-ports)
+- [🧩 JetBrains Compatibility](#-jetbrains-compatibility)
+- [📁 File Reference](#-file-reference)
+- [🧪 Validate Your Config](#-validate-your-config)
+- [🧼 Git Hygiene](#-git-hygiene)
+- [🛠️ CLI Reference](#️-cli-reference)
+- [🤝 Contributing](#-contributing)
+
 ## 🚀 Overview
 
 This repository provides the **base development container** configuration used across Caylent engineering projects. It is designed to be:
 
-- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code  
-- 🧱 **Reusable**: drop into any repo to enable consistent local dev experience  
-- 🔐 **Secure and configurable**: injects secrets via environment, not committed  
-- 🧩 **Smart defaults**: tools, AWS profiles, aliases, Python setup, Git config, and more  
-- 🧪 **Consistent environments**: ensures identical local dev setups across teams using `asdf` to pin and manage exact binary versions  
+- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code
+- 🧱 **Reusable**: drop into any repo to enable consistent local dev experience
+- 🔐 **Secure and configurable**: injects secrets via environment, not committed
+- 🧩 **Smart defaults**: tools, AWS profiles, aliases, Python setup, Git config, and more
+- 🧪 **Consistent environments**: ensures identical local dev setups across teams using `asdf` to pin and manage exact binary versions
 
 📦 Repo URL: [`https://github.com/caylent-solutions/devcontainer`](https://github.com/caylent-solutions/devcontainer)
 
@@ -56,22 +75,17 @@ These extensions are auto-installed on container start.
 
 ## 🪄 Quick Start
 
-### 1. Copy Devcontainer Into Your Project
-```bash
-git clone https://github.com/caylent-solutions/devcontainer.git
-cd devcontainer
-cp -r .devcontainer ../your-project-dir/
-cd ../your-project-dir
-```
-
-### 2. Install the CLI Tool
+### 1. Install the CLI Tool
 
 First, install the Caylent Devcontainer CLI:
 
-```bash
-# Install from GitHub
-pip install git+https://github.com/caylent-solutions/devcontainer.git#subdirectory=caylent-devcontainer-cli
+Install a specific version (recommended)
+
 ```
+pip install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
+```
+
+To install a different version, check the [repository tags](https://github.com/caylent-solutions/devcontainer/tags) for the latest stable release and replace `0.1.0` with the desired version number.
 
 After installation, you can run the CLI from anywhere:
 
@@ -79,15 +93,55 @@ After installation, you can run the CLI from anywhere:
 cdevcontainer --help
 ```
 
+### 2. Set Up Your Project
+
+You can set up a devcontainer in your project using the CLI:
+
+```bash
+cdevcontainer setup-devcontainer /path/to/your/project
+```
+
+This will:
+1. Guide you through an interactive setup process
+2. Let you select or create a template for your environment
+3. Configure AWS profiles if needed
+4. Copy the devcontainer files to your project
+
+If you prefer to set up manually, use the `--manual` flag:
+
+```bash
+cdevcontainer setup-devcontainer --manual /path/to/your/project
+```
+
+To update an existing devcontainer setup to the latest version:
+
+```bash
+cdevcontainer setup-devcontainer --update /path/to/your/project
+```
+
+> 💡 **Pro tip**: Consider committing the `.devcontainer` directory to your repository (excluding sensitive files) to speed up environment setup for your team. See the [Git Hygiene](#-git-hygiene) section for details.
+
 ---
 
 ### 3. Customize Your Developer Environment
+
+When running `cdevcontainer setup-devcontainer`, you'll be guided through configuring:
+
+- AWS configuration (enabled by default)
+- Git branch and credentials
+- Python version
+- Developer information
+- Extra Ubuntu packages
+
+The interactive setup will create a `devcontainer-environment-variables.json` file with your settings.
+
+If you prefer to configure manually:
 
 ```bash
 cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
 ```
 
-Update `devcontainer-environment-variables.json` with your values:
+Then edit `devcontainer-environment-variables.json` with your values:
 - `AWS_CONFIG_ENABLED` (default: `true`) - Set to `false` to disable AWS configuration
 - `DEFAULT_GIT_BRANCH` (e.g. `main`)
 - `DEFAULT_PYTHON_VERSION` (e.g. `3.12.9`)
@@ -97,7 +151,14 @@ Update `devcontainer-environment-variables.json` with your values:
 
 #### Client/Project Templates
 
-For working with multiple projects that share similar configurations:
+The `setup-devcontainer` command will ask if you want to:
+- Use an existing template
+- Create a new reusable template
+- Create a one-time configuration
+
+Templates are saved in `~/.devcontainer-templates/` and can be reused across projects.
+
+You can also manage templates directly:
 
 ```bash
 # Save current environment as a template
@@ -109,23 +170,42 @@ cdevcontainer template list
 # Load a template into a new project
 cd /path/to/new-project
 cdevcontainer template load client1
+
+# Delete one or more templates
+cdevcontainer template delete template1 template2
+
+# Upgrade a template to the current CLI version
+cdevcontainer template upgrade my-template
 ```
 
 When loading a template:
-1. The CLI copies the template from `~/.devcontainer-templates/client1.json` 
+1. The CLI copies the template from `~/.devcontainer-templates/client1.json`
 2. It creates a new `devcontainer-environment-variables.json` file in your project
 3. This file contains all the environment settings from the template (Git credentials, AWS settings, etc.)
 4. You can then run `cdevcontainer code` to use these settings with your project
 
 This allows you to maintain consistent configurations across multiple projects for the same client.
 
+#### Template Version Compatibility
+
+Templates are saved with version information that tracks which CLI version created them. When loading a template created with an older version of the CLI, the tool automatically detects version mismatches and provides options:
+
+- **Upgrade the template**: Updates the template to the current CLI format while preserving settings
+- **Create a new template**: Starts fresh with the current CLI version
+- **Use anyway**: Attempts to use the template as-is (may cause issues)
+- **Exit**: Cancels the operation without making changes
+
+This version checking ensures templates remain compatible as the CLI evolves.
+
 ---
 
 ### 4. Configure AWS Profile Map (Optional)
 
-By default, AWS configuration is enabled. If you don't need AWS access, you can disable it by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`. This is completely optional and not required for using Amazon Q.
+By default, AWS configuration is enabled. If you don't need AWS access, you can disable it during the interactive setup or by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`.
 
-If AWS configuration is enabled, copy the example:
+When using the interactive setup with AWS enabled, you'll be prompted to enter your AWS profile configuration in JSON format. The setup will validate your input and create the AWS profile map file automatically.
+
+If configuring manually, copy the example:
 ```bash
 cp .devcontainer/example-aws-profile-map.json .devcontainer/aws-profile-map.json
 ```
@@ -147,6 +227,8 @@ Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
 ```
 
 > ⚠️ This file is required only when AWS configuration is enabled (`AWS_CONFIG_ENABLED=true`).
+>
+> AWS configuration is completely optional and not required for using Amazon Q.
 
 ---
 
@@ -178,7 +260,7 @@ cdevcontainer code -y
 > ```bash
 > # In terminal 1 (for project A)
 > cdevcontainer code /path/to/project-a
-> 
+>
 > # In terminal 2 (for project B)
 > cdevcontainer code /path/to/project-b
 > ```
@@ -230,8 +312,8 @@ Or open the Source Control tab in VS Code to confirm the repo is accessible.
 
 ## 🐍 Python Install Logic
 
-- `.tool-versions` present? → installs pinned Python version
-- Not present? → installs version from:
+- `.tool-versions` present with Python? → installs that pinned Python version
+- Not present or no Python entry? → installs fallback version from:
 ```json
 "DEFAULT_PYTHON_VERSION": "3.12.9"
 ```
@@ -336,9 +418,52 @@ If the validation succeeds, you'll see:
 - ✅ Use `aws-profile-map.json` to declare AWS SSO profiles
 - `.gitignore` excludes common temp files, IDE config, and secrets
 
+> 💡 **Pro tip**: You can commit the `.devcontainer` directory to your repository for faster team onboarding. Add these lines to your `.gitignore`:
+> ```
+> # Devcontainer - commit structure but not secrets
+> devcontainer-environment-variables.json
+> .devcontainer/aws-profile-map.json
+> shell.env
+> ```
+>
+> This approach lets you version control the devcontainer configuration while excluding sensitive information. When you need to update the devcontainer, run:
+> ```bash
+> cdevcontainer setup-devcontainer --update .
+> git add .devcontainer
+> git commit -m "chore: Update devcontainer to version X.Y.Z"
+> ```
+
 ---
 
 ## 🛠️ CLI Reference
+
+The Caylent Devcontainer CLI provides several commands to manage your devcontainer environment:
+
+```bash
+# Show help
+cdevcontainer --help
+
+# Set up a devcontainer in a project directory
+cdevcontainer setup-devcontainer /path/to/your/project
+
+# Launch VS Code with the devcontainer environment
+cdevcontainer code [/path/to/your/project]
+
+# Manage templates
+cdevcontainer template list
+cdevcontainer template save my-template
+cdevcontainer template load my-template
+cdevcontainer template delete template1 template2
+cdevcontainer template upgrade my-template
+
+# Manage environment variables
+cdevcontainer env export input.json -o output.sh
+cdevcontainer env load
+
+# Install/uninstall the CLI
+cdevcontainer install
+cdevcontainer uninstall
+```
 
 For detailed information about the Caylent Devcontainer CLI, see the [CLI documentation](caylent-devcontainer-cli/README.md).
 
@@ -354,6 +479,7 @@ To set up your development environment:
    ```bash
    git clone https://github.com/caylent-solutions/devcontainer.git
    cd devcontainer
+   make configure
    ```
 
 2. Follow the [Quick Start](#-quick-start) instructions (steps 2-5) to set up the devcontainer environment.
@@ -361,7 +487,7 @@ To set up your development environment:
 3. For CLI development, install the package in development mode:
    ```bash
    cd caylent-devcontainer-cli
-   pip install -e .
+   make install
    ```
 
 ### Contribution Guidelines
@@ -370,13 +496,16 @@ To set up your development environment:
 
 1. Fork the repo on GitHub
 2. Create a feature branch: `git checkout -b feat/my-change`
-3. Push and open a Pull Request
+3. Ensure all tests pass: `make test`
+4. Push and open a Pull Request
 
 #### If Caylent Internal
 
 1. Pull `main`: `git checkout main && git pull`
 2. Create a new branch: `git checkout -b feat/thing`
-3. Commit and push: `git add . && git commit -m "feat: update thing" && git push`
-4. Open a PR to `main` and request review
+3. Ensure all tests pass: `make test`
+4. Commit and push: `git add . && git commit -m "feat: update thing" && git push`
+5. Open a PR to `main` and request review
 
-> All PRs must pass CI and be reviewed before merge.
+> All PRs must pass CI, maintain 90% test coverage, and be reviewed before merge.
+> See [CONTRIBUTING.md](caylent-devcontainer-cli/CONTRIBUTING.md) for detailed guidelines.

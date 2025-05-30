@@ -7,9 +7,11 @@ with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
 
 # Get version from git tag if available, otherwise use a default
+# Get version from git tag if available, otherwise use a default
 version = os.environ.get("GITHUB_REF_NAME", "0.1.0")
-if version.startswith("v"):
-    version = version[1:]
+# Ensure version is valid according to PEP 440
+if not version or "/" in version or "-" in version:
+    version = "0.1.0"
 
 setup(
     name="caylent-devcontainer-cli",
@@ -31,6 +33,8 @@ setup(
         "isort~=6.0",
         "pytest~=7.0",
         "pytest-cov~=4.0",
+        "questionary~=2.0.0",
+        "semver~=3.0.0",
     ],
     entry_points={
         "console_scripts": [
@@ -40,7 +44,7 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

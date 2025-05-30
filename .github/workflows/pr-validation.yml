@@ -1,0 +1,168 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Simulate merge
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          # Fetch the base branch (main)
+          git fetch origin ${{ github.base_ref }}
+          # Checkout the base branch
+          git checkout -b pr-validation origin/${{ github.base_ref }}
+          # Merge the PR branch without committing
+          git merge --no-commit --no-ff ${{ github.event.pull_request.head.sha }}
+
+      - name: Install system dependencies for Python build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
+          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
+          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
+          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
+
+      - name: Install ASDF
+        uses: asdf-vm/actions/setup@v3
+
+      - name: Install ASDF plugins and tools
+        run: |
+          cd $GITHUB_WORKSPACE
+          cat .tool-versions | cut -d' ' -f1 | xargs -I{} asdf plugin add {} || true
+          asdf install
+          asdf reshim
+
+      - name: Install CLI
+        run: |
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          make install
+
+      - name: Lint
+        run: |
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          make lint
+
+      - name: Build
+        run: |
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          make build
+
+      - name: Run unit tests with coverage threshold
+        run: |
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          make unit-test
+          # Generate JSON coverage report first
+          coverage json
+          coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
+          echo "Coverage: $coverage_percent%"
+          if (( $(echo "$coverage_percent < 85" | bc -l) )); then
+            echo "Error: Code coverage is below 85% threshold ($coverage_percent%)"
+            exit 1
+          fi
+
+      - name: Run functional tests
+        run: |
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          make functional-test
+
+      - name: Generate coverage report
+        run: |
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          make coverage
+          make coverage-json
+
+      - name: Print coverage summary
+        run: |
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          make coverage-text
+
+      - name: Find code owners
+        id: codeowners
+        if: success()
+        run: |
+          DEFAULT_OWNER=""
+          if [ -f ".github/CODEOWNERS" ]; then
+            DEFAULT_OWNER=$(grep -E "^\*" .github/CODEOWNERS | awk '{print $2}')
+          fi
+
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} ${{ github.event.pull_request.head.sha }})
+          echo "Changed files: $CHANGED_FILES"
+
+          SPECIFIC_OWNERS=""
+          if [ -f ".github/CODEOWNERS" ]; then
+            for FILE in $CHANGED_FILES; do
+              while [[ "$FILE" == */* ]]; do
+                DIR=$(dirname "$FILE")
+                MATCH=$(grep -E "^$DIR/" .github/CODEOWNERS | awk '{for(i=2;i<=NF;i++) print $i}')
+                if [ -n "$MATCH" ]; then
+                  SPECIFIC_OWNERS="$SPECIFIC_OWNERS $MATCH"
+                  break
+                fi
+                FILE="$DIR"
+              done
+            done
+          fi
+
+          if [ -z "$SPECIFIC_OWNERS" ]; then
+            OWNERS="$DEFAULT_OWNER"
+          else
+            OWNERS="$SPECIFIC_OWNERS"
+          fi
+
+          UNIQUE_OWNERS=$(echo "$OWNERS" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ' | xargs)
+          echo "Final owners: $UNIQUE_OWNERS"
+          echo "owners=$UNIQUE_OWNERS" >> $GITHUB_OUTPUT
+
+      - name: Send PR review request to Slack
+        if: success()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "<!here> :mag: PR Ready for Review",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!here> *PR Review Needed*"
+                  }
+                },
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":mag: PR Ready for Review"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*PR #${{ github.event.pull_request.number }}*: ${{ github.event.pull_request.title }}\nAll validation checks have passed! This PR is ready for review.\n<${{ github.event.pull_request.html_url }}|View Pull Request>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Author:* ${{ github.event.pull_request.user.login }}\n*Code Owners:* ${{ steps.codeowners.outputs.owners }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

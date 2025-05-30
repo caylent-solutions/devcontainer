@@ -2,6 +2,13 @@
 requires = ["setuptools~=68.0", "wheel~=0.40"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "caylent-devcontainer-cli"
+dynamic = ["version"]
+dependencies = [
+    "semver>=3.0.0",
+]
+
 [tool.black]
 line-length = 120
 target-version = ["py38"]
@@ -10,8 +17,25 @@ target-version = ["py38"]
 profile = "black"
 line_length = 120
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_functions = "test_*"
-python_classes = "Test*"
+[tool.semantic_release]
+version_variable = "src/caylent_devcontainer_cli/__init__.py:__version__"
+branch = "main"
+upload_to_pypi = false
+upload_to_release = false
+build_command = "python -m build"
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = [
+    "build",
+    "chore",
+    "ci",
+    "docs",
+    "feat",
+    "fix",
+    "perf",
+    "refactor",
+    "style",
+    "test"
+]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]

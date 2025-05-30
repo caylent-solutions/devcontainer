@@ -24,7 +24,7 @@ def test_version_from_package():
 def test_version_from_env():
     # We need to patch both the version function and the environment
     with patch("importlib.metadata.version", side_effect=ImportError()):
-        with patch.dict("os.environ", {"GITHUB_REF_NAME": "v2.3.4"}):
+        with patch.dict("os.environ", {"GITHUB_REF_NAME": "2.3.4"}):
             # We need to patch the import itself
             with patch.dict("sys.modules"):
                 if "caylent_devcontainer_cli" in sys.modules:

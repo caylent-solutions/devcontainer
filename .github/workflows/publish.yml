@@ -1,0 +1,101 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  validate-version:
+    name: Validate version format
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validate semver format
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          if ! [[ $TAG_NAME =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: $TAG_NAME. Version must follow semver format (e.g., 1.2.3) without any prefix."
+            echo "::error::Please use the format: MAJOR.MINOR.PATCH (e.g., 0.1.0, 1.0.0, 2.3.4)"
+            exit 1
+          fi
+          echo "Version format is valid: $TAG_NAME"
+
+  build-and-publish:
+    name: Build and publish to PyPI
+    needs: validate-version
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/caylent-devcontainer-cli
+    permissions:
+      id-token: write  # Required for PyPI trusted publishing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies for Python build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
+          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
+          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
+          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
+
+      - name: Install ASDF
+        uses: asdf-vm/actions/setup@v3
+
+      - name: Install ASDF plugins and tools
+        run: |
+          cat .tool-versions | cut -d' ' -f1 | xargs -I{} asdf plugin add {} || true
+          asdf install
+          asdf reshim
+
+      - name: Install build dependencies
+        run: |
+          pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: |
+          cd caylent-devcontainer-cli
+          make build
+
+      - name: Send PyPI approval request to Slack
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "<!here> 🔔 PyPI Publish Approval Required",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!here> *Action Required: Approve PyPI Publish*"
+                  }
+                },
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🔔 PyPI Publish Approval Required"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "A new version is ready to be published to PyPI.\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Please review and approve the deployment>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: caylent-devcontainer-cli/dist/

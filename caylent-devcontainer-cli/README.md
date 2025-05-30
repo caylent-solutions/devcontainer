@@ -1,21 +1,91 @@
 # Caylent Devcontainer CLI
 
-A command-line tool for managing Caylent devcontainers.
+A command-line tool for managing Caylent devcontainer environments.
 
-## Features
+## Table of Contents
 
-- Launch VS Code with the devcontainer environment
-- Manage environment variables
-- Save and load configuration templates
-- Install the CLI tool to your PATH
+1. [Installation](#installation)
+2. [Usage](#usage)
+   - [Commands](#commands)
+   - [Setting Up a Devcontainer](#setting-up-a-devcontainer)
+   - [Managing Templates](#managing-templates)
+   - [Launching VS Code](#launching-vs-code)
+3. [Development](#development)
+   - [Setup](#setup)
+   - [Testing](#testing)
+   - [Linting and Formatting](#linting-and-formatting)
+   - [Building and Publishing](#building-and-publishing)
+4. [License](#license)
 
 ## Installation
 
-For detailed installation instructions, please refer to the [Quick Start section in the main README](../README.md#-quick-start).
+```bash
+# Install from PyPI (when available)
+pip install caylent-devcontainer-cli
+
+# Install from GitHub with a specific version tag
+pip install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
+```
 
 ## Usage
 
-### Launch VS Code with the devcontainer environment
+```bash
+cdevcontainer --help
+```
+
+### Commands
+
+- `setup-devcontainer`: Set up a devcontainer in a project directory
+- `code`: Launch VS Code with the devcontainer environment
+- `env`: Manage environment variables
+- `template`: Manage devcontainer templates
+- `install`: Install the CLI tool to your PATH
+- `uninstall`: Uninstall the CLI tool
+
+### Setting Up a Devcontainer
+
+```bash
+# Interactive setup
+cdevcontainer setup-devcontainer /path/to/your/project
+
+# Manual setup (skip interactive prompts)
+cdevcontainer setup-devcontainer --manual /path/to/your/project
+
+# Update existing devcontainer files to the current CLI version
+cdevcontainer setup-devcontainer --update /path/to/your/project
+```
+
+The interactive setup will guide you through:
+1. Using an existing template or creating a new one
+2. Configuring environment variables
+3. Setting up AWS profiles (if enabled)
+
+### Managing Templates
+
+```bash
+# Save current environment as a template
+cdevcontainer template save my-template
+
+# List available templates
+cdevcontainer template list
+
+# Load a template into a project
+cdevcontainer template load my-template
+
+# Delete one or more templates
+cdevcontainer template delete template1 template2
+
+# Upgrade a template to the current CLI version
+cdevcontainer template upgrade my-template
+```
+
+When using templates created with older versions of the CLI, the tool will automatically detect version mismatches and provide options to:
+- Upgrade the profile to the current version
+- Create a new profile from scratch
+- Try to use the profile anyway (with a warning)
+- Exit without making changes
+
+### Launching VS Code
 
 ```bash
 # Launch VS Code for the current project
@@ -25,76 +95,67 @@ cdevcontainer code
 cdevcontainer code /path/to/your/project
 ```
 
-### Manage environment variables
-
-```bash
-# Generate shell exports from JSON
-cdevcontainer env export devcontainer-environment-variables.json -o shell.env
-
-# Load environment variables
-cdevcontainer env load
-```
-
-### Manage templates
-
-```bash
-# Save current environment as a template
-cdevcontainer template save client1
-
-# List available templates
-cdevcontainer template list
-
-# Load a template into current project
-cdevcontainer template load client1
-```
-
-### Self-management
-
-```bash
-# Fix PATH issues or reinstall symlinks after code changes
-# Use when: the command isn't found, you've updated the CLI code, or changed Python environments
-cdevcontainer install
-
-# Completely remove the CLI tool and its symlinks from your system
-# Use when: you no longer need the tool or want to perform a clean reinstallation
-cdevcontainer uninstall
-```
-
 ## Development
 
-For development setup and contribution guidelines, please refer to the [main repository README](../README.md#🤝-contributing).
+### Setup
 
-### Development Tasks
+For development, we recommend using the devcontainer itself. See the [Contributing Guide](CONTRIBUTING.md) for detailed setup instructions.
 
-Once you have the devcontainer set up, you can use the following Makefile tasks:
+### Testing
 
 ```bash
-# Install the package in development mode
-make install
+# Run unit tests
+make unit-test
 
-# Run linting checks
-make lint
+# Run functional tests
+make functional-test
 
-# Auto-fix linting issues
-make format
-
-# Run unit tests with coverage
+# Run all tests
 make test
 
-# Clean build artifacts
-make clean
+# Generate coverage report
+make coverage
 
-# Build the package
-make build
+# View functional test coverage report
+make functional-test-report
 ```
 
-### Note on Tests
+#### Testing Requirements
 
-The test suite is currently being updated. Some tests may fail due to changes in the codebase structure. 
-If you're contributing, please ensure your changes don't break existing functionality.
+- **Unit Tests**: Must maintain at least 90% code coverage
+- **Functional Tests**: Must test CLI commands as they would be used by actual users
+- All tests must pass before merging code
 
-## Versioning
+### Linting and Formatting
 
-The CLI version is determined by the git tag of the repository. When a new tag is created, the CLI version will be updated accordingly.
+```bash
+# Check code style
+make lint
 
-For example, if the repository is tagged with `v1.0.0`, the CLI version will be `1.0.0`.
+# Format code
+make format
+```
+
+### Building and Publishing
+
+The package is automatically published to PyPI when a new tag is pushed to GitHub.
+
+To create a new release:
+
+1. Ensure all tests pass (`make test`)
+2. Perform the [manual tests](MANUAL_TESTING.md) to verify functionality
+3. Create and push a new tag following semantic versioning:
+
+```bash
+git tag -a 0.1.0 -m "Release 0.1.0"
+git push origin 0.1.0
+```
+
+The GitHub Actions workflow will:
+1. Validate the tag follows semantic versioning (MAJOR.MINOR.PATCH)
+2. Build the package using ASDF for Python version management
+3. Publish the package to PyPI
+
+## License
+
+Apache License 2.0

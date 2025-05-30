@@ -17,22 +17,30 @@ sdist/
 var/
 wheels/
 *.egg-info
+*.egg-info/
 .installed.cfg
 *.egg
 
 # Testing
 .coverage
+.coverage.*
 htmlcov/
 .pytest_cache/
 .tox/
 .nox/
 .hypothesis/
-.coverage.*
+coverage.json
 
 # Environment files
 shell.env
 devcontainer-environment-variables.json
 aws-profile-map.json
+
+# Virtual environments
+venv/
+ENV/
+env/
+.env/
 
 # IDE files
 .idea
@@ -44,3 +52,6 @@ aws-profile-map.json
 # OS files
 .DS_Store
 Thumbs.db
+
+# Test files
+output_file.sh
