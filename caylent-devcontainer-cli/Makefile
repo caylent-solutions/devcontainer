@@ -1,4 +1,4 @@
-.PHONY: install lint format unit-test functional-test test clean build coverage publish
+.PHONY: install lint format unit-test functional-test functional-test-report test clean build coverage coverage-text coverage-json distcheck publish
 
 install:
 	pip install -e .
@@ -41,13 +41,17 @@ coverage-json:
 	@echo "Coverage report generated in coverage.json"
 
 clean:
-	rm -rf build dist *.egg-info __pycache__ .pytest_cache .coverage htmlcov
+	rm -rf build dist .coverage htmlcov coverage.json
+	rm -rf *.egg-info **/*.egg-info __pycache__ .pytest_cache .mypy_cache
 
 build:
 	python -m build
 
-publish: clean build
+distcheck:
+	python -m pip install twine
 	twine check dist/*
+
+publish: clean build distcheck
 	@echo "Ready to publish! To publish to PyPI, create and push a git tag:"
 	@echo "git tag -a 0.1.0 -m 'Release 0.1.0'"
 	@echo "git push origin 0.1.0"
