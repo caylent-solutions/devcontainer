@@ -150,7 +150,7 @@ jobs:
 
   manual-approval:
     name: Manual QA Approval
-    needs: [validate, codeql]
+    needs: [validate]
     runs-on: ubuntu-latest
     environment:
       name: qa-approval
