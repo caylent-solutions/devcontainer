@@ -51,4 +51,3 @@ publish: clean build
 	@echo "Ready to publish! To publish to PyPI, create and push a git tag:"
 	@echo "git tag -a 0.1.0 -m 'Release 0.1.0'"
 	@echo "git push origin 0.1.0"
-	

@@ -23,11 +23,11 @@
 
 This repository provides the **base development container** configuration used across Caylent engineering projects. It is designed to be:
 
-- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code  
-- 🧱 **Reusable**: drop into any repo to enable consistent local dev experience  
-- 🔐 **Secure and configurable**: injects secrets via environment, not committed  
-- 🧩 **Smart defaults**: tools, AWS profiles, aliases, Python setup, Git config, and more  
-- 🧪 **Consistent environments**: ensures identical local dev setups across teams using `asdf` to pin and manage exact binary versions  
+- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code
+- 🧱 **Reusable**: drop into any repo to enable consistent local dev experience
+- 🔐 **Secure and configurable**: injects secrets via environment, not committed
+- 🧩 **Smart defaults**: tools, AWS profiles, aliases, Python setup, Git config, and more
+- 🧪 **Consistent environments**: ensures identical local dev setups across teams using `asdf` to pin and manage exact binary versions
 
 📦 Repo URL: [`https://github.com/caylent-solutions/devcontainer`](https://github.com/caylent-solutions/devcontainer)
 
@@ -179,7 +179,7 @@ cdevcontainer template upgrade my-template
 ```
 
 When loading a template:
-1. The CLI copies the template from `~/.devcontainer-templates/client1.json` 
+1. The CLI copies the template from `~/.devcontainer-templates/client1.json`
 2. It creates a new `devcontainer-environment-variables.json` file in your project
 3. This file contains all the environment settings from the template (Git credentials, AWS settings, etc.)
 4. You can then run `cdevcontainer code` to use these settings with your project
@@ -227,7 +227,7 @@ Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
 ```
 
 > ⚠️ This file is required only when AWS configuration is enabled (`AWS_CONFIG_ENABLED=true`).
-> 
+>
 > AWS configuration is completely optional and not required for using Amazon Q.
 
 ---
@@ -260,7 +260,7 @@ cdevcontainer code -y
 > ```bash
 > # In terminal 1 (for project A)
 > cdevcontainer code /path/to/project-a
-> 
+>
 > # In terminal 2 (for project B)
 > cdevcontainer code /path/to/project-b
 > ```
@@ -425,7 +425,7 @@ If the validation succeeds, you'll see:
 > .devcontainer/aws-profile-map.json
 > shell.env
 > ```
-> 
+>
 > This approach lets you version control the devcontainer configuration while excluding sensitive information. When you need to update the devcontainer, run:
 > ```bash
 > cdevcontainer setup-devcontainer --update .

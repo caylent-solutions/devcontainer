@@ -21,7 +21,7 @@ The recommended way to set up your development environment is to use the devcont
    ```bash
    make configure
    ```
-   
+
    This will:
    - Install pre-commit using asdf (or pip if asdf is not available)
    - Set up git hooks that:
@@ -33,7 +33,7 @@ The recommended way to set up your development environment is to use the devcont
    ```bash
    # If you already have the CLI installed
    cdevcontainer code .
-   
+
    # Or open VS Code manually and reopen in container when prompted
    code .
    ```

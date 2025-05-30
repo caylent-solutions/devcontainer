@@ -91,10 +91,10 @@ make functional-test-report
 def test_help_command():
     """Test the help command."""
     result = run_command(["cdevcontainer", "--help"])
-    
+
     # Check that the command succeeded
     assert result.returncode == 0
-    
+
     # Check that the output contains expected commands
     assert "setup-devcontainer" in result.stdout
     assert "code" in result.stdout

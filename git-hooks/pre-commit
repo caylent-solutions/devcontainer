@@ -21,6 +21,11 @@ done
 if git diff --cached --name-only | grep -q "^caylent-devcontainer-cli/"; then
   echo "Running format for CLI changes..."
   cd "$ROOT_DIR/caylent-devcontainer-cli" && make format
-  # Stage the formatted files
-  git add $(git diff --cached --name-only | grep "^caylent-devcontainer-cli/")
+  # Stage the formatted files - safely
+  for file in $(git diff --cached --name-only | grep "^caylent-devcontainer-cli/"); do
+    if [ -f "$file" ]; then
+      git add "$file"
+    fi
+  done
 fi
+

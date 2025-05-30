@@ -37,9 +37,9 @@ jobs:
       - name: Install system dependencies for Python build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev 
-          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl 
-          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev 
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
+          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
+          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
           sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
 
       - name: Install ASDF
@@ -65,4 +65,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: caylent-devcontainer-cli/dist/
-          
