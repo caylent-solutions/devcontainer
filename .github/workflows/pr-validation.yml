@@ -49,6 +49,7 @@ jobs:
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           pip install --upgrade pip
           make install
+          asdf reshim
 
       - name: Lint
         run: |

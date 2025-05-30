@@ -4,10 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-_No unreleased changes yet._
-
-## [1.0.0] - 2025-05-30
-
 ### Added
 - Core CLI (`cdevcontainer`) with support for:
   - `setup-devcontainer` for interactive and manual configuration
