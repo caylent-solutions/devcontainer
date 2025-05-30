@@ -47,6 +47,7 @@ jobs:
       - name: Install CLI
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          pip install --upgrade pip
           make install
 
       - name: Lint
@@ -57,7 +58,7 @@ jobs:
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          make build
+          make publish
 
       - name: Run unit tests with coverage threshold
         run: |

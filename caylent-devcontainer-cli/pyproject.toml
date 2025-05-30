@@ -1,38 +1,38 @@
 [build-system]
-requires = ["setuptools>=78.1.1", "wheel~=0.40"]
+requires = ["setuptools>=78.1.1", "wheel>=0.40.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "caylent-devcontainer-cli"
 version = "0.1.0"
 description = "CLI tool for managing Caylent devcontainers"
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.8"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
+
 authors = [
-    {name = "Caylent", email = "solution-owners@caylent.com"}
+  { name = "Caylent", email = "solutions-owners@caylent.com" }
 ]
+
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
 ]
+
 dependencies = [
-    "black~=24.0",
-    "flake8~=7.0",
-    "isort~=6.0",
-    "pytest~=7.0",
-    "pytest-cov~=4.0",
-    "questionary~=2.0.0",
-    "semver~=3.0.0",
-    "setuptools>=78.1.1",
-    "wheel~=0.40",
+  "black~=24.0",
+  "flake8~=7.0",
+  "isort~=6.0",
+  "pytest~=7.0",
+  "pytest-cov~=4.0",
+  "questionary~=2.0.0",
+  "semver~=3.0.0"
 ]
 
 [project.scripts]
@@ -41,6 +41,12 @@ cdevcontainer = "caylent_devcontainer_cli.cli:main"
 [project.urls]
 Homepage = "https://github.com/caylent-solutions/devcontainer"
 Issues = "https://github.com/caylent-solutions/devcontainer/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.black]
 line-length = 120
@@ -59,16 +65,16 @@ build_command = "python -m build"
 
 [tool.semantic_release.commit_parser_options]
 allowed_tags = [
-    "build",
-    "chore",
-    "ci",
-    "docs",
-    "feat",
-    "fix",
-    "perf",
-    "refactor",
-    "style",
-    "test"
+  "build",
+  "chore",
+  "ci",
+  "docs",
+  "feat",
+  "fix",
+  "perf",
+  "refactor",
+  "style",
+  "test"
 ]
 minor_tags = ["feat"]
 patch_tags = ["fix", "perf"]

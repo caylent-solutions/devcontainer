@@ -47,7 +47,7 @@ jobs:
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          make build
+          make publish
 
       - name: Run unit tests with coverage threshold
         run: |
@@ -65,21 +65,13 @@ jobs:
       - name: Run functional tests
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          make functional-test || echo "Functional tests failed but continuing workflow"
+          make functional-test
 
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make coverage
           make coverage-json
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: |
-            caylent-devcontainer-cli/htmlcov/
-            caylent-devcontainer-cli/coverage.json
 
       - name: Print coverage summary
         run: |
@@ -224,8 +216,8 @@ jobs:
       - name: Install CLI and dependencies
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          pip install --upgrade pip
           make install
-          pip install build
       - name: Create CHANGELOG if needed
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
