@@ -86,3 +86,56 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make coverage-text
+          
+      - name: Find code owners
+        id: codeowners
+        if: success()
+        run: |
+          # Try to find code owners for the changed files
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} ${{ github.event.pull_request.head.sha }})
+          CODEOWNERS=""
+          if [ -f ".github/CODEOWNERS" ]; then
+            for FILE in $CHANGED_FILES; do
+              OWNERS=$(grep -E "(^|\\s)${FILE}(\\s|$)" .github/CODEOWNERS | awk '{for(i=2;i<=NF;i++) print $i}' | sort -u)
+              if [ -n "$OWNERS" ]; then
+                CODEOWNERS="$CODEOWNERS $OWNERS"
+              fi
+            done
+            CODEOWNERS=$(echo "$CODEOWNERS" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
+          fi
+          echo "owners=$CODEOWNERS" >> $GITHUB_OUTPUT
+          
+      - name: Send PR review request to Slack
+        if: success()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "🔍 PR Ready for Review",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🔍 PR Ready for Review"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*PR #${{ github.event.pull_request.number }}*: ${{ github.event.pull_request.title }}\n\nAll validation checks have passed! This PR is ready for review.\n\n<${{ github.event.pull_request.html_url }}|View Pull Request>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Author:* ${{ github.event.pull_request.user.login }}\n*Code Owners:* ${{ steps.codeowners.outputs.owners || 'No code owners found' }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
