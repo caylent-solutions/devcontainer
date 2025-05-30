@@ -3,6 +3,7 @@
 install:
 	pip install -e .
 	pip install -r requirements.txt
+	asdf reshim python 2>/dev/null || true
 
 lint:
 	black --check src tests
