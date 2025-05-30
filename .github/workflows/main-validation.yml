@@ -54,7 +54,6 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make unit-test
-          # Generate JSON coverage report first
           coverage json
           coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
           echo "Coverage: $coverage_percent%"
@@ -158,18 +157,18 @@ jobs:
       contents: read
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: python
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:python"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
 
   manual-approval:
     name: Manual QA Approval
@@ -195,6 +194,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Generate token from GitHub App
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
       - name: Install system dependencies for Python build
         run: |
@@ -225,7 +231,7 @@ jobs:
         id: semantic-release
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           python -m semantic_release version
           python -m semantic_release changelog
@@ -234,15 +240,19 @@ jobs:
 
       - name: Commit changelog and version bump
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "caylent-platform-bot[bot]"
+          git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
           git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
           git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
           git push origin HEAD
 
       - name: Create Git tag
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
           git push origin ${{ steps.semantic-release.outputs.new_version }}
-
