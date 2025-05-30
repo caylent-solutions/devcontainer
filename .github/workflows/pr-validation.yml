@@ -63,7 +63,9 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make unit-test
-          coverage_percent=$(python -c "import json; f=open('.coverage'); print(json.load(f)['totals']['percent_covered'])")
+          # Generate JSON coverage report first
+          coverage json
+          coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
           echo "Coverage: $coverage_percent%"
           if (( $(echo "$coverage_percent < 85" | bc -l) )); then
             echo "Error: Code coverage is below 85% threshold ($coverage_percent%)"
