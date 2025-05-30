@@ -60,7 +60,7 @@ jobs:
       - name: Build package
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          make build
+          make publish
 
       - name: Send PyPI approval request to Slack
         uses: slackapi/slack-github-action@v1.25.0

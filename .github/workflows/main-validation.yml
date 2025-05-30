@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev
           sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
           sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
-          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
+          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc twine
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -47,7 +47,7 @@ jobs:
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          make build
+          make publish
 
       - name: Run unit tests with coverage threshold
         run: |
@@ -65,21 +65,13 @@ jobs:
       - name: Run functional tests
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          make functional-test || echo "Functional tests failed but continuing workflow"
+          make functional-test
 
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make coverage
           make coverage-json
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: |
-            caylent-devcontainer-cli/htmlcov/
-            caylent-devcontainer-cli/coverage.json
 
       - name: Print coverage summary
         run: |
@@ -225,7 +217,6 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make install
-          pip install build
       - name: Create CHANGELOG if needed
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
