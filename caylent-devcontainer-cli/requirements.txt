@@ -1,5 +1,6 @@
 setuptools~=68.0
 wheel~=0.40
+build~=1.0
 black~=24.0
 flake8~=7.0
 isort~=6.0
