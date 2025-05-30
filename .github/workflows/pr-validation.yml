@@ -32,7 +32,7 @@ jobs:
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev
           sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
           sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
-          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc twine
+          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -47,6 +47,7 @@ jobs:
       - name: Install CLI
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          pip install --upgrade pip
           make install
 
       - name: Lint
