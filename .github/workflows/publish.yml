@@ -55,7 +55,7 @@ jobs:
         run: |
           pip install --upgrade pip
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          make build
+          make install
 
       - name: Build package
         run: |
