@@ -507,5 +507,5 @@ To set up your development environment:
 4. Commit and push: `git add . && git commit -m "feat: update thing" && git push`
 5. Open a PR to `main` and request review
 
-> All PRs must pass CI, maintain 90% test coverage, and be reviewed before merge.
+> All PRs must pass CI, maintain 85% test coverage, and be reviewed before merge.
 > See [CONTRIBUTING.md](caylent-devcontainer-cli/CONTRIBUTING.md) for detailed guidelines.
