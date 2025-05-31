@@ -63,32 +63,34 @@ jobs:
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make publish
 
-      - name: Send PyPI approval request to Slack
+      - name: Publish to PyPI
+        id: publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: caylent-devcontainer-cli/dist/
+          skip_existing: true
+          attestations: false
+
+      - name: Send success notification to Slack
+        if: success()
         uses: slackapi/slack-github-action@v1.25.0
         with:
           payload: |
             {
-              "text": "<!here> 🔔 PyPI Publish Approval Required",
+              "text": "✅ PyPI Publish Successful",
               "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<!here> *Action Required: Approve PyPI Publish*"
-                  }
-                },
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "🔔 PyPI Publish Approval Required"
+                    "text": "✅ PyPI Publish Successful"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "A new version is ready to be published to PyPI.\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Please review and approve the deployment>"
+                    "text": "Version ${{ github.ref_name }} has been successfully published to PyPI.\n\n<https://pypi.org/p/caylent-devcontainer-cli|View on PyPI> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
                   }
                 }
               ]
@@ -97,7 +99,30 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Send failure notification to Slack
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
         with:
-          packages-dir: caylent-devcontainer-cli/dist/
+          payload: |
+            {
+              "text": "❌ PyPI Publish Failed",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ PyPI Publish Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Failed to publish version ${{ github.ref_name }} to PyPI.\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View error details>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
