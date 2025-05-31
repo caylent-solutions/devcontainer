@@ -213,6 +213,9 @@ jobs:
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
             libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
             xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc jq
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+            libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
+            xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc jq
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -220,6 +223,7 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
+          cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
@@ -241,6 +245,7 @@ jobs:
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           python -m semantic_release changelog --no-commit
+          python -m semantic_release changelog --no-commit
 
       - name: Commit changelog and version bump
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
@@ -252,8 +257,11 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
           git checkout main
           git pull origin main
+          git checkout main
+          git pull origin main
           git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
           git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
+          git push origin main --force
           git push origin main --force
 
       - name: Create Git tag
