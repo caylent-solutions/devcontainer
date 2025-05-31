@@ -32,4 +32,4 @@ The `1.0.0` release of the **Caylent Devcontainer** introduces a robust foundati
 
 - Installable via pip:
   ```bash
-  pip install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
+  pip install caylent-devcontainer-cli==1.0.0
