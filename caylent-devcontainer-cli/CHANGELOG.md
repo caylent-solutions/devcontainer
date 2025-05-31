@@ -3,11 +3,25 @@
 
 ## Unreleased
 
+### Chore
+
+* chore(release): 1.1.0 ([`a8fc155`](https://github.com/caylent-solutions/devcontainer/commit/a8fc155c2942c52fc64eebd01281f87572b255e6))
+
 ### Feature
 
 * feat: upgrade github actions to use asdf 0.15.0; last version before the switch to go (#34)
 
 * feat: upgrade github actions to use asdf 0.15.0; last version before the switch to go ([`f48dde9`](https://github.com/caylent-solutions/devcontainer/commit/f48dde94ee4d15d180ca3a5d2996146786041e5e))
+
+### Fix
+
+* fix: remove apt install of jq as it is installed already by asdf in github actions (#36) ([`bc35705`](https://github.com/caylent-solutions/devcontainer/commit/bc357057eaa4ff95db64155795294850a563eb3d))
+
+### Unknown
+
+* Merge pull request #35 from caylent-solutions/release-1.1.0
+
+Release 1.1.0 ([`2d6e542`](https://github.com/caylent-solutions/devcontainer/commit/2d6e54286d41ec5d3ff238b5f957fadc1a9fca5e))
 
 
 
