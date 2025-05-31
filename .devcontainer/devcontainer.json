@@ -34,7 +34,8 @@
         "wholroyd.jinja"
       ],
       "settings": {
-        "terminal.integrated.defaultProfile.linux": "zsh"
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "gitlens.currentLine.enabled": false
       }
     }
   },
