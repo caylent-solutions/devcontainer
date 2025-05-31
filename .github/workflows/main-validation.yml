@@ -230,15 +230,16 @@ jobs:
           make install
           asdf reshim
 
-      - name: Bump version and update changelog
+      - name: Compute next version
         id: semantic-release
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
-        env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          python -m semantic_release version --no-vcs-release
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        run: |
           python -m semantic_release changelog --no-commit
 
       - name: Commit changelog and version bump
