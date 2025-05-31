@@ -1,8 +1,8 @@
 # CHANGELOG
 
-## 0.1.0 (2025-05-31)
+## 1.0.0 (2025-05-31)
 
-The `0.1.0` release of the **Caylent Devcontainer** introduces a robust foundation for managing local development environments at scale. This version includes a powerful CLI, environment templating, AWS integration, and a full CI/CD pipeline built on GitHub Actions.
+The `1.0.0` release of the **Caylent Devcontainer** introduces a robust foundation for managing local development environments at scale. This version includes a powerful CLI, environment templating, AWS integration, and a full CI/CD pipeline built on GitHub Actions.
 
 ---
 
