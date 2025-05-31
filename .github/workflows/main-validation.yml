@@ -153,6 +153,7 @@ jobs:
 
   codeql:
     name: CodeQL Analysis
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     runs-on: ubuntu-24.04
     permissions:
       security-events: write
@@ -212,10 +213,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
             libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
-            xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc jq
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-            libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
-            xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc jq
+            xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc jq gh
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -245,9 +243,9 @@ jobs:
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           python -m semantic_release changelog --no-commit
-          python -m semantic_release changelog --no-commit
 
       - name: Commit changelog and version bump
+        id: commit-changes
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
@@ -255,18 +253,22 @@ jobs:
           git config --global user.name "caylent-platform-bot[bot]"
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
-          git checkout main
-          git pull origin main
-          git checkout main
-          git pull origin main
+          git checkout -b release-${{ steps.semantic-release.outputs.new_version }}
           git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
           git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
-          git push origin main --force
-          git push origin main --force
+          git push origin release-${{ steps.semantic-release.outputs.new_version }}
+          PR_URL=$(gh pr create --title "Release ${{ steps.semantic-release.outputs.new_version }}" --body "Automated release PR for version ${{ steps.semantic-release.outputs.new_version }}" --base main --head release-${{ steps.semantic-release.outputs.new_version }})
+          echo "pr_url=${PR_URL}" >> $GITHUB_OUTPUT
+          gh pr merge ${PR_URL} --admin --merge
 
       - name: Create Git tag
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          # Wait for PR merge to complete
+          sleep 10
+          git fetch --all
+          git checkout main
+          git pull origin main
           git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
           git push origin ${{ steps.semantic-release.outputs.new_version }}
