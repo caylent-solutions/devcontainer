@@ -9,6 +9,12 @@
 
 * build!: replace semantic_release auto-push with safe version calculation to comply with branch protections (#24) ([`d18e90f`](https://github.com/caylent-solutions/devcontainer/commit/d18e90f5f0f357b6ebd1ca0fd030c8b71a802630))
 
+### Build
+
+* build: fix semantic-release output assignment to enable version propagation (#28) ([`0678432`](https://github.com/caylent-solutions/devcontainer/commit/0678432bffee1b99407d9ee6856af7a8911dd0e3))
+
+* build: fix release automation by correctly passing new_version to all dependent steps (#27) ([`a9ee987`](https://github.com/caylent-solutions/devcontainer/commit/a9ee987c9ec870fe6bc22c4447067e2e6a8da335))
+
 ### Ci
 
 * ci: use GitHub App for semantic-release (#14) ([`1a4a481`](https://github.com/caylent-solutions/devcontainer/commit/1a4a48143b9298af303054201040c111e2363a86))
@@ -32,6 +38,16 @@
 * test: resolution to create-release with bot (#18) ([`694e1ee`](https://github.com/caylent-solutions/devcontainer/commit/694e1ee9586607e74f1a21c9963210e5ce594f7f))
 
 ### Unknown
+
+* fix (#30) ([`73b58f7`](https://github.com/caylent-solutions/devcontainer/commit/73b58f766d654eec4b5c4582663b551458db91e3))
+
+* fix-attempt add debug statements (#29) ([`69f4902`](https://github.com/caylent-solutions/devcontainer/commit/69f4902bfa9baf0956267484a8b068345a339cd1))
+
+* Merge pull request #26 from caylent-solutions/release-
+
+Release ([`97c3e42`](https://github.com/caylent-solutions/devcontainer/commit/97c3e42b6d12ac0e39527dad8f7b9033bd5c2090))
+
+* chore(release): ([`1669637`](https://github.com/caylent-solutions/devcontainer/commit/166963726094347bd095f8b8b0f062d7e85d8aae))
 
 * fix (#23)
 
