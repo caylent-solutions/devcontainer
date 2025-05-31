@@ -237,6 +237,7 @@ jobs:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
+          echo "new_version=$NEW_VERSION"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
@@ -252,14 +253,27 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          VERSION="${{ steps.semantic-release.outputs.new_version }}"
+
+          if [[ -z "$VERSION" ]]; then
+            echo "ERROR: new_version is empty. Exiting."
+            exit 1
+          fi
+
           git config --global user.name "caylent-platform-bot[bot]"
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
-          git checkout -b release-${{ steps.semantic-release.outputs.new_version }}
+          git checkout -b release-$VERSION
           git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
-          git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
-          git push origin release-${{ steps.semantic-release.outputs.new_version }}
-          PR_URL=$(gh pr create --title "Release ${{ steps.semantic-release.outputs.new_version }}" --body "Automated release PR for version ${{ steps.semantic-release.outputs.new_version }}" --base main --head release-${{ steps.semantic-release.outputs.new_version }})
+          git commit -m "chore(release): $VERSION"
+          git push origin release-$VERSION
+
+          PR_URL=$(gh pr create \
+            --title "Release $VERSION" \
+            --body "Automated release PR for version $VERSION" \
+            --base main \
+            --head release-$VERSION)
+
           echo "pr_url=${PR_URL}" >> $GITHUB_OUTPUT
           gh pr merge ${PR_URL} --admin --merge
 
@@ -271,6 +285,7 @@ jobs:
 
           PR_URL="${{ steps.commit-changes.outputs.pr_url }}"
           PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]\+$')
+          NEW_VERSION="${{ steps.semantic-release.outputs.new_version }}"
 
           echo "Waiting for PR #$PR_NUMBER to be merged..."
 
@@ -298,5 +313,5 @@ jobs:
           git fetch --all
           git checkout main
           git pull origin main
-          git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
-          git push origin ${{ steps.semantic-release.outputs.new_version }}
+          git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
+          git push origin "$NEW_VERSION"
