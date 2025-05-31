@@ -5,35 +5,9 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  codeql:
-    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
-    name: CodeQL Analysis
-    runs-on: ubuntu-24.04
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:python"
-
   validate:
-    needs: [codeql]
-    # Only run this workflow when the actor is NOT the bot
-    # This ensures the workflow runs for regular pushes but skips for bot-generated changelog commits
-    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Validate PR
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -46,20 +20,17 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          # Fetch the base branch (main)
           git fetch origin ${{ github.base_ref }}
-          # Checkout the base branch
           git checkout -b pr-validation origin/${{ github.base_ref }}
-          # Merge the PR branch without committing
           git merge --no-commit --no-ff ${{ github.event.pull_request.head.sha }}
 
       - name: Install system dependencies for Python build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
-          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
-          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
-          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+            libbz2-dev libreadline-dev libsqlite3-dev curl \
+            libncursesw5-dev xz-utils tk-dev libxml2-dev \
+            libxmlsec1-dev libffi-dev liblzma-dev bc
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -92,7 +63,6 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
           make unit-test
-          # Generate JSON coverage report first
           coverage json
           coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
           echo "Coverage: $coverage_percent%"

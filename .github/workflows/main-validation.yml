@@ -7,10 +7,8 @@ on:
 
 jobs:
   validate:
-    # Only run the validate job when the actor is NOT the bot
-    # This ensures the workflow runs for regular pushes but skips for bot-generated changelog commits
-    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Validate Main
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -22,10 +20,10 @@ jobs:
       - name: Install system dependencies for Python build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
-          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
-          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
-          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+            libbz2-dev libreadline-dev libsqlite3-dev curl \
+            libncursesw5-dev xz-utils tk-dev libxml2-dev \
+            libxmlsec1-dev libffi-dev liblzma-dev bc gh jq
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -33,7 +31,7 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
-          cat .tool-versions | cut -d' ' -f1 | xargs -I{} asdf plugin add {} || true
+          cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
 
@@ -175,9 +173,9 @@ jobs:
           category: "/language:python"
 
   manual-approval:
-    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Manual QA Approval
-    needs: [validate]
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
+    needs: [validate, codeql]
     runs-on: ubuntu-latest
     environment:
       name: qa-approval
@@ -208,7 +206,7 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
-      - name: Install system dependencies for Python build
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
@@ -221,7 +219,6 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
-          cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
@@ -261,12 +258,38 @@ jobs:
           echo "pr_url=${PR_URL}" >> $GITHUB_OUTPUT
           gh pr merge ${PR_URL} --admin --merge
 
-      - name: Create Git tag
+      - name: Wait for PR to merge and create Git tag
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          # Wait for PR merge to complete
-          sleep 10
+          set -euo pipefail
+
+          PR_URL="${{ steps.commit-changes.outputs.pr_url }}"
+          PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]\+$')
+
+          echo "Waiting for PR #$PR_NUMBER to be merged..."
+
+          MAX_ATTEMPTS=10
+          ATTEMPT=1
+          DELAY=3
+
+          while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+            MERGED_AT=$(gh pr view "$PR_NUMBER" --json mergedAt -q '.mergedAt' || echo "")
+            if [[ -n "$MERGED_AT" && "$MERGED_AT" != "null" ]]; then
+              echo "✅ PR #$PR_NUMBER merged at $MERGED_AT"
+              break
+            fi
+
+            echo "⏳ Attempt $ATTEMPT/$MAX_ATTEMPTS: PR not merged yet, retrying in $DELAY seconds..."
+            sleep "$DELAY"
+            ATTEMPT=$((ATTEMPT + 1))
+            DELAY=$((DELAY * 2))
+          done
+
+          if [ "$ATTEMPT" -gt "$MAX_ATTEMPTS" ]; then
+            echo "⚠️ Timed out waiting for PR to merge, continuing anyway."
+          fi
+
           git fetch --all
           git checkout main
           git pull origin main
