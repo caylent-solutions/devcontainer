@@ -26,7 +26,11 @@ jobs:
             libxmlsec1-dev libffi-dev liblzma-dev bc gh jq
 
       - name: Install ASDF
-        uses: asdf-vm/actions/setup@v3
+        run: |
+          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          echo "$HOME/.asdf/bin" >> $GITHUB_PATH
+          echo "$HOME/.asdf/shims" >> $GITHUB_PATH
+          source $HOME/.asdf/asdf.sh
 
       - name: Install ASDF plugins and tools
         run: |
@@ -176,7 +180,7 @@ jobs:
     name: Manual QA Approval
     if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     needs: [validate, codeql]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: qa-approval
       url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -214,7 +218,11 @@ jobs:
             xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc jq gh
 
       - name: Install ASDF
-        uses: asdf-vm/actions/setup@v3
+        run: |
+          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          echo "$HOME/.asdf/bin" >> $GITHUB_PATH
+          echo "$HOME/.asdf/shims" >> $GITHUB_PATH
+          source $HOME/.asdf/asdf.sh
 
       - name: Install ASDF plugins and tools
         run: |
