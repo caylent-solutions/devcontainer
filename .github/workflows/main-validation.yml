@@ -233,14 +233,18 @@ jobs:
       - name: Compute next version
         id: semantic-release
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          python -m semantic_release changelog --no-commit
+          python -m semantic_release changelog
 
       - name: Commit changelog and version bump
         id: commit-changes
