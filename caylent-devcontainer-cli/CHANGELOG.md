@@ -15,6 +15,10 @@
 
 * build: fix release automation by correctly passing new_version to all dependent steps (#27) ([`a9ee987`](https://github.com/caylent-solutions/devcontainer/commit/a9ee987c9ec870fe6bc22c4447067e2e6a8da335))
 
+### Chore
+
+* chore(release): 1.0.0 ([`bb60014`](https://github.com/caylent-solutions/devcontainer/commit/bb60014013bc3a7aa9e492cdc74d824d3ab91ca8))
+
 ### Ci
 
 * ci: use GitHub App for semantic-release (#14) ([`1a4a481`](https://github.com/caylent-solutions/devcontainer/commit/1a4a48143b9298af303054201040c111e2363a86))
@@ -38,6 +42,12 @@
 * test: resolution to create-release with bot (#18) ([`694e1ee`](https://github.com/caylent-solutions/devcontainer/commit/694e1ee9586607e74f1a21c9963210e5ce594f7f))
 
 ### Unknown
+
+* fix (#32) ([`a5f0fcd`](https://github.com/caylent-solutions/devcontainer/commit/a5f0fcd0287681822108026c4504aa47e2db8311))
+
+* Merge pull request #31 from caylent-solutions/release-1.0.0
+
+Release 1.0.0 ([`af0afce`](https://github.com/caylent-solutions/devcontainer/commit/af0afceda9a7a7606ca959ca1d155a786afd2489))
 
 * fix (#30) ([`73b58f7`](https://github.com/caylent-solutions/devcontainer/commit/73b58f766d654eec4b5c4582663b551458db91e3))
 
