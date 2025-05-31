@@ -293,7 +293,7 @@ jobs:
 
           PR_URL="${{ steps.commit-changes.outputs.pr_url }}"
           PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]\+$')
-          NEW_VERSION="${{ steps.semantic-release.outputs.new_version }}"
+          NEW_VERSION="${{ steps.semantic-release.outputs.version }}"
 
           echo "Waiting for PR #$PR_NUMBER to be merged..."
 
