@@ -237,7 +237,13 @@ jobs:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
-          echo "new_version=$NEW_VERSION"
+          echo "New version: $NEW_VERSION"
+          # Ensure we have a non-empty version
+          if [[ -z "$NEW_VERSION" ]]; then
+            echo "No new version detected, using current version"
+            NEW_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('caylent-devcontainer-cli'))")
+            echo "Current version: $NEW_VERSION"
+          fi
           echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Generate changelog
@@ -253,10 +259,23 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          # Debug output to see what's available
+          echo "Outputs from semantic-release step:"
+          echo "${{ toJSON(steps.semantic-release.outputs) }}"
+          
+          # Use the output directly
           VERSION="${{ steps.semantic-release.outputs.new_version }}"
+          echo "VERSION from output: $VERSION"
+          
+          # Fallback if still empty
+          if [[ -z "$VERSION" ]]; then
+            echo "Falling back to version from previous step"
+            VERSION=$(cat $GITHUB_OUTPUT | grep new_version | cut -d= -f2)
+            echo "VERSION from GITHUB_OUTPUT: $VERSION"
+          fi
 
           if [[ -z "$VERSION" ]]; then
-            echo "ERROR: new_version is empty. Exiting."
+            echo "ERROR: new_version is still empty. Exiting."
             exit 1
           fi
 
