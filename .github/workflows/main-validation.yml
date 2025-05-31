@@ -239,37 +239,18 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          # Save existing changelog if it exists
-          if [ -f "CHANGELOG.md" ]; then
-            cp CHANGELOG.md CHANGELOG.md.bak
-          fi
-          
-          # Run semantic-release to determine version based on commits
-          # Use --no-vcs-release to prevent automatic git operations
+          if [ -f "CHANGELOG.md" ]; then cp CHANGELOG.md CHANGELOG.md.bak; fi
           python -m semantic_release version --no-vcs-release
-          
-          # Get the version without 'v' prefix
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          
-          # Handle changelog properly - append instead of overwrite
+
           if [ -f "CHANGELOG.md.bak" ]; then
-            # Extract new content (excluding the header) from generated changelog
             python -m semantic_release changelog > temp_changelog.md
-            
-            # Get the header from the original changelog
             head -n 10 CHANGELOG.md.bak > CHANGELOG.md
-            
-            # Add the new version section from temp changelog
             sed -n "/^## ${NEW_VERSION}/,/^## /p" temp_changelog.md | sed '$d' >> CHANGELOG.md
-            
-            # Add the rest of the original changelog (skipping header)
             tail -n +11 CHANGELOG.md.bak >> CHANGELOG.md
-            
-            # Clean up
             rm CHANGELOG.md.bak temp_changelog.md
           else
-            # If no changelog exists, create it but remove the 'v' prefix from versions
             python -m semantic_release changelog > temp_changelog.md
             sed 's/## v/## /g' temp_changelog.md > CHANGELOG.md
             rm temp_changelog.md
@@ -283,17 +264,12 @@ jobs:
           git config --global user.name "caylent-platform-bot[bot]"
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
-          
-          # Create a temporary branch for the changelog update
           TEMP_BRANCH="changelog-update-${{ steps.semantic-release.outputs.new_version }}"
           git checkout -b $TEMP_BRANCH
-          
-          # Add and commit changes
           git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
           git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
           git push origin $TEMP_BRANCH
-          
-          # Create PR using GitHub API
+
           PR_RESPONSE=$(curl -s -X POST \
             -H "Authorization: token ${GH_TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
@@ -304,12 +280,10 @@ jobs:
               "base": "main",
               "body": "Automated changelog update for version '"${{ steps.semantic-release.outputs.new_version }}"'"
             }')
-            
-          # Extract PR number
+
           PR_NUMBER=$(echo "$PR_RESPONSE" | jq -r .number)
           echo "Created PR #$PR_NUMBER"
-          
-          # Merge the PR with admin privileges
+
           curl -s -X PUT \
             -H "Authorization: token ${GH_TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
@@ -324,12 +298,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          # Wait until the merged PR is reflected in origin/main
           until git fetch origin main && git checkout main && git pull origin main; do
             echo "Waiting for main branch update..."
             sleep 5
           done
-          
-          # Create tag without 'v' prefix
           git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
           git push origin ${{ steps.semantic-release.outputs.new_version }}
