@@ -1,4 +1,4 @@
-name: "CodeQL Advanced"
+name: "CodeQL Analysis (Disabled)"
 
 on:
   push:
@@ -10,41 +10,8 @@ on:
 
 jobs:
   analyze:
-    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
-    name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-    permissions:
-      security-events: write
-      packages: read
-      actions: read
-      contents: read
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - language: actions
-          build-mode: none
-        - language: python
-          build-mode: none
-
+    name: CodeQL Skipped
+    runs-on: ubuntu-latest
+    if: ${{ false }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-
-      - if: matrix.build-mode == 'manual'
-        shell: bash
-        run: |
-          echo 'Manual build mode not supported in this configuration.'
-          exit 1
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{matrix.language}}"
+      - run: echo "CodeQL analysis is intentionally disabled in this workflow."
