@@ -58,6 +58,28 @@ jobs:
           make install
           asdf reshim
 
+      - name: Update version in package files
+        run: |
+          TAG_VERSION="${{ github.ref_name }}"
+          cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          
+          # Update version in __init__.py
+          if [ -f "src/caylent_devcontainer_cli/__init__.py" ]; then
+            sed -i "s/__version__ = .*/__version__ = \"$TAG_VERSION\"/" src/caylent_devcontainer_cli/__init__.py
+          fi
+          
+          # Update version in pyproject.toml if it exists
+          if [ -f "pyproject.toml" ]; then
+            sed -i "s/version = .*/version = \"$TAG_VERSION\"/" pyproject.toml
+          fi
+          
+          # Update version in setup.py if it exists
+          if [ -f "setup.py" ]; then
+            sed -i "s/version=['\"][^'\"]*['\"]/version=\"$TAG_VERSION\"/" setup.py
+          fi
+          
+          echo "Updated package version to $TAG_VERSION"
+
       - name: Build package
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
