@@ -10,6 +10,7 @@ on:
 
 jobs:
   analyze:
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     permissions:
