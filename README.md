@@ -499,7 +499,7 @@ To set up your development environment:
 3. Ensure all tests pass: `make test`
 4. Push and open a Pull Request
 
-#### If Caylent Internal
+#### If Caylent (Internal)
 
 1. Pull `main`: `git checkout main && git pull`
 2. Create a new branch: `git checkout -b feat/thing`
