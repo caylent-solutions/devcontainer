@@ -1,27 +1,32 @@
-name: "CodeQL Analysis"
+name: "CodeQL Advanced"
 
 on:
   push:
-    branches-ignore: [ "main" ]  # Only run on non-main pushes
+    branches-ignore: [ "main" ]
   pull_request:
-    branches: [ "main" ]         # Run on PRs targeting main
+    branches: [ "main" ]
   schedule:
-    - cron: '0 0 * * 0'          # Run once a week at midnight on Sunday
+    - cron: '41 22 * * 6'
 
 jobs:
   analyze:
-    name: Analyze
     if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
-    runs-on: ubuntu-latest
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     permissions:
       security-events: write
+      packages: read
       actions: read
       contents: read
 
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python' ]
+        include:
+        - language: actions
+          build-mode: none
+        - language: python
+          build-mode: none
 
     steps:
       - name: Checkout repository
@@ -31,8 +36,15 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - if: matrix.build-mode == 'manual'
+        shell: bash
+        run: |
+          echo 'Manual build mode not supported in this configuration.'
+          exit 1
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: "/language:${{matrix.language}}"
