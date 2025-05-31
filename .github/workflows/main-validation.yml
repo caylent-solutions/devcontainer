@@ -238,7 +238,7 @@ jobs:
         run: |
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Generate changelog
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
@@ -274,7 +274,7 @@ jobs:
             --base main \
             --head release-$VERSION)
 
-          echo "pr_url=${PR_URL}" >> $GITHUB_OUTPUT
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
           gh pr merge ${PR_URL} --admin --merge
 
       - name: Wait for PR to merge and create Git tag
