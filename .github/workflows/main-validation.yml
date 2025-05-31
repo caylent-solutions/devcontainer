@@ -7,6 +7,9 @@ on:
 
 jobs:
   validate:
+    # Only run the validate job when the actor is NOT the bot
+    # This ensures the workflow runs for regular pushes but skips for bot-generated changelog commits
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Validate Main
     runs-on: ubuntu-24.04
 
@@ -171,6 +174,7 @@ jobs:
           category: "/language:python"
 
   manual-approval:
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Manual QA Approval
     needs: [validate]
     runs-on: ubuntu-latest
@@ -183,11 +187,13 @@ jobs:
         run: echo "QA has been approved"
 
   create-release:
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Create Release
     needs: manual-approval
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -197,10 +203,12 @@ jobs:
 
       - name: Generate token from GitHub App
         id: generate_token
-        uses: tibdex/github-app-token@v1
+        uses: tibdex/github-app-token@v2
         with:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          repositories: >-
+            ["${{ github.repository }}"]
 
       - name: Install system dependencies for Python build
         run: |
@@ -208,7 +216,7 @@ jobs:
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev
           sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
           sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
-          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc
+          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc jq
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -233,10 +241,41 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          python -m semantic_release version
-          python -m semantic_release changelog
-          NEW_VERSION=$(python -m semantic_release version --print)
+          # Save existing changelog if it exists
+          if [ -f "CHANGELOG.md" ]; then
+            cp CHANGELOG.md CHANGELOG.md.bak
+          fi
+          
+          # Run semantic-release to determine version based on commits
+          # Use --no-vcs-release to prevent automatic git operations
+          python -m semantic_release version --no-vcs-release
+          
+          # Get the version without 'v' prefix
+          NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+          # Handle changelog properly - append instead of overwrite
+          if [ -f "CHANGELOG.md.bak" ]; then
+            # Extract new content (excluding the header) from generated changelog
+            python -m semantic_release changelog > temp_changelog.md
+            
+            # Get the header from the original changelog
+            head -n 10 CHANGELOG.md.bak > CHANGELOG.md
+            
+            # Add the new version section from temp changelog
+            sed -n "/^## ${NEW_VERSION}/,/^## /p" temp_changelog.md | sed '$d' >> CHANGELOG.md
+            
+            # Add the rest of the original changelog (skipping header)
+            tail -n +11 CHANGELOG.md.bak >> CHANGELOG.md
+            
+            # Clean up
+            rm CHANGELOG.md.bak temp_changelog.md
+          else
+            # If no changelog exists, create it but remove the 'v' prefix from versions
+            python -m semantic_release changelog > temp_changelog.md
+            sed 's/## v/## /g' temp_changelog.md > CHANGELOG.md
+            rm temp_changelog.md
+          fi
 
       - name: Commit changelog and version bump
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
@@ -246,13 +285,53 @@ jobs:
           git config --global user.name "caylent-platform-bot[bot]"
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
+          
+          # Create a temporary branch for the changelog update
+          TEMP_BRANCH="changelog-update-${{ steps.semantic-release.outputs.new_version }}"
+          git checkout -b $TEMP_BRANCH
+          
+          # Add and commit changes
           git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
           git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
-          git push origin HEAD
+          git push origin $TEMP_BRANCH
+          
+          # Create PR using GitHub API
+          PR_RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pulls \
+            -d '{
+              "title": "chore(release): '"${{ steps.semantic-release.outputs.new_version }}"'",
+              "head": "'"$TEMP_BRANCH"'",
+              "base": "main",
+              "body": "Automated changelog update for version '"${{ steps.semantic-release.outputs.new_version }}"'"
+            }')
+            
+          # Extract PR number
+          PR_NUMBER=$(echo "$PR_RESPONSE" | jq -r .number)
+          echo "Created PR #$PR_NUMBER"
+          
+          # Merge the PR with admin privileges
+          curl -s -X PUT \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/merge" \
+            -d '{
+              "merge_method": "merge",
+              "commit_title": "chore(release): '"${{ steps.semantic-release.outputs.new_version }}"'",
+              "commit_message": "Update changelog for version '"${{ steps.semantic-release.outputs.new_version }}"'"
+            }'
 
       - name: Create Git tag
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          # Wait until the merged PR is reflected in origin/main
+          until git fetch origin main && git checkout main && git pull origin main; do
+            echo "Waiting for main branch update..."
+            sleep 5
+          done
+          
+          # Create tag without 'v' prefix
           git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
           git push origin ${{ steps.semantic-release.outputs.new_version }}

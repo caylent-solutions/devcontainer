@@ -62,6 +62,13 @@ branch = "main"
 upload_to_pypi = false
 upload_to_release = false
 build_command = "python -m build"
+version_source = "commit"
+version_toml = ["pyproject.toml:project.version"]
+tag_format = "{version}"
+major_on_zero = false
+commit_version_number = true
+changelog_file = "CHANGELOG.md"
+changelog_scope = false
 
 [tool.semantic_release.commit_parser_options]
 allowed_tags = [

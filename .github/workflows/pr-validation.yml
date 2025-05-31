@@ -6,6 +6,9 @@ on:
 
 jobs:
   validate:
+    # Only run this workflow when the actor is NOT the bot
+    # This ensures the workflow runs for regular pushes but skips for bot-generated changelog commits
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Validate PR
     runs-on: ubuntu-24.04
 
