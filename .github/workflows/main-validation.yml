@@ -187,9 +187,7 @@ jobs:
         run: echo "QA has been approved"
 
   create-release:
-    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     name: Create Release
-    needs: manual-approval
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -211,10 +209,9 @@ jobs:
       - name: Install system dependencies for Python build
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
-          sudo apt-get install -y libbz2-dev libreadline-dev libsqlite3-dev curl
-          sudo apt-get install -y libncursesw5-dev xz-utils tk-dev libxml2-dev
-          sudo apt-get install -y libxmlsec1-dev libffi-dev liblzma-dev bc jq
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+            libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
+            xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc jq
 
       - name: Install ASDF
         uses: asdf-vm/actions/setup@v3
@@ -222,7 +219,7 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
-          cat .tool-versions | cut -d' ' -f1 | xargs -I{} asdf plugin add {} || true
+          cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
 
@@ -239,22 +236,10 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          if [ -f "CHANGELOG.md" ]; then cp CHANGELOG.md CHANGELOG.md.bak; fi
           python -m semantic_release version --no-vcs-release
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-          if [ -f "CHANGELOG.md.bak" ]; then
-            python -m semantic_release changelog > temp_changelog.md
-            head -n 10 CHANGELOG.md.bak > CHANGELOG.md
-            sed -n "/^## ${NEW_VERSION}/,/^## /p" temp_changelog.md | sed '$d' >> CHANGELOG.md
-            tail -n +11 CHANGELOG.md.bak >> CHANGELOG.md
-            rm CHANGELOG.md.bak temp_changelog.md
-          else
-            python -m semantic_release changelog > temp_changelog.md
-            sed 's/## v/## /g' temp_changelog.md > CHANGELOG.md
-            rm temp_changelog.md
-          fi
+          python -m semantic_release changelog --no-commit
 
       - name: Commit changelog and version bump
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
@@ -264,43 +249,15 @@ jobs:
           git config --global user.name "caylent-platform-bot[bot]"
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
-          TEMP_BRANCH="changelog-update-${{ steps.semantic-release.outputs.new_version }}"
-          git checkout -b $TEMP_BRANCH
+          git checkout main
+          git pull origin main
           git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
           git commit -m "chore(release): ${{ steps.semantic-release.outputs.new_version }}"
-          git push origin $TEMP_BRANCH
-
-          PR_RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/pulls \
-            -d '{
-              "title": "chore(release): '"${{ steps.semantic-release.outputs.new_version }}"'",
-              "head": "'"$TEMP_BRANCH"'",
-              "base": "main",
-              "body": "Automated changelog update for version '"${{ steps.semantic-release.outputs.new_version }}"'"
-            }')
-
-          PR_NUMBER=$(echo "$PR_RESPONSE" | jq -r .number)
-          echo "Created PR #$PR_NUMBER"
-
-          curl -s -X PUT \
-            -H "Authorization: token ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/merge" \
-            -d '{
-              "merge_method": "merge",
-              "commit_title": "chore(release): '"${{ steps.semantic-release.outputs.new_version }}"'",
-              "commit_message": "Update changelog for version '"${{ steps.semantic-release.outputs.new_version }}"'"
-            }'
+          git push origin main --force
 
       - name: Create Git tag
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          until git fetch origin main && git checkout main && git pull origin main; do
-            echo "Waiting for main branch update..."
-            sleep 5
-          done
           git tag -a ${{ steps.semantic-release.outputs.new_version }} -m "Release ${{ steps.semantic-release.outputs.new_version }}"
           git push origin ${{ steps.semantic-release.outputs.new_version }}

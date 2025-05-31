@@ -35,7 +35,12 @@
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
-        "gitlens.currentLine.enabled": false
+        "gitlens.currentLine.enabled": false,
+        "gitlens.codeLens.enabled": false,
+        "gitlens.hovers.enabled": false,
+        "gitlens.statusBar.enabled": false,
+        "gitlens.blame.line.enabled": false,
+        "gitlens.blame.file.enabled": false
       }
     }
   },
