@@ -79,13 +79,21 @@ These extensions are auto-installed on container start.
 
 First, install the Caylent Devcontainer CLI:
 
-Install a specific version (recommended)
-
-```
-pip install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
+```bash
+pip install caylent-devcontainer-cli
 ```
 
-To install a different version, check the [repository tags](https://github.com/caylent-solutions/devcontainer/tags) for the latest stable release and replace `0.1.0` with the desired version number.
+You can also install a specific version:
+
+```bash
+pip install caylent-devcontainer-cli==1.1.0
+```
+
+To install directly from GitHub (alternative method):
+
+```bash
+pip install git+https://github.com/caylent-solutions/devcontainer.git@1.1.0#subdirectory=caylent-devcontainer-cli
+```
 
 After installation, you can run the CLI from anywhere:
 
