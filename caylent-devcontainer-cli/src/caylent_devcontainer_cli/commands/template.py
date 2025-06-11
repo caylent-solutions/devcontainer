@@ -308,9 +308,14 @@ def upgrade_template_file(template_name):
                 current_semver = semver.VersionInfo.parse(current_version)
 
                 if template_semver.major == current_semver.major and template_semver.minor == current_semver.minor:
+                    # Even if the major and minor versions match, ensure the cli_version is updated
+                    template_data["cli_version"] = __version__
+                    with open(template_path, "w") as f:
+                        json.dump(template_data, f, indent=2)
+                        f.write("\n")  # Add newline at end of file
                     log(
                         "INFO",
-                        f"Template '{template_name}' is already at the latest format (version {template_version})",
+                        f"Template '{template_name}' version updated from {template_version} to {__version__}",
                     )
                     return
             except ValueError:
