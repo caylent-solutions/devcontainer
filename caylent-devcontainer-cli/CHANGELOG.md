@@ -5,6 +5,8 @@
 
 ### Chore
 
+* chore(release): 1.1.0 ([`5ad4ea1`](https://github.com/caylent-solutions/devcontainer/commit/5ad4ea144496a70dc3a26f94ce9a427fe7d712c3))
+
 * chore(release): 1.1.0 ([`2866972`](https://github.com/caylent-solutions/devcontainer/commit/2866972d9c0a84b812dce69b08b048d681216e6f))
 
 * chore(release): 1.1.0 ([`9b3bace`](https://github.com/caylent-solutions/devcontainer/commit/9b3bace83341fe61f907d4585a03be3110275918))
@@ -21,11 +23,17 @@
 
 ### Fix
 
+* fix: template upgrade (#44) ([`9618e80`](https://github.com/caylent-solutions/devcontainer/commit/9618e80e4187653639673dbb28b17de5159306b8))
+
 * fix: Updated pip install instructions now that its available on pypi (#40) ([`18bdf97`](https://github.com/caylent-solutions/devcontainer/commit/18bdf978b50f454f06034e48d00cdfffe9600d31))
 
 * fix: remove apt install of jq as it is installed already by asdf in github actions (#36) ([`bc35705`](https://github.com/caylent-solutions/devcontainer/commit/bc357057eaa4ff95db64155795294850a563eb3d))
 
 ### Unknown
+
+* Merge pull request #41 from caylent-solutions/release-1.1.0
+
+Release 1.1.0 ([`b3e703c`](https://github.com/caylent-solutions/devcontainer/commit/b3e703c7ab9f9ca24f96dc85966b428d79ac52e4))
 
 * Merge pull request #39 from caylent-solutions/release-1.1.0
 
