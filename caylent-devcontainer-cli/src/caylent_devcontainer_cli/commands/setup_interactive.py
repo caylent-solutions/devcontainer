@@ -182,9 +182,8 @@ def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
     if not os.path.exists(TEMPLATES_DIR):
         os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
-    # Ensure version information is included
-    if "cli_version" not in template_data:
-        template_data["cli_version"] = __version__
+    # Always update version information to current version
+    template_data["cli_version"] = __version__
 
     template_path = os.path.join(TEMPLATES_DIR, f"{name}.json")
 
@@ -282,6 +281,9 @@ def upgrade_template(template_data: Dict[str, Any]) -> Dict[str, Any]:
             new_template["aws_profile_map"] = prompt_aws_profile_map()
         else:
             new_template["aws_profile_map"] = {}
+
+    # Ensure the cli_version is updated to the current version
+    new_template["cli_version"] = __version__
 
     return new_template
 
