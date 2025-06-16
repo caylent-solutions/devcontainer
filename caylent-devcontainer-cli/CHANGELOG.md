@@ -1,7 +1,11 @@
 # CHANGELOG
 
 
-## Unreleased
+## v1.2.0 (2024-07-09)
+
+### Fix
+
+* fix: Fixed cli update of saved templates such that the version of the cli tool that updates the saved template works as expected
 
 ### Chore
 
