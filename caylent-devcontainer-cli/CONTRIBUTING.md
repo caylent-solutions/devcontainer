@@ -130,7 +130,7 @@ When adding new features:
 
 ## Release Process
 
-### Automated Release (When GitHub Actions Workflow is Working)
+### Automated Release
 
 Releases are automatically published to PyPI when a new tag is pushed to GitHub.
 
@@ -144,7 +144,7 @@ Releases are automatically published to PyPI when a new tag is pushed to GitHub.
 
 The GitHub Actions workflow will validate the tag format, build the package, and publish it to PyPI.
 
-### Manual Release Process (When GitHub Actions Workflow is Not Working)
+### Manual Release Process
 
 Follow these steps for a manual release:
 
