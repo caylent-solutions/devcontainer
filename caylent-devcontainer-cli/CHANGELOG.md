@@ -1,7 +1,11 @@
 # CHANGELOG
 
 
-## Unreleased
+## v1.2.0 (2024-07-09)
+
+### Feature
+
+* feat: Fixed the template update cli function such that saved templates gets properly updated with the version of the cli tool that updated it.
 
 ### Chore
 
