@@ -130,6 +130,8 @@ When adding new features:
 
 ## Release Process
 
+### Automated Release (When GitHub Actions Workflow is Working)
+
 Releases are automatically published to PyPI when a new tag is pushed to GitHub.
 
 1. Ensure all tests pass (`make test`)
@@ -141,3 +143,82 @@ Releases are automatically published to PyPI when a new tag is pushed to GitHub.
    ```
 
 The GitHub Actions workflow will validate the tag format, build the package, and publish it to PyPI.
+
+### Manual Release Process (When GitHub Actions Workflow is Not Working)
+
+Follow these steps for a manual release:
+
+1. Start from the latest main branch:
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+2. Create a release branch:
+   ```bash
+   git checkout -b release-X.Y.Z
+   ```
+
+3. Update version numbers in the following files:
+   - `src/caylent_devcontainer_cli/__init__.py`: Update `__version__ = "X.Y.Z"`
+   - `pyproject.toml`: Update `version = "X.Y.Z"`
+
+4. Update the CHANGELOG.md with the new version and changes:
+   ```markdown
+   # CHANGELOG
+
+   ## vX.Y.Z (YYYY-MM-DD)
+
+   ### Category (Fix, Feature, etc.)
+
+   * description of the change
+   ```
+
+5. Run tests to ensure everything passes:
+   ```bash
+   cd caylent-devcontainer-cli
+   make test
+   ```
+
+7. Commit the version changes:
+   ```bash
+   git add src/caylent_devcontainer_cli/__init__.py pyproject.toml CHANGELOG.md
+   git commit -m "chore(release): X.Y.Z"
+   ```
+
+8. Push the branch and create a pull request:
+   ```bash
+   git push -u origin release-X.Y.Z
+   ```
+   
+   Create a PR from the release branch to main through the GitHub interface.
+
+9. After the PR is reviewed and merged to main, checkout main and pull:
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+10. Create and push a git tag:
+    ```bash
+    git tag -a "X.Y.Z" -m "Release X.Y.Z"
+    git push origin X.Y.Z
+    ```
+
+11. Build the package:
+    ```bash
+    cd caylent-devcontainer-cli
+    make clean
+    make build
+    make distcheck
+    ```
+
+12. Upload to PyPI (requires PyPI credentials):
+    ```bash
+    python -m twine upload dist/*
+    ```
+
+13. Verify the package is available on PyPI:
+    ```bash
+    pip install caylent-devcontainer-cli==X.Y.Z
+    ```

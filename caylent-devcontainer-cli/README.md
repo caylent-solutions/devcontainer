@@ -138,6 +138,8 @@ make format
 
 ### Building and Publishing
 
+#### Automated Release Process
+
 The package is automatically published to PyPI when a new tag is pushed to GitHub.
 
 To create a new release:
@@ -147,14 +149,18 @@ To create a new release:
 3. Create and push a new tag following semantic versioning:
 
 ```bash
-git tag -a 0.1.0 -m "Release 0.1.0"
-git push origin 0.1.0
+git tag -a X.Y.Z -m "Release X.Y.Z"
+git push origin X.Y.Z
 ```
 
 The GitHub Actions workflow will:
 1. Validate the tag follows semantic versioning (MAJOR.MINOR.PATCH)
 2. Build the package using ASDF for Python version management
 3. Publish the package to PyPI
+
+#### Manual Release Process
+
+Follow the manual release process documented in the [Contributing Guide](CONTRIBUTING.md#manual-release-process-when-github-actions-workflow-is-not-working).
 
 ## License
 
