@@ -5,6 +5,8 @@
 
 ### Chore
 
+* chore(release): 1.1.0 ([`e08a1db`](https://github.com/caylent-solutions/devcontainer/commit/e08a1db72d8573f9ae326409785a32da469a3ffe))
+
 * chore(release): 1.1.0 ([`5ad4ea1`](https://github.com/caylent-solutions/devcontainer/commit/5ad4ea144496a70dc3a26f94ce9a427fe7d712c3))
 
 * chore(release): 1.1.0 ([`2866972`](https://github.com/caylent-solutions/devcontainer/commit/2866972d9c0a84b812dce69b08b048d681216e6f))
@@ -14,6 +16,8 @@
 * chore(release): 1.1.0 ([`a8fc155`](https://github.com/caylent-solutions/devcontainer/commit/a8fc155c2942c52fc64eebd01281f87572b255e6))
 
 ### Feature
+
+* feat: bump-minor version (#46) ([`5de03f4`](https://github.com/caylent-solutions/devcontainer/commit/5de03f48180781fac599e29662ba301708091b0b))
 
 * feat: update README.md (#38) ([`2f2ed3b`](https://github.com/caylent-solutions/devcontainer/commit/2f2ed3b03c3cfcb7dd8f91da97c4cf7dc626f062))
 
@@ -30,6 +34,10 @@
 * fix: remove apt install of jq as it is installed already by asdf in github actions (#36) ([`bc35705`](https://github.com/caylent-solutions/devcontainer/commit/bc357057eaa4ff95db64155795294850a563eb3d))
 
 ### Unknown
+
+* Merge pull request #45 from caylent-solutions/release-1.1.0
+
+Release 1.1.0 ([`3da3e2f`](https://github.com/caylent-solutions/devcontainer/commit/3da3e2f1e091df0ae3629f41345071234957ca20))
 
 * Merge pull request #41 from caylent-solutions/release-1.1.0
 
