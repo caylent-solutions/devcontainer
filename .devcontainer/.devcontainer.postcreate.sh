@@ -76,6 +76,13 @@ ZSH_THEME="obraun"
 ENABLE_CORRECTION="false"
 HIST_STAMPS="%m/%d/%Y - %H:%M:%S"
 source $ZSH/oh-my-zsh.sh
+
+# asdf version manager (must be after oh-my-zsh)
+. "$HOME/.asdf/asdf.sh"
+# append completions to fpath
+fpath=(${ASDF_DIR}/completions $fpath)
+# initialise completions with ZSH's compinit
+autoload -Uz compinit && compinit
 EOF
 
 #################
@@ -121,21 +128,11 @@ fi
 ##############################
 log_info "Installing asdf..."
 mkdir -p /home/${CONTAINER_USER}/.asdf
-git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.14.0
+git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.15.0
 
 # Add asdf to bash
 echo '. "$HOME/.asdf/asdf.sh"' >> ${BASH_RC}
 echo '. "$HOME/.asdf/completions/asdf.bash"' >> ${BASH_RC}
-
-# Add asdf to zsh properly
-cat <<'EOF' >> ${ZSH_RC}
-# asdf version manager
-. "$HOME/.asdf/asdf.sh"
-# append completions to fpath
-fpath=(${ASDF_DIR}/completions $fpath)
-# initialise completions with ZSH's compinit
-autoload -Uz compinit && compinit
-EOF
 
 # Source asdf for the current script
 export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"

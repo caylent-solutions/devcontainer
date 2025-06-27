@@ -270,7 +270,7 @@ jobs:
           # Use the correct output variable name
           VERSION="${{ steps.semantic-release.outputs.version }}"
           echo "VERSION: $VERSION"
-          
+
           if [[ -z "$VERSION" ]]; then
             echo "ERROR: version is empty. Exiting."
             exit 1
