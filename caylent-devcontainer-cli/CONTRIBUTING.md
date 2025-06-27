@@ -190,7 +190,7 @@ Follow these steps for a manual release:
    ```bash
    git push -u origin release-X.Y.Z
    ```
-   
+
    Create a PR from the release branch to main through the GitHub interface.
 
 9. After the PR is reviewed and merged to main, checkout main and pull:

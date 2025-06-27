@@ -439,7 +439,7 @@ This PR introduces a fully restructured and production-ready VS Code Devcontaine
 
 ## 🧪 How to Use
 
-1. Copy `.devcontainer` into your app repo  
+1. Copy `.devcontainer` into your app repo
 2. Copy and configure:
    ```bash
    cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
