@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.3.0 (2025-01-27)
+
+### Fix
+
+* fix: Fixed asdf sourcing issue when container is rebuilt - asdf was not getting sourced causing it not to work
 
 ## v1.2.0 (2024-07-09)
 

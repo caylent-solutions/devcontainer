@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "caylent-devcontainer-cli"
-version = "1.2.0"
+version = "1.3.0"
 description = "CLI tool for managing Caylent devcontainers"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.8"
@@ -58,7 +58,7 @@ line_length = 120
 
 [tool.semantic_release]
 version_variable = "src/caylent_devcontainer_cli/__init__.py:__version__"
-branch = "main"
+# branch = "main"  # Temporarily disabled for testing from feature branches
 upload_to_pypi = false
 upload_to_release = false
 build_command = "python -m build"
@@ -81,7 +81,51 @@ allowed_tags = [
   "perf",
   "refactor",
   "style",
+  "test",
+  "release",
+  "revert",
+  "meta",
+  "module"
+]
+
+minor_tags = [
+  "feat",
+  "perf",
+  "build",
+  "ci",
+  "release",
+  "revert",
+  "meta",
+  "module"
+]
+
+patch_tags = [
+  "fix",
+  "chore",
+  "docs",
+  "style",
+  "refactor",
   "test"
 ]
-minor_tags = ["feat"]
-patch_tags = ["fix", "perf"]
+
+major_tags = [
+  "feat!",
+  "fix!",
+  "perf!",
+  "build!",
+  "ci!",
+  "chore!",
+  "docs!",
+  "style!",
+  "refactor!",
+  "test!",
+  "release!",
+  "revert!",
+  "meta!",
+  "module!"
+]
+
+parse_squash_commits = true
+
+[tool.semantic_release.changelog]
+exclude_commit_patterns = ["^chore\\(release\\):"]
