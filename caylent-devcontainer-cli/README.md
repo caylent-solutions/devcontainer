@@ -36,7 +36,7 @@ cdevcontainer --help
 ### Commands
 
 - `setup-devcontainer`: Set up a devcontainer in a project directory
-- `code`: Launch VS Code with the devcontainer environment
+- `code`: Launch IDE (VS Code, Cursor) with the devcontainer environment
 - `env`: Manage environment variables
 - `template`: Manage devcontainer templates
 - `install`: Install the CLI tool to your PATH
@@ -85,20 +85,30 @@ When using templates created with older versions of the CLI, the tool will autom
 - Try to use the profile anyway (with a warning)
 - Exit without making changes
 
-### Launching VS Code
+### Launching IDEs
 
 ```bash
-# Launch VS Code for the current project
+# Launch VS Code for the current project (default)
 cdevcontainer code
+
+# Launch Cursor for the current project
+cdevcontainer code --ide cursor
 
 # Launch VS Code for a specific project
 cdevcontainer code /path/to/your/project
 
-# Launch VS Code for another project (works from within any devcontainer)
-cdevcontainer code /path/to/another-project
+# Launch Cursor for a specific project
+cdevcontainer code /path/to/your/project --ide cursor
+
+# Launch IDE for another project (works from within any devcontainer)
+cdevcontainer code /path/to/another-project --ide cursor
 ```
 
-> **Note**: You can run `cdevcontainer code` from within any devcontainer to launch VS Code for other projects. This allows you to work on multiple projects simultaneously, each in their own devcontainer environment.
+**Supported IDEs:**
+- `vscode` - Visual Studio Code (default)
+- `cursor` - Cursor AI IDE
+
+> **Note**: You can run `cdevcontainer code` from within any devcontainer to launch any supported IDE for other projects. This allows you to work on multiple projects simultaneously, each in their own devcontainer environment.
 
 ## Development
 

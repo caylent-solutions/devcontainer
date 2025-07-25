@@ -15,6 +15,7 @@ from caylent_devcontainer_cli.commands.setup import (
     clone_repo,
     copy_devcontainer_files,
     create_version_file,
+    ensure_gitignore_entries,
     handle_setup,
     interactive_setup,
     register_command,
@@ -924,3 +925,226 @@ def test_interactive_setup_save_new_template(
     mock_name.assert_called_once()
     mock_save.assert_called_once_with({"env_values": {}, "aws_profile_map": {}}, "new-template")
     mock_apply.assert_called_once()
+
+
+# Tests for confirm_overwrite function
+@patch("builtins.input", return_value="y")
+def test_confirm_overwrite_yes(mock_input, capsys):
+    """Test confirm_overwrite with yes response."""
+    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
+
+    result = confirm_overwrite("Test message")
+
+    assert result is True
+    captured = capsys.readouterr()
+    assert "Test message" in captured.out
+    mock_input.assert_called_once()
+
+
+@patch("builtins.input", return_value="n")
+def test_confirm_overwrite_no(mock_input, capsys):
+    """Test confirm_overwrite with no response."""
+    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
+
+    result = confirm_overwrite("Test message")
+
+    assert result is False
+    captured = capsys.readouterr()
+    assert "Test message" in captured.out
+    mock_input.assert_called_once()
+
+
+@patch("builtins.input", return_value="Y")
+def test_confirm_overwrite_uppercase_yes(mock_input):
+    """Test confirm_overwrite with uppercase Y."""
+    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
+
+    result = confirm_overwrite("Test message")
+    assert result is True
+    mock_input.assert_called_once()
+
+
+@patch("builtins.input", return_value="")
+def test_confirm_overwrite_empty_default_no(mock_input):
+    """Test confirm_overwrite with empty input defaults to no."""
+    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
+
+    result = confirm_overwrite("Test message")
+    assert result is False
+    mock_input.assert_called_once()
+
+
+# Tests for ensure_gitignore_entries function
+@patch("os.path.exists", return_value=False)
+@patch("builtins.open", new_callable=mock_open)
+def test_ensure_gitignore_entries_create_new(mock_file, mock_exists, capsys):
+    """Test creating new .gitignore file with all entries."""
+    ensure_gitignore_entries("/test/path")
+
+    mock_file.assert_called_once_with("/test/path/.gitignore", "a")
+    written_content = "".join(call.args[0] for call in mock_file().write.call_args_list)
+
+    assert "# Environment files" in written_content
+    assert "shell.env" in written_content
+    assert "devcontainer-environment-variables.json" in written_content
+    assert ".devcontainer/aws-profile-map.json" in written_content
+
+    captured = capsys.readouterr()
+    assert "Checking .gitignore for required environment file entries" in captured.err
+    assert ".gitignore file does not exist, will create it" in captured.err
+    assert "Created .gitignore with 3 new entries" in captured.err
+
+
+@patch("os.path.exists", return_value=True)
+@patch("builtins.open", new_callable=mock_open, read_data="shell.env\nother-file.txt\n")
+def test_ensure_gitignore_entries_partial_update(mock_file, mock_exists, capsys):
+    """Test updating .gitignore with missing entries."""
+    ensure_gitignore_entries("/test/path")
+
+    # Should be called twice - once for read, once for append
+    assert mock_file.call_count == 2
+
+    captured = capsys.readouterr()
+    assert "Missing 2 entries in .gitignore" in captured.err
+    assert "Updated .gitignore with 2 new entries" in captured.err
+
+
+@patch("os.path.exists", return_value=True)
+@patch(
+    "builtins.open",
+    new_callable=mock_open,
+    read_data="shell.env\ndevcontainer-environment-variables.json\n.devcontainer/aws-profile-map.json\n",
+)
+def test_ensure_gitignore_entries_all_present(mock_file, mock_exists, capsys):
+    """Test when all required entries are already present."""
+    ensure_gitignore_entries("/test/path")
+
+    # Should only be called once for reading
+    mock_file.assert_called_once_with("/test/path/.gitignore", "r")
+    # Write should not be called
+    mock_file().write.assert_not_called()
+
+    captured = capsys.readouterr()
+    assert "All required entries already present in .gitignore" in captured.err
+
+
+# Tests for interactive_setup_without_clone function
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=True)
+@patch("caylent_devcontainer_cli.commands.setup_interactive.select_template", return_value="test-template")
+@patch("caylent_devcontainer_cli.commands.setup_interactive.load_template_from_file")
+@patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template_without_clone")
+def test_interactive_setup_without_clone_with_template(mock_apply, mock_load, mock_select, mock_prompt):
+    """Test interactive setup without clone using existing template."""
+    from caylent_devcontainer_cli.commands.setup import interactive_setup_without_clone
+
+    mock_load.return_value = {"containerEnv": {"TEST": "value"}, "aws_profile_map": {}}
+
+    interactive_setup_without_clone("/target")
+
+    mock_prompt.assert_called_once()
+    mock_select.assert_called_once()
+    mock_load.assert_called_once_with("test-template")
+    mock_apply.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=False)
+@patch("caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive")
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_save_template", return_value=False)
+@patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template_without_clone")
+def test_interactive_setup_without_clone_new_template(mock_apply, mock_save_prompt, mock_create, mock_prompt):
+    """Test interactive setup without clone creating new template."""
+    from caylent_devcontainer_cli.commands.setup import interactive_setup_without_clone
+
+    mock_create.return_value = {"containerEnv": {"TEST": "value"}, "aws_profile_map": {}}
+
+    interactive_setup_without_clone("/target")
+
+    mock_prompt.assert_called_once()
+    mock_create.assert_called_once()
+    mock_save_prompt.assert_called_once()
+    mock_apply.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", side_effect=KeyboardInterrupt)
+def test_interactive_setup_without_clone_keyboard_interrupt(mock_prompt):
+    """Test interactive setup without clone handles KeyboardInterrupt."""
+    from caylent_devcontainer_cli.commands.setup import interactive_setup_without_clone
+
+    with pytest.raises(SystemExit):
+        interactive_setup_without_clone("/target")
+
+
+# Tests for apply_template_without_clone function
+@patch("builtins.open", new_callable=mock_open)
+def test_apply_template_without_clone_containerenv(mock_file):
+    """Test apply template without clone using containerEnv format."""
+    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
+
+    template_data = {"containerEnv": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false"}, "aws_profile_map": {}}
+
+    apply_template_without_clone(template_data, "/target")
+
+    # Check that environment file was written
+    mock_file.assert_called_with("/target/devcontainer-environment-variables.json", "w")
+    written_data = json.loads(
+        "".join(call.args[0] for call in mock_file().write.call_args_list if call.args[0] != "\n")
+    )
+
+    assert written_data["containerEnv"]["TEST_VAR"] == "test_value"
+    assert written_data["containerEnv"]["AWS_CONFIG_ENABLED"] == "false"
+
+
+@patch("builtins.open", new_callable=mock_open)
+def test_apply_template_without_clone_env_values(mock_file):
+    """Test apply template without clone using old env_values format."""
+    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
+
+    template_data = {"env_values": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false"}, "aws_profile_map": {}}
+
+    apply_template_without_clone(template_data, "/target")
+
+    # Check that environment file was written with converted format
+    mock_file.assert_called_with("/target/devcontainer-environment-variables.json", "w")
+    written_data = json.loads(
+        "".join(call.args[0] for call in mock_file().write.call_args_list if call.args[0] != "\n")
+    )
+
+    assert written_data["containerEnv"]["TEST_VAR"] == "test_value"
+    assert written_data["containerEnv"]["AWS_CONFIG_ENABLED"] == "false"
+
+
+@patch("builtins.open", new_callable=mock_open)
+def test_apply_template_without_clone_with_aws(mock_file):
+    """Test apply template without clone with AWS configuration."""
+    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
+
+    template_data = {
+        "containerEnv": {"AWS_CONFIG_ENABLED": "true"},
+        "aws_profile_map": {"default": {"region": "us-west-2"}},
+    }
+
+    apply_template_without_clone(template_data, "/target")
+
+    # Should be called twice - once for env file, once for AWS file
+    assert mock_file.call_count == 2
+
+    # Check calls
+    calls = mock_file.call_args_list
+    assert calls[0][0] == ("/target/devcontainer-environment-variables.json", "w")
+    assert calls[1][0] == ("/target/.devcontainer/aws-profile-map.json", "w")
+
+
+@patch("builtins.open", new_callable=mock_open)
+def test_apply_template_without_clone_no_aws(mock_file):
+    """Test apply template without clone without AWS configuration."""
+    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
+
+    template_data = {"containerEnv": {"AWS_CONFIG_ENABLED": "false"}, "aws_profile_map": {}}
+
+    apply_template_without_clone(template_data, "/target")
+
+    # Should only be called once for env file
+    mock_file.assert_called_once_with("/target/devcontainer-environment-variables.json", "w")
+
+
+# Tests for JsonValidator class

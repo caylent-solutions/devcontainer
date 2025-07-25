@@ -182,6 +182,7 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 
 
 # Test the handle_code function
+@patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
@@ -189,7 +190,7 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 @patch("subprocess.Popen")
 def test_handle_code(
-    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, capsys
+    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, mock_which, capsys
 ):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
@@ -197,6 +198,7 @@ def test_handle_code(
 
     args = MagicMock()
     args.project_root = "/test/path"
+    args.ide = "vscode"
 
     handle_code(args)
 

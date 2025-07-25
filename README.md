@@ -243,11 +243,17 @@ Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
 ### 5. Setting Up Your Environment
 
 ```bash
-# Launch VS Code for the current project
+# Launch VS Code for the current project (default IDE)
 cdevcontainer code
+
+# Launch Cursor for the current project
+cdevcontainer code --ide cursor
 
 # Launch VS Code for a specific project
 cdevcontainer code /path/to/your-project
+
+# Launch Cursor for a specific project
+cdevcontainer code /path/to/your-project --ide cursor
 ```
 
 This will:
@@ -275,13 +281,14 @@ cdevcontainer code -y
 >
 > This approach prevents environment variable conflicts when working with multiple projects simultaneously.
 
-> 🚀 **Advanced tip**: You can launch VS Code for another project directly from within a running devcontainer:
+> 🚀 **Advanced tip**: You can launch any supported IDE for another project directly from within a running devcontainer:
 > ```bash
 > # From within any devcontainer terminal
 > cdevcontainer code /path/to/another-project
+> cdevcontainer code /path/to/another-project --ide cursor
 > ```
 >
-> This will open a new VS Code window with the other project's devcontainer, allowing you to work on multiple projects simultaneously.
+> This will open a new IDE window with the other project's devcontainer, allowing you to work on multiple projects simultaneously.
 
 ---
 
@@ -462,11 +469,15 @@ cdevcontainer --help
 # Set up a devcontainer in a project directory
 cdevcontainer setup-devcontainer /path/to/your/project
 
-# Launch VS Code with the devcontainer environment
+# Launch IDE with the devcontainer environment (default: VS Code)
 cdevcontainer code [/path/to/your/project]
 
-# Launch VS Code for another project (works from within any devcontainer)
-cdevcontainer code /path/to/another-project
+# Launch specific IDE
+cdevcontainer code --ide cursor [/path/to/your/project]
+cdevcontainer code --ide vscode [/path/to/your/project]
+
+# Launch IDE for another project (works from within any devcontainer)
+cdevcontainer code /path/to/another-project --ide cursor
 
 # Manage templates
 cdevcontainer template list
