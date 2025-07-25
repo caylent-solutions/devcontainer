@@ -117,7 +117,8 @@ When adding new features:
 2. Create a feature branch: `git checkout -b feat/my-change`
 3. Implement your changes with appropriate tests
 4. Ensure all tests pass and code meets style guidelines
-5. Submit a pull request with a clear description of the changes
+5. Use proper commit message conventions (see below)
+6. Submit a pull request with a clear description of the changes
 
 ### For Caylent Internal Contributors
 
@@ -128,9 +129,84 @@ When adding new features:
 5. Commit and push: `git add . && git commit -m "feat: update thing" && git push`
 6. Open a PR to `main` and request review
 
+## Commit Message Conventions
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/) specification. Use the following prefixes:
+
+### Version Bump Types
+
+**Minor version bumps** (new features):
+- `feat:` - New features
+- `perf:` - Performance improvements
+- `build:` - Build system changes
+- `ci:` - CI/CD changes
+- `release:` - Release-related changes
+- `revert:` - Reverting previous changes
+- `meta:` - Meta changes
+- `module:` - Module-related changes
+
+**Patch version bumps** (bug fixes and maintenance):
+- `fix:` - Bug fixes
+- `chore:` - Maintenance tasks
+- `docs:` - Documentation updates
+- `style:` - Code style changes (formatting, etc.)
+- `refactor:` - Code refactoring
+- `test:` - Test-related changes
+
+**Major version bumps** (breaking changes):
+- Add `!` after any type for breaking changes: `feat!:`, `fix!:`, etc.
+- Or include `BREAKING CHANGE:` in the commit body
+
+### Examples
+```bash
+# Minor version bump
+git commit -m "feat: add new template command"
+git commit -m "perf: optimize file processing"
+
+# Patch version bump
+git commit -m "fix: resolve template parsing issue"
+git commit -m "docs: update installation instructions"
+
+# Major version bump
+git commit -m "feat!: change CLI argument structure"
+git commit -m "fix: resolve issue\n\nBREAKING CHANGE: removes deprecated --old-flag option"
+```
+
 ## Release Process
 
-### Automated Release
+### Automated Release via Main Branch
+
+Releases are automatically created when code is merged to main and passes QA approval:
+
+1. Merge your changes to `main`
+2. Main validation workflow runs automatically
+3. After tests pass, manual QA approval is required
+4. Release workflow is triggered automatically with auto version bump
+5. Release workflow creates tag which triggers PyPI publish
+
+### Manual Release Workflow
+
+You can manually trigger releases with custom options:
+
+1. Go to **Actions** → **Release** in GitHub
+2. Click **Run workflow**
+3. Choose options:
+   - **Branch**: Select branch (usually `main`)
+   - **Bump type**: `auto`, `major`, `minor`, or `patch`
+   - **Dry run**: `true` to test without creating real release
+
+#### Dry Run Testing
+- Shows what version would be created
+- Lists commits that would be included
+- Shows bump type analysis
+- **No real branches, tags, or releases created**
+
+#### Real Release
+- Creates release branch and PR
+- Updates version files and changelog
+- Creates git tag which triggers PyPI publish
+
+### Automated Tag-Based Release
 
 Releases are automatically published to PyPI when a new tag is pushed to GitHub.
 

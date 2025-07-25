@@ -1,56 +1,60 @@
-.PHONY: install lint format unit-test functional-test functional-test-report test clean build coverage coverage-text coverage-json distcheck publish
+.PHONY: help install lint format unit-test functional-test functional-test-report test clean build coverage coverage-text coverage-json distcheck publish
 
-install:
+help: ## Show this help message
+	@echo "Available make tasks:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+install: ## Install the package and dependencies
 	pip install -e .
 	pip install -r requirements.txt
 	asdf reshim python 2>/dev/null || true
 
-lint:
+lint: ## Check code formatting and style
 	black --check src tests
 	isort --check-only src tests
 	flake8 src tests
 
-format:
+format: ## Format code using black and isort
 	black src tests
 	isort src tests
 
-unit-test:
+unit-test: ## Run unit tests with coverage
 	pytest tests/unit -v --cov=src --cov-report=term-missing
 
-functional-test:
+functional-test: ## Run functional tests
 	pytest tests/functional -v
 
-functional-test-report:
+functional-test-report: ## Generate a report of functional test coverage
 	@echo "Functional Test Coverage Report"
 	@echo "=============================="
 	@grep -r "def test_" tests/functional/ | wc -l | xargs echo "Total functional tests:"
 	@echo "\nCommands tested:"
 	@grep -r "cdevcontainer" tests/functional/ | grep -v "def\|import" | sort | uniq | sed 's/.*cdevcontainer/cdevcontainer/' | sed 's/].*/]/' || echo "No commands found"
 
-test: unit-test functional-test
+test: unit-test functional-test ## Run all tests (unit and functional)
 
-coverage:
+coverage: ## Generate HTML coverage report
 	pytest tests/unit --cov=src --cov-report=html
 	@echo "Coverage report generated in htmlcov/index.html"
 
-coverage-text:
+coverage-text: ## Generate text coverage report
 	pytest tests/unit --cov=src --cov-report=term-missing
 
-coverage-json:
+coverage-json: ## Generate JSON coverage report
 	pytest tests/unit --cov=src --cov-report=json
 	@echo "Coverage report generated in coverage.json"
 
-clean:
+clean: ## Clean build artifacts and cache files
 	rm -rf build dist .coverage htmlcov coverage.json
 	rm -rf *.egg-info **/*.egg-info __pycache__ .pytest_cache .mypy_cache
 
-build:
+build: ## Build the package
 	python -m build
 
-distcheck:
+distcheck: ## Check the built distribution
 	twine check dist/*
 
-publish: clean build distcheck
+publish: clean build distcheck ## Prepare for publishing to PyPI
 	@echo "Ready to publish! To publish to PyPI, create and push a git tag:"
 	@echo "git tag -a 0.1.0 -m 'Release 0.1.0'"
 	@echo "git push origin 0.1.0"

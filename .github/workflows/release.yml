@@ -1,0 +1,249 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type (major, minor, patch, or auto)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - major
+          - minor
+          - patch
+      dry_run:
+        description: 'Dry run - show what would happen without creating tags/releases'
+        required: false
+        default: false
+        type: boolean
+  workflow_call:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: false
+        default: 'auto'
+        type: string
+      dry_run:
+        description: 'Dry run mode'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate GitHub App token
+      id: generate_token
+      uses: tibdex/github-app-token@v2
+      with:
+        app_id: ${{ secrets.GH_APP_ID }}
+        private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+          libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
+          xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc gh
+
+    - name: Install ASDF
+      run: |
+        git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+        echo "$HOME/.asdf/bin" >> $GITHUB_PATH
+        echo "$HOME/.asdf/shims" >> $GITHUB_PATH
+
+    - name: Install ASDF plugins and tools
+      run: |
+        cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
+        asdf install
+        asdf reshim
+
+    - name: Install python-semantic-release
+      run: pip install -r .github/workflows/requirements-release.txt
+
+    - name: Install CLI dependencies
+      working-directory: ./caylent-devcontainer-cli
+      run: |
+        pip install --upgrade pip
+        make install
+        asdf reshim
+
+    - name: Determine version and create release
+      id: run-release
+      working-directory: ./caylent-devcontainer-cli
+      env:
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+      run: |
+        set -eo pipefail
+
+        git config user.name "caylent-platform-bot[bot]"
+        git config user.email "caylent-platform-bot[bot]@users.noreply.github.com"
+
+        git fetch origin
+        git fetch --tags --force
+
+        # Get current version
+        CURRENT_VERSION=$(python -c "from src.caylent_devcontainer_cli import __version__; print(__version__)")
+        echo "Current version: $CURRENT_VERSION"
+
+        # Get latest tag
+        LATEST_TAG=$(git tag --list "[0-9]*" --sort=-v:refname | head -1)
+        echo "Latest tag: $LATEST_TAG"
+
+        # Get commits since last tag
+        if [[ -z "$LATEST_TAG" ]]; then
+          COMMITS=$(git log --oneline)
+        else
+          COMMITS=$(git log --oneline "${LATEST_TAG}..HEAD")
+        fi
+
+        echo "Commits since last tag:"
+        echo "$COMMITS"
+
+        # Determine bump type
+        BUMP_TYPE="${{ inputs.bump_type }}"
+
+        if [[ "$BUMP_TYPE" == "major" ]]; then
+          IS_MAJOR=1
+          IS_MINOR=0
+          IS_PATCH=0
+        elif [[ "$BUMP_TYPE" == "minor" ]]; then
+          IS_MAJOR=0
+          IS_MINOR=1
+          IS_PATCH=0
+        elif [[ "$BUMP_TYPE" == "patch" ]]; then
+          IS_MAJOR=0
+          IS_MINOR=0
+          IS_PATCH=1
+        else
+          # Auto-detect bump level from commit messages
+          IS_MAJOR=0
+          IS_MINOR=0
+          IS_PATCH=0
+
+          # Check for breaking changes (major bump)
+          if echo "$COMMITS" | grep -Eq '\b(feat|fix|perf|build|ci|chore|docs|style|refactor|test|release|module|meta|revert)!:'; then
+            echo "Found breaking change - will trigger major bump"
+            IS_MAJOR=1
+          elif echo "$COMMITS" | grep -q 'BREAKING CHANGE'; then
+            echo "Found 'BREAKING CHANGE' footer - will trigger major bump"
+            IS_MAJOR=1
+          fi
+
+          if [[ $IS_MAJOR -ne 1 ]]; then
+            # Check for minor bump
+            if echo "$COMMITS" | grep -Eq '\b(feat|perf|build|release|module|meta|ci):'; then
+              echo "Found minor commit"
+              IS_MINOR=1
+            fi
+
+            # Check for patch bump
+            if echo "$COMMITS" | grep -Eq '\b(fix|chore|docs|style|refactor|test):'; then
+              echo "Found patch commit"
+              IS_PATCH=1
+            fi
+
+            # If no matching commits found, no bump
+            if [[ $IS_MINOR -eq 0 && $IS_PATCH -eq 0 ]]; then
+              echo "No bump-worthy commits found"
+            fi
+          fi
+        fi
+
+        # Calculate next version
+        if [[ $IS_MAJOR -eq 1 ]]; then
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          NEXT="$((MAJOR + 1)).0.0"
+        elif [[ $IS_MINOR -eq 1 ]]; then
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          NEXT="$MAJOR.$((MINOR + 1)).0"
+        elif [[ $IS_PATCH -eq 1 ]]; then
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+          NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+        else
+          echo "No bump needed"
+          exit 0
+        fi
+
+        echo "Next version will be: $NEXT"
+        echo "Bump analysis: Major=$IS_MAJOR, Minor=$IS_MINOR, Patch=$IS_PATCH"
+
+        if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+          echo "🔍 DRY RUN MODE - NO REAL CHANGES WILL BE MADE"
+          echo "🔍 DRY RUN: Would create version $NEXT"
+          echo "🔍 DRY RUN: Current version: $CURRENT_VERSION"
+          echo "🔍 DRY RUN: Next version: $NEXT"
+          echo "🔍 DRY RUN: Bump type: Major=$IS_MAJOR, Minor=$IS_MINOR, Patch=$IS_PATCH"
+          echo "🔍 DRY RUN: Commits that would be included:"
+          echo "$COMMITS"
+          echo "🔍 DRY RUN: Would create branch: release-$NEXT"
+          echo "🔍 DRY RUN: Would create tag: $NEXT"
+          echo "🔍 DRY RUN: NO ACTUAL BRANCHES, TAGS, OR RELEASES CREATED"
+          exit 0
+        fi
+
+        echo "🚀 REAL RELEASE MODE - Creating actual release"
+
+        # Clean up any existing release branch
+        BRANCH_NAME="release-$NEXT"
+        git push origin --delete "$BRANCH_NAME" 2>/dev/null || true
+        git branch -D "$BRANCH_NAME" 2>/dev/null || true
+
+        # Update version in files
+        sed -i "s/__version__ = .*/__version__ = \"$NEXT\"/" src/caylent_devcontainer_cli/__init__.py
+        sed -i "s/version = .*/version = \"$NEXT\"/" pyproject.toml
+
+        # Generate changelog
+        python -m semantic_release changelog
+
+        # Create release branch and commit changes
+        git checkout -b "$BRANCH_NAME"
+        git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py pyproject.toml
+        git commit -m "chore(release): $NEXT"
+        git push origin "$BRANCH_NAME"
+
+        # Create PR and merge it
+        echo "Creating release PR..."
+        PR_BODY="Automated release PR for version $NEXT"
+        PR_URL=$(gh pr create --title "Release $NEXT" --body "$PR_BODY" --base main --head "$BRANCH_NAME")
+        echo "Created PR: $PR_URL"
+
+        echo "Auto-merging release PR..."
+        gh pr merge "$PR_URL" --admin --merge
+
+        # Wait for merge and create tag
+        echo "Waiting for PR to merge..."
+        sleep 10
+
+        git fetch --all
+        git checkout main
+        git pull origin main
+        git tag -a "$NEXT" -m "Release $NEXT"
+        git push origin "$NEXT"
+
+        # Clean up release branch
+        echo "Cleaning up release branch..."
+        git push origin --delete "$BRANCH_NAME" || true
+
+        echo "✅ Release complete: $NEXT"
+        echo "version=$NEXT" >> $GITHUB_OUTPUT
+
+    outputs:
+      version: ${{ steps.run-release.outputs.version }}
