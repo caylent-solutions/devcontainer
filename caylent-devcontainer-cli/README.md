@@ -5,11 +5,13 @@ A command-line tool for managing Caylent devcontainer environments.
 ## Table of Contents
 
 1. [Installation](#installation)
+   - [Prerequisites](#prerequisites)
+   - [Install CLI](#install-cli)
 2. [Usage](#usage)
    - [Commands](#commands)
    - [Setting Up a Devcontainer](#setting-up-a-devcontainer)
    - [Managing Templates](#managing-templates)
-   - [Launching VS Code](#launching-vs-code)
+   - [Launching IDEs](#launching-ides)
 3. [Development](#development)
    - [Setup](#setup)
    - [Testing](#testing)
@@ -18,6 +20,26 @@ A command-line tool for managing Caylent devcontainer environments.
 4. [License](#license)
 
 ## Installation
+
+### Prerequisites
+
+The CLI requires IDE command-line tools to launch projects:
+
+#### VS Code CLI Setup
+1. Open **VS Code**
+2. Press `⌘ + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux)
+3. Type: **Shell Command: Install 'code' command in PATH**
+4. Run the command and restart your terminal
+5. Test: `code .`
+
+#### Cursor CLI Setup
+1. Open **Cursor**
+2. Press `⌘ + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux)
+3. Type: **Shell Command: Install 'cursor' command in PATH**
+4. Run the command and restart your terminal
+5. Test: `cursor .`
+
+### Install CLI
 
 ```bash
 # Install from PyPI (when available)
