@@ -23,7 +23,7 @@
 
 This repository provides the **base development container** configuration used across Caylent engineering projects. It is designed to be:
 
-- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code
+- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code or Cursor
 - 🧱 **Reusable**: drop into any repo to enable consistent local dev experience
 - 🔐 **Secure and configurable**: injects secrets via environment, not committed
 - 🧩 **Smart defaults**: tools, AWS profiles, aliases, Python setup, Git config, and more
@@ -48,19 +48,19 @@ This repository provides the **base development container** configuration used a
 
 The devcontainer installs:
 
-- ✅ Amazon Q VS Code extension
+- ✅ Amazon Q extension (VS Code/Cursor compatible)
 - ✅ GitHub Copilot + Copilot Chat
 - ✅ GitLens, YAML, Python, Docker, Makefile Tools
 - ✅ Jinja, spell checking
 
-These extensions are auto-installed on container start.
+These extensions are auto-installed on container start and work with both VS Code and Cursor.
 
 ---
 
 ## 🖥 Prerequisites
 
 ### For macOS
-- [VS Code](https://code.visualstudio.com/Download)
+- [VS Code](https://code.visualstudio.com/Download) or [Cursor](https://cursor.sh/)
 - [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
 - [Homebrew](https://brew.sh/) — optional
 - Python 3.12.9 - [Installation Guide](supplemental-docs/PYTHON_INSTALL.md#for-macos-using-asdf)
@@ -68,8 +68,26 @@ These extensions are auto-installed on container start.
 ### For Windows
 - [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
-- [VS Code](https://code.visualstudio.com/Download)
+- [VS Code](https://code.visualstudio.com/Download) or [Cursor](https://cursor.sh/)
 - Python 3.12.9 - [Installation Guide](supplemental-docs/PYTHON_INSTALL.md#for-windows-using-windows-store-or-official-installer)
+
+### IDE Command Line Setup
+
+The `cdevcontainer` CLI requires IDE command-line tools to launch projects. Enable them as follows:
+
+#### VS Code CLI Setup
+1. Open **VS Code**
+2. Press `⌘ + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux)
+3. Type: **Shell Command: Install 'code' command in PATH**
+4. Run the command and restart your terminal
+5. Test: `code .`
+
+#### Cursor CLI Setup
+1. Open **Cursor**
+2. Press `⌘ + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux)
+3. Type: **Shell Command: Install 'cursor' command in PATH**
+4. Run the command and restart your terminal
+5. Test: `cursor .`
 
 ---
 
@@ -302,7 +320,7 @@ cdevcontainer code -y
 
 ### 🤖 Amazon Q
 
-- Open the Amazon Q sidebar (left bar in VS Code) or use Command+Shift+P and type "AmazonQ: Open Chat"
+- Open the Amazon Q sidebar (left bar in VS Code/Cursor) or use Command+Shift+P and type "AmazonQ: Open Chat"
 - Click **Sign in** and follow the browser flow
 - Enter your SSO start URL, select your region and Pro account
 - Authentication will complete via browser
@@ -329,7 +347,7 @@ git config --get user.name
 git ls-remote https://github.com/your-org/your-repo.git
 ```
 
-Or open the Source Control tab in VS Code to confirm the repo is accessible.
+Or open the Source Control tab in your IDE to confirm the repo is accessible.
 
 ---
 
@@ -356,7 +374,7 @@ Then rebuild the container.
 
 When you make changes to the devcontainer configuration (such as modifying `devcontainer.json`, `devcontainer-environment-variables.json`, or `.tool-versions`), you'll need to rebuild the container for changes to take effect:
 
-1. A popup will typically appear in VS Code prompting you to rebuild when configuration files change
+1. A popup will typically appear in your IDE prompting you to rebuild when configuration files change
 2. Alternatively, you can manually rebuild by:
    - Opening the Command Palette (Command+Shift+P or Ctrl+Shift+P)
    - Typing "Dev Containers: Rebuild Container" and selecting it
@@ -397,7 +415,7 @@ docker swarm init
 JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](https://www.jetbrains.com/remote-development/gateway/), but:
 
 - Post-create hooks, VS Code extensions, and shell customization are **not** guaranteed
-- VS Code is **strongly recommended** for full compatibility
+- VS Code or Cursor are **strongly recommended** for full compatibility
 
 ---
 
