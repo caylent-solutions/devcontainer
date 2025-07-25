@@ -182,12 +182,15 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 
 
 # Test the handle_code function
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])  # Make env_json newer than shell_env
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 @patch("subprocess.Popen")
-def test_handle_code(mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, capsys):
+def test_handle_code(
+    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, capsys
+):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process

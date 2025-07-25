@@ -275,6 +275,14 @@ cdevcontainer code -y
 >
 > This approach prevents environment variable conflicts when working with multiple projects simultaneously.
 
+> 🚀 **Advanced tip**: You can launch VS Code for another project directly from within a running devcontainer:
+> ```bash
+> # From within any devcontainer terminal
+> cdevcontainer code /path/to/another-project
+> ```
+>
+> This will open a new VS Code window with the other project's devcontainer, allowing you to work on multiple projects simultaneously.
+
 ---
 
 ## 🧩 Post-Launch Setup
@@ -456,6 +464,9 @@ cdevcontainer setup-devcontainer /path/to/your/project
 
 # Launch VS Code with the devcontainer environment
 cdevcontainer code [/path/to/your/project]
+
+# Launch VS Code for another project (works from within any devcontainer)
+cdevcontainer code /path/to/another-project
 
 # Manage templates
 cdevcontainer template list

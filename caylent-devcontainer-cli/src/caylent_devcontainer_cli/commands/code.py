@@ -43,6 +43,11 @@ def handle_code(args):
     else:
         log("INFO", "Using existing shell.env file")
 
+    # Ensure .gitignore entries
+    from caylent_devcontainer_cli.commands.setup import ensure_gitignore_entries
+
+    ensure_gitignore_entries(project_root)
+
     # Launch VS Code
     log("INFO", "Launching VS Code...")
 

@@ -52,6 +52,7 @@ def test_register_command():
     mock_parser.set_defaults.assert_called_once_with(func=handle_setup)
 
 
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
@@ -59,7 +60,7 @@ def test_register_command():
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
 def test_handle_setup_interactive(
-    mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive, mock_create_version
+    mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive, mock_create_version, mock_gitignore
 ):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
@@ -76,13 +77,16 @@ def test_handle_setup_interactive(
     mock_create_version.assert_called_once_with("/test/path")
 
 
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
 @patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
-def test_handle_setup_manual(mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive, mock_create_version):
+def test_handle_setup_manual(
+    mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive, mock_create_version, mock_gitignore
+):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
     args = MagicMock()
@@ -120,7 +124,7 @@ def test_copy_devcontainer_files(mock_exists, mock_copytree):
 
 @patch("shutil.copytree")
 @patch("os.path.exists", side_effect=[True, False, False])
-@patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True)
+@patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True)
 @patch("shutil.rmtree")
 def test_copy_devcontainer_files_overwrite(mock_rmtree, mock_confirm, mock_exists, mock_copytree):
     copy_devcontainer_files("/source", "/target")
@@ -130,7 +134,7 @@ def test_copy_devcontainer_files_overwrite(mock_rmtree, mock_confirm, mock_exist
 
 @patch("shutil.copytree")
 @patch("os.path.exists", return_value=True)
-@patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False)
+@patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=False)
 @patch("sys.exit")
 def test_copy_devcontainer_files_cancel(mock_exit, mock_confirm, mock_exists, mock_copytree):
     copy_devcontainer_files("/source", "/target")
@@ -151,7 +155,7 @@ def test_copy_devcontainer_files_with_examples():
     """Test that copy_devcontainer_files keeps example files when keep_examples is True."""
     with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
         "os.remove"
-    ) as mock_remove, patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True):
+    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True):
 
         copy_devcontainer_files("/source", "/target", keep_examples=True)
 
@@ -166,7 +170,7 @@ def test_copy_devcontainer_files_without_examples():
     """Test that copy_devcontainer_files removes example files when keep_examples is False."""
     with patch("os.path.exists", side_effect=[True, True, True]), patch("shutil.copytree") as mock_copytree, patch(
         "os.remove"
-    ) as mock_remove, patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True):
+    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True):
 
         copy_devcontainer_files("/source", "/target", keep_examples=False)
 
@@ -185,7 +189,7 @@ def test_copy_devcontainer_files_confirm_overwrite():
     """Test that copy_devcontainer_files asks for confirmation when target exists."""
     with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
         "os.remove"
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True) as mock_confirm:
+    ), patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True) as mock_confirm:
 
         copy_devcontainer_files("/source", "/target", keep_examples=False)
 
@@ -198,7 +202,7 @@ def test_copy_devcontainer_files_cancel_overwrite():
     """Test that copy_devcontainer_files exits when overwrite is cancelled."""
     with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
         "os.remove"
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False):
+    ), patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=False):
 
         with pytest.raises(SystemExit):
             copy_devcontainer_files("/source", "/target", keep_examples=False)
@@ -530,7 +534,9 @@ def test_handle_setup_update_mode():
         "caylent_devcontainer_cli.commands.setup.clone_repo"
     ), patch("caylent_devcontainer_cli.commands.setup.interactive_setup"), patch(
         "caylent_devcontainer_cli.commands.setup.create_version_file"
-    ) as mock_create_version:
+    ) as mock_create_version, patch(
+        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
+    ):
         handle_setup(args)
         mock_create_version.assert_called_once_with("/test/path")
 
@@ -559,12 +565,14 @@ def test_handle_setup_with_existing_version():
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
         "builtins.open", mock_open(read_data="1.0.0")
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True), patch(
+    ), patch("caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=True), patch(
         "caylent_devcontainer_cli.commands.setup.clone_repo"
     ), patch(
         "caylent_devcontainer_cli.commands.setup.interactive_setup"
     ), patch(
         "caylent_devcontainer_cli.commands.setup.create_version_file"
+    ), patch(
+        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
     ):
         handle_setup(args)
 
@@ -578,12 +586,13 @@ def test_handle_setup_with_existing_version_cancel():
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
         "builtins.open", mock_open(read_data="1.0.0")
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False), patch(
-        "sys.exit", side_effect=SystemExit(0)
-    ) as mock_exit:
-        with pytest.raises(SystemExit):
-            handle_setup(args)
-        mock_exit.assert_called_once_with(0)
+    ), patch("caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=False), patch(
+        "caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone"
+    ) as mock_interactive_no_clone, patch(
+        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
+    ):
+        handle_setup(args)
+        mock_interactive_no_clone.assert_called_once_with("/test/path")
 
 
 def test_handle_setup_with_existing_no_version():
@@ -594,11 +603,13 @@ def test_handle_setup_with_existing_no_version():
     args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
-        "caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True
+        "caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=True
     ), patch("caylent_devcontainer_cli.commands.setup.clone_repo"), patch(
         "caylent_devcontainer_cli.commands.setup.interactive_setup"
     ), patch(
         "caylent_devcontainer_cli.commands.setup.create_version_file"
+    ), patch(
+        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
     ):
         handle_setup(args)
 
@@ -611,19 +622,25 @@ def test_handle_setup_with_existing_no_version_cancel():
     args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
-        "caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False
-    ), patch("sys.exit", side_effect=SystemExit(0)) as mock_exit:
-        with pytest.raises(SystemExit):
-            handle_setup(args)
-        mock_exit.assert_called_once_with(0)
+        "caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=False
+    ), patch(
+        "caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone"
+    ) as mock_interactive_no_clone, patch(
+        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
+    ):
+        handle_setup(args)
+        mock_interactive_no_clone.assert_called_once_with("/test/path")
 
 
 # Tests from test_setup_version.py
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
-def test_handle_setup_creates_version_file(mock_temp_dir, mock_clone, mock_interactive, mock_create_version):
+def test_handle_setup_creates_version_file(
+    mock_temp_dir, mock_clone, mock_interactive, mock_create_version, mock_gitignore
+):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
     args = MagicMock()
@@ -639,12 +656,15 @@ def test_handle_setup_creates_version_file(mock_temp_dir, mock_clone, mock_inter
     mock_create_version.assert_called_once_with("/test/path")
 
 
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
-def test_handle_setup_manual_creates_version_file(mock_temp_dir, mock_clone, mock_show, mock_copy, mock_create_version):
+def test_handle_setup_manual_creates_version_file(
+    mock_temp_dir, mock_clone, mock_show, mock_copy, mock_create_version, mock_gitignore
+):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
     args = MagicMock()
@@ -670,13 +690,14 @@ def test_create_version_file(mock_file):
     mock_file().write.assert_called_once_with(__version__ + "\n")
 
 
-@patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True)
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
+@patch("caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=True)
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
 def test_handle_setup_with_existing_version_2(
-    mock_temp_dir, mock_clone, mock_interactive, mock_create_version, mock_confirm
+    mock_temp_dir, mock_clone, mock_interactive, mock_create_version, mock_confirm, mock_gitignore
 ):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 

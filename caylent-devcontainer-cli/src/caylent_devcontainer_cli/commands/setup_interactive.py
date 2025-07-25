@@ -51,7 +51,19 @@ def prompt_use_template() -> bool:
         log("INFO", "No saved templates found.")
         return False
 
-    return questionary.confirm("Do you want to use a saved template?", default=True).ask()
+    try:
+        result = questionary.confirm("Do you want to use a saved template?", default=True).ask()
+        if result is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        return result
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def select_template() -> Optional[str]:
@@ -63,61 +75,152 @@ def select_template() -> Optional[str]:
 
     templates.append("< Go back")
 
-    selected = questionary.select("Select a template:", choices=templates).ask()
+    try:
+        selected = questionary.select("Select a template:", choices=templates).ask()
+        if selected is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    if selected == "< Go back":
-        return None
+            sys.exit(0)
 
-    return selected
+        if selected == "< Go back":
+            return None
+
+        return selected
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def prompt_save_template() -> bool:
     """Ask if the user wants to save the template."""
-    return questionary.confirm("Do you want to save this configuration as a reusable template?", default=False).ask()
+    try:
+        result = questionary.confirm(
+            "Do you want to save this configuration as a reusable template?", default=False
+        ).ask()
+        if result is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        return result
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def prompt_template_name() -> str:
     """Prompt for template name."""
-    return questionary.text("Enter a name for this template:", validate=lambda text: len(text) > 0).ask()
+    try:
+        result = questionary.text("Enter a name for this template:", validate=lambda text: len(text) > 0).ask()
+        if result is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        return result
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def prompt_env_values() -> Dict[str, Any]:
     """Prompt for environment values."""
     env_values = {}
 
-    # AWS Config Enabled
-    env_values["AWS_CONFIG_ENABLED"] = questionary.select(
-        "Enable AWS configuration?", choices=["true", "false"], default="true"
-    ).ask()
+    try:
+        # AWS Config Enabled
+        aws_config = questionary.select("Enable AWS configuration?", choices=["true", "false"], default="true").ask()
+        if aws_config is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    # Git branch
-    env_values["DEFAULT_GIT_BRANCH"] = questionary.text("Default Git branch (e.g., main):", default="main").ask()
+            sys.exit(0)
+        env_values["AWS_CONFIG_ENABLED"] = aws_config
 
-    # Python version
-    env_values["DEFAULT_PYTHON_VERSION"] = questionary.text(
-        "Default Python version (e.g., 3.12.9):", default="3.12.9"
-    ).ask()
+        # Git branch
+        git_branch = questionary.text("Default Git branch (e.g., main):", default="main").ask()
+        if git_branch is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    # Developer name
-    env_values["DEVELOPER_NAME"] = questionary.text(
-        "Developer name:", instruction="Your name will be used in the devcontainer"
-    ).ask()
+            sys.exit(0)
+        env_values["DEFAULT_GIT_BRANCH"] = git_branch
 
-    # Git credentials
-    env_values["GIT_PROVIDER_URL"] = questionary.text("Git provider URL:", default="github.com").ask()
+        # Python version
+        python_version = questionary.text("Default Python version (e.g., 3.12.9):", default="3.12.9").ask()
+        if python_version is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    env_values["GIT_USER"] = questionary.text("Git username:", instruction="Your username for authentication").ask()
+            sys.exit(0)
+        env_values["DEFAULT_PYTHON_VERSION"] = python_version
 
-    env_values["GIT_USER_EMAIL"] = questionary.text("Git email:", instruction="Your email for Git commits").ask()
+        # Developer name
+        dev_name = questionary.text("Developer name:", instruction="Your name will be used in the devcontainer").ask()
+        if dev_name is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    env_values["GIT_TOKEN"] = questionary.password(
-        "Git token:", instruction="Your personal access token (will be stored in the config)"
-    ).ask()
+            sys.exit(0)
+        env_values["DEVELOPER_NAME"] = dev_name
 
-    # Extra packages
-    env_values["EXTRA_APT_PACKAGES"] = questionary.text("Extra APT packages (space-separated):", default="").ask()
+        # Git credentials
+        git_provider = questionary.text("Git provider URL:", default="github.com").ask()
+        if git_provider is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    return env_values
+            sys.exit(0)
+        env_values["GIT_PROVIDER_URL"] = git_provider
+
+        git_user = questionary.text("Git username:", instruction="Your username for authentication").ask()
+        if git_user is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["GIT_USER"] = git_user
+
+        git_email = questionary.text("Git email:", instruction="Your email for Git commits").ask()
+        if git_email is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["GIT_USER_EMAIL"] = git_email
+
+        git_token = questionary.password(
+            "Git token:", instruction="Your personal access token (will be stored in the config)"
+        ).ask()
+        if git_token is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["GIT_TOKEN"] = git_token
+
+        # Extra packages
+        extra_packages = questionary.text("Extra APT packages (space-separated):", default="").ask()
+        if extra_packages is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["EXTRA_APT_PACKAGES"] = extra_packages
+
+        return env_values
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def prompt_aws_profile_map() -> Dict[str, Any]:
@@ -340,3 +443,38 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
         log("OK", f"AWS profile map saved to {aws_map_path}")
 
     log("OK", "Template applied successfully")
+
+
+def apply_template_without_clone(template_data: Dict[str, Any], target_path: str) -> None:
+    """Apply template to target path without overwriting .devcontainer directory."""
+    # Create environment variables file
+    env_file_path = os.path.join(target_path, "devcontainer-environment-variables.json")
+    with open(env_file_path, "w") as f:
+        # Use containerEnv directly from template or create it if using old format
+        if "containerEnv" in template_data:
+            env_data = template_data
+        else:
+            # Handle old format templates for backward compatibility
+            env_data = {"containerEnv": template_data.get("env_values", {})}
+
+        json.dump(env_data, f, indent=2)
+        f.write("\n")  # Add newline at end of file
+
+    log("OK", f"Environment variables saved to {env_file_path}")
+
+    # Create AWS profile map if needed
+    # Check both containerEnv and env_values for backward compatibility
+    container_env = template_data.get("containerEnv", {})
+    env_values = template_data.get("env_values", {})
+    aws_config_enabled = container_env.get("AWS_CONFIG_ENABLED", env_values.get("AWS_CONFIG_ENABLED", "false"))
+
+    if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
+        target_devcontainer = os.path.join(target_path, ".devcontainer")
+        aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
+        with open(aws_map_path, "w") as f:
+            json.dump(template_data["aws_profile_map"], f, indent=2)
+            f.write("\n")  # Add newline at end of file
+
+        log("OK", f"AWS profile map saved to {aws_map_path}")
+
+    log("OK", "Template applied successfully (existing .devcontainer preserved)")

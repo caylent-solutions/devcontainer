@@ -93,7 +93,12 @@ cdevcontainer code
 
 # Launch VS Code for a specific project
 cdevcontainer code /path/to/your/project
+
+# Launch VS Code for another project (works from within any devcontainer)
+cdevcontainer code /path/to/another-project
 ```
+
+> **Note**: You can run `cdevcontainer code` from within any devcontainer to launch VS Code for other projects. This allows you to work on multiple projects simultaneously, each in their own devcontainer environment.
 
 ## Development
 

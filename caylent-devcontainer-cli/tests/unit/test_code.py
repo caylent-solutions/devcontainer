@@ -39,13 +39,14 @@ def test_handle_code_missing_config(mock_isfile, mock_find_project_root, capsys)
     assert "Configuration file not found" in captured.err
 
 
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])  # env_json is newer than shell_env
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 @patch("subprocess.Popen")
 def test_handle_code_regenerate_env(
-    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, capsys
+    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, capsys
 ):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
@@ -66,9 +67,10 @@ def test_handle_code_regenerate_env(
     assert "Generating environment variables" in captured.err
 
 
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("subprocess.Popen")
 @patch("os.environ.get", return_value="/bin/zsh")
-def test_handle_code_custom_shell(mock_environ_get, mock_popen, capsys):
+def test_handle_code_custom_shell(mock_environ_get, mock_popen, mock_gitignore, capsys):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process
