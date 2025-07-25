@@ -11,22 +11,22 @@
 ---
 
 ## ✨ Key New Features
-- 💻 **IDE Support**  
+- 💻 **IDE Support**
   Launch projects directly in **VS Code** or **Cursor** using `--ide` with automatic validation and helpful error messages.
 
-- 🔑 **Flexible AWS Profile Setup**  
-  Create AWS profiles interactively in standard config format or all at once from a JSON file.  
+- 🔑 **Flexible AWS Profile Setup**
+  Create AWS profiles interactively in standard config format or all at once from a JSON file.
   Built‑in validation, error prompts, and retry support.
 
-- 📜 **Makefile Help System**  
-  `make help` now shows a clean, formatted list of all tasks.  
+- 📜 **Makefile Help System**
+  `make help` now shows a clean, formatted list of all tasks.
   Added pre‑commit validation and improved task descriptions.
 
-- ⚡ **Streamlined Setup Flow**  
-  Skipping an overwrite now continues setup rather than exiting.  
+- ⚡ **Streamlined Setup Flow**
+  Skipping an overwrite now continues setup rather than exiting.
   Secrets and environment files are auto‑added to `.gitignore` with a reminder to commit.
 
-- 🔒 **Privacy Controls**  
+- 🔒 **Privacy Controls**
   Default settings disable telemetry and AI model training for Amazon Q and GitHub Copilot.
 
 ---
@@ -501,7 +501,7 @@ This PR introduces a fully restructured and production-ready VS Code Devcontaine
 
 ## 🧪 How to Use
 
-1. Copy `.devcontainer` into your app repo  
+1. Copy `.devcontainer` into your app repo
 2. Copy and configure:
    ```bash
    cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
