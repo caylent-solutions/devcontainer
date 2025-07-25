@@ -3,38 +3,50 @@
 
 ## Unreleased
 
-### Build
 
-* build: update asdf version to v0.15.0 and optimize zsh configuration  (#50)
+## v1.4.0 (2025-07-25)
 
-* build: update asdf version to v0.15.0 and optimize zsh configuration
+# 🚀 New Devcontainer CLI Release – Big Improvements! 🎉
 
-- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
-- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
-- Consolidate asdf zsh setup to reduce duplication in postcreate script
-- Ensure proper initialization order for zsh completions
+---
 
-* build: update asdf version to v0.15.0 and optimize zsh configuration
+## ✨ Key New Features
+- 💻 **IDE Support**  
+  Launch projects directly in **VS Code** or **Cursor** using `--ide` with automatic validation and helpful error messages.
 
-- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
-- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
-- Consolidate asdf zsh setup to reduce duplication in postcreate script
-- Ensure proper initialization order for zsh completions ([`84516c0`](https://github.com/caylent-solutions/devcontainer/commit/84516c034c83e8a6ca9b67cf1db1f6b947437975))
+- 🔑 **Flexible AWS Profile Setup**  
+  Create AWS profiles interactively in standard config format or all at once from a JSON file.  
+  Built‑in validation, error prompts, and retry support.
 
-### Feature
+- 📜 **Makefile Help System**  
+  `make help` now shows a clean, formatted list of all tasks.  
+  Added pre‑commit validation and improved task descriptions.
 
-* feat: add IDE support, AWS profile options, and major developer experience improvements
+- ⚡ **Streamlined Setup Flow**  
+  Skipping an overwrite now continues setup rather than exiting.  
+  Secrets and environment files are auto‑added to `.gitignore` with a reminder to commit.
 
-- add `--ide` flag with native support for VS Code and Cursor, with validation and clear error messages  
-- add two methods for AWS profile setup (standard format and JSON) with validation and retry prompts  
-- add an interactive help system to Makefiles with descriptive comments and a pre‑commit validation task  
-- improve setup flow so declining overwrite continues setup, and automatically manage `.gitignore` for secrets and environment files  
-- increase test coverage to 91% with expanded functional tests  
-- add privacy settings to disable data sharing for Amazon Q and GitHub Copilot  
+- 🔒 **Privacy Controls**  
+  Default settings disable telemetry and AI model training for Amazon Q and GitHub Copilot.
 
-fix: correct test mocks and improve interrupt handling
+---
 
-docs: update setup instructions, prerequisites, and references for IDE support ([`1174d58`](https://github.com/caylent-solutions/devcontainer/commit/1174d58de12039946706a688df7c07436a5730a3))
+## ✅ Quality Improvements
+- Increased unit test coverage to **91%**
+- Expanded functional test coverage
+- Fixed test mocks and improved interrupt handling
+
+### Technical Details
+
+#### Build
+* build: update asdf version to v0.15.0 and optimize zsh configuration (#50)
+  - Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
+  - Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
+  - Consolidate asdf zsh setup to reduce duplication in postcreate script
+  - Ensure proper initialization order for zsh completions ([`84516c0`](https://github.com/caylent-solutions/devcontainer/commit/84516c034c83e8a6ca9b67cf1db1f6b947437975))
+
+#### Feature
+* feat: add IDE support, AWS profile options, and major developer experience improvements ([`1174d58`](https://github.com/caylent-solutions/devcontainer/commit/1174d58de12039946706a688df7c07436a5730a3))
 
 
 
