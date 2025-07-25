@@ -51,7 +51,24 @@ def prompt_use_template() -> bool:
         log("INFO", "No saved templates found.")
         return False
 
-    return questionary.confirm("Do you want to use a saved template?", default=True).ask()
+    try:
+        print("\n⚠️  Do not press enter after your answer for this prompt. ⚠️")
+        result = questionary.confirm("Do you want to use a saved template?", default=True).ask()
+        if result is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        # Small delay to ensure proper terminal handling
+        import time
+
+        time.sleep(0.1)
+        return result
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def select_template() -> Optional[str]:
@@ -63,69 +80,289 @@ def select_template() -> Optional[str]:
 
     templates.append("< Go back")
 
-    selected = questionary.select("Select a template:", choices=templates).ask()
+    try:
+        selected = questionary.select("Select a template:", choices=templates).ask()
+        if selected is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    if selected == "< Go back":
-        return None
+            sys.exit(0)
 
-    return selected
+        if selected == "< Go back":
+            return None
+
+        return selected
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def prompt_save_template() -> bool:
     """Ask if the user wants to save the template."""
-    return questionary.confirm("Do you want to save this configuration as a reusable template?", default=False).ask()
+    try:
+        result = questionary.confirm(
+            "Do you want to save this configuration as a reusable template?", default=False
+        ).ask()
+        if result is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        return result
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def prompt_template_name() -> str:
     """Prompt for template name."""
-    return questionary.text("Enter a name for this template:", validate=lambda text: len(text) > 0).ask()
+    try:
+        result = questionary.text("Enter a name for this template:", validate=lambda text: len(text) > 0).ask()
+        if result is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        return result
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
 
 
 def prompt_env_values() -> Dict[str, Any]:
     """Prompt for environment values."""
     env_values = {}
 
-    # AWS Config Enabled
-    env_values["AWS_CONFIG_ENABLED"] = questionary.select(
-        "Enable AWS configuration?", choices=["true", "false"], default="true"
-    ).ask()
+    try:
+        # AWS Config Enabled
+        aws_config = questionary.select("Enable AWS configuration?", choices=["true", "false"], default="true").ask()
+        if aws_config is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    # Git branch
-    env_values["DEFAULT_GIT_BRANCH"] = questionary.text("Default Git branch (e.g., main):", default="main").ask()
+            sys.exit(0)
+        env_values["AWS_CONFIG_ENABLED"] = aws_config
 
-    # Python version
-    env_values["DEFAULT_PYTHON_VERSION"] = questionary.text(
-        "Default Python version (e.g., 3.12.9):", default="3.12.9"
-    ).ask()
+        # Git branch
+        git_branch = questionary.text(
+            "Default Git branch (e.g., main):",
+            default="main",
+            validate=lambda text: len(text.strip()) > 0 or "You must provide a Git branch name",
+        ).ask()
+        if git_branch is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    # Developer name
-    env_values["DEVELOPER_NAME"] = questionary.text(
-        "Developer name:", instruction="Your name will be used in the devcontainer"
-    ).ask()
+            sys.exit(0)
+        env_values["DEFAULT_GIT_BRANCH"] = git_branch
 
-    # Git credentials
-    env_values["GIT_PROVIDER_URL"] = questionary.text("Git provider URL:", default="github.com").ask()
+        # Python version
+        python_version = questionary.text(
+            "Default Python version (e.g., 3.12.9):",
+            default="3.12.9",
+            validate=lambda text: len(text.strip()) > 0 or "You must provide a Python version",
+        ).ask()
+        if python_version is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    env_values["GIT_USER"] = questionary.text("Git username:", instruction="Your username for authentication").ask()
+            sys.exit(0)
+        env_values["DEFAULT_PYTHON_VERSION"] = python_version
 
-    env_values["GIT_USER_EMAIL"] = questionary.text("Git email:", instruction="Your email for Git commits").ask()
+        # Developer name
+        dev_name = questionary.text(
+            "Developer name:",
+            instruction="Your name will be used in the devcontainer",
+            validate=lambda text: len(text.strip()) > 0 or "You must provide a developer name",
+        ).ask()
+        if dev_name is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    env_values["GIT_TOKEN"] = questionary.password(
-        "Git token:", instruction="Your personal access token (will be stored in the config)"
-    ).ask()
+            sys.exit(0)
+        env_values["DEVELOPER_NAME"] = dev_name
 
-    # Extra packages
-    env_values["EXTRA_APT_PACKAGES"] = questionary.text("Extra APT packages (space-separated):", default="").ask()
+        # Git credentials
+        git_provider = questionary.text(
+            "Git provider URL:",
+            default="github.com",
+            validate=lambda text: len(text.strip()) > 0 or "You must provide a Git provider URL",
+        ).ask()
+        if git_provider is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
 
-    return env_values
+            sys.exit(0)
+        env_values["GIT_PROVIDER_URL"] = git_provider
+
+        git_user = questionary.text(
+            "Git username:",
+            instruction="Your username for authentication",
+            validate=lambda text: len(text.strip()) > 0 or "You must provide a Git username",
+        ).ask()
+        if git_user is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["GIT_USER"] = git_user
+
+        git_email = questionary.text(
+            "Git email:",
+            instruction="Your email for Git commits",
+            validate=lambda text: len(text.strip()) > 0 or "You must provide a Git email",
+        ).ask()
+        if git_email is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["GIT_USER_EMAIL"] = git_email
+
+        gitignore_header = (
+            "\n\033[35mAll 3 files that contain secrets will automatically be added to your .gitignore; "
+            "be sure to commit these changes for your protection:\033[0m"
+        )
+        print(gitignore_header)
+        print("- shell.env \033[35m(contains Git token)\033[0m")
+        print("- devcontainer-environment-variables.json \033[35m(contains Git token)\033[0m")
+        aws_file_desc = (
+            "- .devcontainer/aws-profile-map.json \033[35m(contains aws account id "
+            "if you chose to create an AWS config)\033[0m"
+        )
+        print(aws_file_desc)
+        print()
+
+        git_token = questionary.password(
+            "Git token:",
+            instruction="Your personal access token (will be stored in the config)",
+            validate=lambda text: len(text.strip()) > 0 or "You must provide a Git token",
+        ).ask()
+        if git_token is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["GIT_TOKEN"] = git_token
+
+        # Extra packages
+        extra_packages = questionary.text("Extra APT packages (space-separated):", default="").ask()
+        if extra_packages is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["EXTRA_APT_PACKAGES"] = extra_packages
+
+        return env_values
+    except KeyboardInterrupt:
+        log("INFO", "Setup cancelled by user.")
+        import sys
+
+        sys.exit(0)
+
+
+def parse_standard_profile(profile_text: str) -> Dict[str, str]:
+    """Parse standard AWS profile format into dictionary."""
+    profile = {}
+    for line in profile_text.strip().split("\n"):
+        line = line.strip()
+        if not line or line.startswith("[") or line.startswith("#"):
+            continue
+        if "=" in line:
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip()
+            profile[key] = value
+    return profile
+
+
+def validate_standard_profile(profile: Dict[str, str]) -> Optional[str]:
+    """Validate standard profile has required fields."""
+    required_fields = ["sso_start_url", "sso_region", "sso_account_name", "sso_account_id", "sso_role_name", "region"]
+    missing = [field for field in required_fields if field not in profile]
+    if missing:
+        return f"Missing required fields: {', '.join(missing)}"
+
+    empty = [field for field in required_fields if field in profile and not profile[field].strip()]
+    if empty:
+        return f"Empty values for required fields: {', '.join(empty)}"
+
+    return None
+
+
+def convert_standard_to_json(profiles: Dict[str, Dict[str, str]]) -> Dict[str, Any]:
+    """Convert standard format profiles to JSON format."""
+    json_profiles = {}
+    for name, profile in profiles.items():
+        json_profiles[name] = {
+            "region": profile["region"],
+            "sso_start_url": profile["sso_start_url"],
+            "sso_region": profile["sso_region"],
+            "account_name": profile["sso_account_name"],
+            "account_id": profile["sso_account_id"],
+            "role_name": profile["sso_role_name"],
+        }
+    return json_profiles
 
 
 def prompt_aws_profile_map() -> Dict[str, Any]:
     """Prompt for AWS profile map."""
-    if questionary.confirm("Do you want to configure AWS profiles?", default=True).ask():
+    if not questionary.confirm("Do you want to configure AWS profiles?", default=True).ask():
+        return {}
+
+    # Present two options
+    input_method = questionary.select(
+        "How would you like to provide your AWS profiles?",
+        choices=["Standard format (enter profiles one by one)", "JSON format (paste complete configuration)"],
+    ).ask()
+
+    if input_method == "Standard format (enter profiles one by one)":
+        print("\nEnter AWS profiles in standard format. Example:")
+        print("[default]")
+        print("sso_start_url       = https://example.awsapps.com/start")
+        print("sso_region          = us-west-2")
+        print("sso_account_name    = example-dev-account")
+        print("sso_account_id      = 123456789012")
+        print("sso_role_name       = DeveloperAccess")
+        print("region              = us-west-2")
+
+        profiles = {}
+
+        while True:
+            profile_name = questionary.text(
+                "Enter profile name (e.g., 'default'):", validate=lambda text: len(text.strip()) > 0
+            ).ask()
+
+            while True:
+                print(f"\nEnter configuration for profile '{profile_name}':")
+                profile_text = questionary.text("Paste the profile configuration:", multiline=True).ask()
+
+                parsed_profile = parse_standard_profile(profile_text)
+                error = validate_standard_profile(parsed_profile)
+
+                if error:
+                    print(f"\nError: {error}")
+                    print("Please re-enter the profile configuration.")
+                    continue
+
+                profiles[profile_name] = parsed_profile
+                break
+
+            if not questionary.confirm("Would you like to add another AWS profile?", default=False).ask():
+                break
+
+        return convert_standard_to_json(profiles)
+
+    else:  # JSON format
         print("\nEnter your AWS profile configuration in JSON format.")
         print("Example:")
-        # Split the example into multiple lines to avoid linting issues
         print("{")
         print('  "default": {')
         print('    "region": "us-west-2",')
@@ -136,23 +373,17 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
         print('    "role_name": "DeveloperAccess"')
         print("  }")
         print("}")
-
         print(
             "\nFor more information, see: "
             "https://github.com/caylent-solutions/devcontainer#4-configure-aws-profile-map-optional"
         )
-
-        # Add a newline before the prompt to make it clearer where to start typing
         print("\nEnter AWS profile map JSON: (Finish with 'Esc then Enter')")
         aws_profile_map_json = questionary.text(
-            "",  # Empty prompt since we already printed the instruction
+            "",
             multiline=True,
             validate=JsonValidator(),
         ).ask()
-
         return json.loads(aws_profile_map_json)
-
-    return {}
 
 
 def create_template_interactive() -> Dict[str, Any]:
@@ -340,3 +571,38 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
         log("OK", f"AWS profile map saved to {aws_map_path}")
 
     log("OK", "Template applied successfully")
+
+
+def apply_template_without_clone(template_data: Dict[str, Any], target_path: str) -> None:
+    """Apply template to target path without overwriting .devcontainer directory."""
+    # Create environment variables file
+    env_file_path = os.path.join(target_path, "devcontainer-environment-variables.json")
+    with open(env_file_path, "w") as f:
+        # Use containerEnv directly from template or create it if using old format
+        if "containerEnv" in template_data:
+            env_data = template_data
+        else:
+            # Handle old format templates for backward compatibility
+            env_data = {"containerEnv": template_data.get("env_values", {})}
+
+        json.dump(env_data, f, indent=2)
+        f.write("\n")  # Add newline at end of file
+
+    log("OK", f"Environment variables saved to {env_file_path}")
+
+    # Create AWS profile map if needed
+    # Check both containerEnv and env_values for backward compatibility
+    container_env = template_data.get("containerEnv", {})
+    env_values = template_data.get("env_values", {})
+    aws_config_enabled = container_env.get("AWS_CONFIG_ENABLED", env_values.get("AWS_CONFIG_ENABLED", "false"))
+
+    if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
+        target_devcontainer = os.path.join(target_path, ".devcontainer")
+        aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
+        with open(aws_map_path, "w") as f:
+            json.dump(template_data["aws_profile_map"], f, indent=2)
+            f.write("\n")  # Add newline at end of file
+
+        log("OK", f"AWS profile map saved to {aws_map_path}")
+
+    log("OK", "Template applied successfully (existing .devcontainer preserved)")

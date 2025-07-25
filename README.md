@@ -23,7 +23,7 @@
 
 This repository provides the **base development container** configuration used across Caylent engineering projects. It is designed to be:
 
-- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code
+- ✅ **Cross-platform**: macOS and Windows (WSL2) compatible using VS Code or Cursor
 - 🧱 **Reusable**: drop into any repo to enable consistent local dev experience
 - 🔐 **Secure and configurable**: injects secrets via environment, not committed
 - 🧩 **Smart defaults**: tools, AWS profiles, aliases, Python setup, Git config, and more
@@ -48,19 +48,19 @@ This repository provides the **base development container** configuration used a
 
 The devcontainer installs:
 
-- ✅ Amazon Q VS Code extension
+- ✅ Amazon Q extension (VS Code/Cursor compatible)
 - ✅ GitHub Copilot + Copilot Chat
 - ✅ GitLens, YAML, Python, Docker, Makefile Tools
 - ✅ Jinja, spell checking
 
-These extensions are auto-installed on container start.
+These extensions are auto-installed on container start and work with both VS Code and Cursor.
 
 ---
 
 ## 🖥 Prerequisites
 
 ### For macOS
-- [VS Code](https://code.visualstudio.com/Download)
+- [VS Code](https://code.visualstudio.com/Download) or [Cursor](https://cursor.sh/)
 - [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
 - [Homebrew](https://brew.sh/) — optional
 - Python 3.12.9 - [Installation Guide](supplemental-docs/PYTHON_INSTALL.md#for-macos-using-asdf)
@@ -68,8 +68,26 @@ These extensions are auto-installed on container start.
 ### For Windows
 - [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop)
-- [VS Code](https://code.visualstudio.com/Download)
+- [VS Code](https://code.visualstudio.com/Download) or [Cursor](https://cursor.sh/)
 - Python 3.12.9 - [Installation Guide](supplemental-docs/PYTHON_INSTALL.md#for-windows-using-windows-store-or-official-installer)
+
+### IDE Command Line Setup
+
+The `cdevcontainer` CLI requires IDE command-line tools to launch projects. Enable them as follows:
+
+#### VS Code CLI Setup
+1. Open **VS Code**
+2. Press `⌘ + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux)
+3. Type: **Shell Command: Install 'code' command in PATH**
+4. Run the command and restart your terminal
+5. Test: `code .`
+
+#### Cursor CLI Setup
+1. Open **Cursor**
+2. Press `⌘ + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux)
+3. Type: **Shell Command: Install 'cursor' command in PATH**
+4. Run the command and restart your terminal
+5. Test: `cursor .`
 
 ---
 
@@ -211,28 +229,50 @@ This version checking ensures templates remain compatible as the CLI evolves.
 
 By default, AWS configuration is enabled. If you don't need AWS access, you can disable it during the interactive setup or by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`.
 
-When using the interactive setup with AWS enabled, you'll be prompted to enter your AWS profile configuration in JSON format. The setup will validate your input and create the AWS profile map file automatically.
+When using the interactive setup with AWS enabled, you'll be presented with two options for providing your AWS profile configuration:
 
+#### Option 1: JSON Format (Complete Configuration)
+Paste your complete AWS profile configuration in JSON format:
+
+```json
+{
+  "default": {
+    "region": "us-west-2",
+    "sso_start_url": "https://example.awsapps.com/start",
+    "sso_region": "us-west-2",
+    "account_name": "example-dev-account",
+    "account_id": "123456789012",
+    "role_name": "DeveloperAccess"
+  }
+}
+```
+
+#### Option 2: Standard Format (Profile by Profile)
+Enter AWS profiles one at a time in standard AWS config format:
+
+```ini
+[default]
+sso_start_url       = https://example.awsapps.com/start
+sso_region          = us-west-2
+sso_account_name    = example-dev-account
+sso_account_id      = 123456789012
+sso_role_name       = DeveloperAccess
+region              = us-west-2
+```
+
+The setup will:
+- Validate each profile for required fields
+- Prompt you to re-enter if validation fails
+- Ask if you want to add additional profiles
+- Automatically convert to the expected JSON format
+
+#### Manual Configuration
 If configuring manually, copy the example:
 ```bash
 cp .devcontainer/example-aws-profile-map.json .devcontainer/aws-profile-map.json
 ```
 
-Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
-
-```json
-{
-  "default": {
-    "region": "us-east-2",
-    "sso_start_url": "https://your-org.awsapps.com/start",
-    "sso_region": "us-east-1",
-    "account_name": "your-default-account",
-    "account_id": "123456789012",
-    "role_name": "AdministratorAccess"
-  },
-  ...
-}
-```
+Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts using the JSON format shown above.
 
 > ⚠️ This file is required only when AWS configuration is enabled (`AWS_CONFIG_ENABLED=true`).
 >
@@ -243,11 +283,17 @@ Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
 ### 5. Setting Up Your Environment
 
 ```bash
-# Launch VS Code for the current project
+# Launch VS Code for the current project (default IDE)
 cdevcontainer code
+
+# Launch Cursor for the current project
+cdevcontainer code --ide cursor
 
 # Launch VS Code for a specific project
 cdevcontainer code /path/to/your-project
+
+# Launch Cursor for a specific project
+cdevcontainer code /path/to/your-project --ide cursor
 ```
 
 This will:
@@ -275,6 +321,15 @@ cdevcontainer code -y
 >
 > This approach prevents environment variable conflicts when working with multiple projects simultaneously.
 
+> 🚀 **Advanced tip**: You can launch any supported IDE for another project directly from within a running devcontainer:
+> ```bash
+> # From within any devcontainer terminal
+> cdevcontainer code /path/to/another-project
+> cdevcontainer code /path/to/another-project --ide cursor
+> ```
+>
+> This will open a new IDE window with the other project's devcontainer, allowing you to work on multiple projects simultaneously.
+
 ---
 
 ## 🧩 Post-Launch Setup
@@ -287,7 +342,7 @@ cdevcontainer code -y
 
 ### 🤖 Amazon Q
 
-- Open the Amazon Q sidebar (left bar in VS Code) or use Command+Shift+P and type "AmazonQ: Open Chat"
+- Open the Amazon Q sidebar (left bar in VS Code/Cursor) or use Command+Shift+P and type "AmazonQ: Open Chat"
 - Click **Sign in** and follow the browser flow
 - Enter your SSO start URL, select your region and Pro account
 - Authentication will complete via browser
@@ -314,7 +369,7 @@ git config --get user.name
 git ls-remote https://github.com/your-org/your-repo.git
 ```
 
-Or open the Source Control tab in VS Code to confirm the repo is accessible.
+Or open the Source Control tab in your IDE to confirm the repo is accessible.
 
 ---
 
@@ -341,7 +396,7 @@ Then rebuild the container.
 
 When you make changes to the devcontainer configuration (such as modifying `devcontainer.json`, `devcontainer-environment-variables.json`, or `.tool-versions`), you'll need to rebuild the container for changes to take effect:
 
-1. A popup will typically appear in VS Code prompting you to rebuild when configuration files change
+1. A popup will typically appear in your IDE prompting you to rebuild when configuration files change
 2. Alternatively, you can manually rebuild by:
    - Opening the Command Palette (Command+Shift+P or Ctrl+Shift+P)
    - Typing "Dev Containers: Rebuild Container" and selecting it
@@ -382,7 +437,7 @@ docker swarm init
 JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](https://www.jetbrains.com/remote-development/gateway/), but:
 
 - Post-create hooks, VS Code extensions, and shell customization are **not** guaranteed
-- VS Code is **strongly recommended** for full compatibility
+- VS Code or Cursor are **strongly recommended** for full compatibility
 
 ---
 
@@ -454,8 +509,15 @@ cdevcontainer --help
 # Set up a devcontainer in a project directory
 cdevcontainer setup-devcontainer /path/to/your/project
 
-# Launch VS Code with the devcontainer environment
+# Launch IDE with the devcontainer environment (default: VS Code)
 cdevcontainer code [/path/to/your/project]
+
+# Launch specific IDE
+cdevcontainer code --ide cursor [/path/to/your/project]
+cdevcontainer code --ide vscode [/path/to/your/project]
+
+# Launch IDE for another project (works from within any devcontainer)
+cdevcontainer code /path/to/another-project --ide cursor
 
 # Manage templates
 cdevcontainer template list

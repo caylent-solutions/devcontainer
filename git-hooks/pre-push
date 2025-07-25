@@ -25,8 +25,8 @@ if git diff --name-only HEAD @{u} 2>/dev/null | grep -q "^caylent-devcontainer-c
   # Check coverage threshold
   coverage_percent=$(python -c "import json; f=open('.coverage'); print(json.load(f)['totals']['percent_covered'])")
   echo "Coverage: $coverage_percent%"
-  if (( $(echo "$coverage_percent < 85" | bc -l) )); then
-    echo "❌ Code coverage is below 85% threshold ($coverage_percent%). Please add more tests."
+  if (( $(echo "$coverage_percent < 90" | bc -l) )); then
+    echo "❌ Code coverage is below 90% threshold ($coverage_percent%). Please add more tests."
     exit 1
   fi
 

@@ -34,7 +34,7 @@ coverage.json
 # Environment files
 shell.env
 devcontainer-environment-variables.json
-aws-profile-map.json
+.devcontainer/aws-profile-map.json
 
 # Virtual environments
 venv/
