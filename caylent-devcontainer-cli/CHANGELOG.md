@@ -1,13 +1,52 @@
 # CHANGELOG
 
 
-## v1.2.0 (2024-07-09)
+## Unreleased
 
-### Fix
+### Build
 
-* fix: Fixed cli update of saved templates such that the version of the cli tool that updates the saved template works as expected
+* build: update asdf version to v0.15.0 and optimize zsh configuration  (#50)
+
+* build: update asdf version to v0.15.0 and optimize zsh configuration
+
+- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
+- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
+- Consolidate asdf zsh setup to reduce duplication in postcreate script
+- Ensure proper initialization order for zsh completions
+
+* build: update asdf version to v0.15.0 and optimize zsh configuration
+
+- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
+- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
+- Consolidate asdf zsh setup to reduce duplication in postcreate script
+- Ensure proper initialization order for zsh completions ([`84516c0`](https://github.com/caylent-solutions/devcontainer/commit/84516c034c83e8a6ca9b67cf1db1f6b947437975))
+
+### Feature
+
+* feat: add IDE support, AWS profile options, and major developer experience improvements
+
+- add `--ide` flag with native support for VS Code and Cursor, with validation and clear error messages  
+- add two methods for AWS profile setup (standard format and JSON) with validation and retry prompts  
+- add an interactive help system to Makefiles with descriptive comments and a pre‑commit validation task  
+- improve setup flow so declining overwrite continues setup, and automatically manage `.gitignore` for secrets and environment files  
+- increase test coverage to 91% with expanded functional tests  
+- add privacy settings to disable data sharing for Amazon Q and GitHub Copilot  
+
+fix: correct test mocks and improve interrupt handling
+
+docs: update setup instructions, prerequisites, and references for IDE support ([`1174d58`](https://github.com/caylent-solutions/devcontainer/commit/1174d58de12039946706a688df7c07436a5730a3))
+
+
+
+## v1.2.0 (2025-06-16)
 
 ### Chore
+
+* chore(release): 1.2.0 - Fix cli update of saved templates ([`529eda3`](https://github.com/caylent-solutions/devcontainer/commit/529eda3ef71f6eeb670c1689d7fdcc5b2f70a510))
+
+* chore(release): 1.2.0 ([`2af2603`](https://github.com/caylent-solutions/devcontainer/commit/2af2603f587ea99828e5412928d86631b1138f11))
+
+* chore(release): 1.1.0 ([`c8685f7`](https://github.com/caylent-solutions/devcontainer/commit/c8685f7d7824da0fb640f3b0ff507b5ecdcee13f))
 
 * chore(release): 1.1.0 ([`e08a1db`](https://github.com/caylent-solutions/devcontainer/commit/e08a1db72d8573f9ae326409785a32da469a3ffe))
 
@@ -39,6 +78,18 @@
 
 ### Unknown
 
+* Release 1.2.0 (#48)
+
+* docs: Update release process documentation with manual steps
+
+* feat: improve release process ([`56846ee`](https://github.com/caylent-solutions/devcontainer/commit/56846eeeb117a9cec9c5dccd848f29f7615cc00a))
+
+* revert: Revert version changes to fix unit tests ([`321df27`](https://github.com/caylent-solutions/devcontainer/commit/321df27230a29f83e51aba2363775b5f8a9262ec))
+
+* Merge pull request #47 from caylent-solutions/release-1.1.0
+
+Release 1.1.0 ([`2e69546`](https://github.com/caylent-solutions/devcontainer/commit/2e6954637e0a90a3803fb5a102b2cbd19ab823fc))
+
 * Merge pull request #45 from caylent-solutions/release-1.1.0
 
 Release 1.1.0 ([`3da3e2f`](https://github.com/caylent-solutions/devcontainer/commit/3da3e2f1e091df0ae3629f41345071234957ca20))
@@ -58,7 +109,6 @@ Release 1.1.0 ([`5f8cfd7`](https://github.com/caylent-solutions/devcontainer/com
 * Merge pull request #35 from caylent-solutions/release-1.1.0
 
 Release 1.1.0 ([`2d6e542`](https://github.com/caylent-solutions/devcontainer/commit/2d6e54286d41ec5d3ff238b5f957fadc1a9fca5e))
-
 
 
 ## v1.0.0 (2025-05-31)
@@ -439,7 +489,7 @@ This PR introduces a fully restructured and production-ready VS Code Devcontaine
 
 ## 🧪 How to Use
 
-1. Copy `.devcontainer` into your app repo
+1. Copy `.devcontainer` into your app repo  
 2. Copy and configure:
    ```bash
    cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
