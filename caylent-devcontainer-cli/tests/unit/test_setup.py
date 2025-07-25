@@ -327,14 +327,17 @@ def test_prompt_aws_profile_map_skip(mock_confirm):
 
 @patch("questionary.confirm")
 @patch("questionary.text")
-def test_prompt_aws_profile_map(mock_text, mock_confirm):
+@patch("questionary.select")
+def test_prompt_aws_profile_map(mock_select, mock_text, mock_confirm):
     mock_confirm.return_value.ask.return_value = True
+    mock_select.return_value.ask.return_value = "JSON format (paste complete configuration)"
     mock_text.return_value.ask.return_value = '{"default": {"region": "us-west-2"}}'
 
     result = prompt_aws_profile_map()
 
     assert result == {"default": {"region": "us-west-2"}}
     mock_confirm.assert_called_once()
+    mock_select.assert_called_once()
     mock_text.assert_called_once()
 
 

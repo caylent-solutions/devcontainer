@@ -229,28 +229,50 @@ This version checking ensures templates remain compatible as the CLI evolves.
 
 By default, AWS configuration is enabled. If you don't need AWS access, you can disable it during the interactive setup or by setting `AWS_CONFIG_ENABLED=false` in your `devcontainer-environment-variables.json`.
 
-When using the interactive setup with AWS enabled, you'll be prompted to enter your AWS profile configuration in JSON format. The setup will validate your input and create the AWS profile map file automatically.
+When using the interactive setup with AWS enabled, you'll be presented with two options for providing your AWS profile configuration:
 
+#### Option 1: JSON Format (Complete Configuration)
+Paste your complete AWS profile configuration in JSON format:
+
+```json
+{
+  "default": {
+    "region": "us-west-2",
+    "sso_start_url": "https://example.awsapps.com/start",
+    "sso_region": "us-west-2",
+    "account_name": "example-dev-account",
+    "account_id": "123456789012",
+    "role_name": "DeveloperAccess"
+  }
+}
+```
+
+#### Option 2: Standard Format (Profile by Profile)
+Enter AWS profiles one at a time in standard AWS config format:
+
+```ini
+[default]
+sso_start_url       = https://example.awsapps.com/start
+sso_region          = us-west-2
+sso_account_name    = example-dev-account
+sso_account_id      = 123456789012
+sso_role_name       = DeveloperAccess
+region              = us-west-2
+```
+
+The setup will:
+- Validate each profile for required fields
+- Prompt you to re-enter if validation fails
+- Ask if you want to add additional profiles
+- Automatically convert to the expected JSON format
+
+#### Manual Configuration
 If configuring manually, copy the example:
 ```bash
 cp .devcontainer/example-aws-profile-map.json .devcontainer/aws-profile-map.json
 ```
 
-Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts:
-
-```json
-{
-  "default": {
-    "region": "us-east-2",
-    "sso_start_url": "https://your-org.awsapps.com/start",
-    "sso_region": "us-east-1",
-    "account_name": "your-default-account",
-    "account_id": "123456789012",
-    "role_name": "AdministratorAccess"
-  },
-  ...
-}
-```
+Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts using the JSON format shown above.
 
 > ⚠️ This file is required only when AWS configuration is enabled (`AWS_CONFIG_ENABLED=true`).
 >

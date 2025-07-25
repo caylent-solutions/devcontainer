@@ -304,3 +304,157 @@ def test_load_template_version_mismatch_use_anyway(mock_select):
             result = load_template_from_file("test-template")
 
             assert result["containerEnv"]["TEST"] == "value"
+
+
+# Tests for new AWS profile configuration functions
+def test_parse_standard_profile():
+    """Test parse_standard_profile function."""
+    from caylent_devcontainer_cli.commands.setup_interactive import parse_standard_profile
+
+    profile_text = """
+[default]
+sso_start_url = https://example.awsapps.com/start
+sso_region = us-west-2
+sso_account_name = example-dev-account
+sso_account_id = 123456789012
+sso_role_name = DeveloperAccess
+region = us-west-2
+"""
+
+    result = parse_standard_profile(profile_text)
+
+    assert result["sso_start_url"] == "https://example.awsapps.com/start"
+    assert result["sso_region"] == "us-west-2"
+    assert result["sso_account_name"] == "example-dev-account"
+    assert result["sso_account_id"] == "123456789012"
+    assert result["sso_role_name"] == "DeveloperAccess"
+    assert result["region"] == "us-west-2"
+
+
+def test_validate_standard_profile_missing_fields():
+    """Test validate_standard_profile with missing fields."""
+    from caylent_devcontainer_cli.commands.setup_interactive import validate_standard_profile
+
+    profile = {"sso_start_url": "https://example.awsapps.com/start", "sso_region": "us-west-2"}
+
+    result = validate_standard_profile(profile)
+
+    assert "Missing required fields" in result
+    assert "sso_account_name" in result
+
+
+def test_validate_standard_profile_empty_fields():
+    """Test validate_standard_profile with empty fields."""
+    from caylent_devcontainer_cli.commands.setup_interactive import validate_standard_profile
+
+    profile = {
+        "sso_start_url": "https://example.awsapps.com/start",
+        "sso_region": "us-west-2",
+        "sso_account_name": "example-dev-account",
+        "sso_account_id": "123456789012",
+        "sso_role_name": "DeveloperAccess",
+        "region": "",
+    }
+
+    result = validate_standard_profile(profile)
+
+    assert "Empty values for required fields" in result
+    assert "region" in result
+
+
+def test_validate_standard_profile_valid():
+    """Test validate_standard_profile with valid profile."""
+    from caylent_devcontainer_cli.commands.setup_interactive import validate_standard_profile
+
+    profile = {
+        "sso_start_url": "https://example.awsapps.com/start",
+        "sso_region": "us-west-2",
+        "sso_account_name": "example-dev-account",
+        "sso_account_id": "123456789012",
+        "sso_role_name": "DeveloperAccess",
+        "region": "us-west-2",
+    }
+
+    result = validate_standard_profile(profile)
+
+    assert result is None
+
+
+def test_convert_standard_to_json():
+    """Test convert_standard_to_json function."""
+    from caylent_devcontainer_cli.commands.setup_interactive import convert_standard_to_json
+
+    profiles = {
+        "default": {
+            "sso_start_url": "https://example.awsapps.com/start",
+            "sso_region": "us-west-2",
+            "sso_account_name": "example-dev-account",
+            "sso_account_id": "123456789012",
+            "sso_role_name": "DeveloperAccess",
+            "region": "us-west-2",
+        }
+    }
+
+    result = convert_standard_to_json(profiles)
+
+    assert "default" in result
+    assert result["default"]["region"] == "us-west-2"
+    assert result["default"]["account_name"] == "example-dev-account"
+    assert result["default"]["account_id"] == "123456789012"
+
+
+@patch("questionary.confirm")
+def test_prompt_aws_profile_map_disabled(mock_confirm):
+    """Test prompt_aws_profile_map when AWS is disabled."""
+    from caylent_devcontainer_cli.commands.setup_interactive import prompt_aws_profile_map
+
+    mock_confirm.return_value.ask.return_value = False
+
+    result = prompt_aws_profile_map()
+
+    assert result == {}
+
+
+@patch("json.loads")
+@patch("questionary.text")
+@patch("questionary.select")
+@patch("questionary.confirm")
+def test_prompt_aws_profile_map_json_format(mock_confirm, mock_select, mock_text, mock_json_loads):
+    """Test prompt_aws_profile_map with JSON format option."""
+    from caylent_devcontainer_cli.commands.setup_interactive import prompt_aws_profile_map
+
+    mock_confirm.return_value.ask.return_value = True
+    mock_select.return_value.ask.return_value = "JSON format (paste complete configuration)"
+    mock_text.return_value.ask.return_value = '{"default": {"region": "us-west-2"}}'
+    mock_json_loads.return_value = {"default": {"region": "us-west-2"}}
+
+    result = prompt_aws_profile_map()
+
+    assert result == {"default": {"region": "us-west-2"}}
+    mock_json_loads.assert_called_once()
+
+
+@patch("questionary.confirm")
+@patch("questionary.text")
+@patch("questionary.select")
+def test_prompt_aws_profile_map_standard_format(mock_select, mock_text, mock_confirm):
+    """Test prompt_aws_profile_map with standard format option."""
+    from caylent_devcontainer_cli.commands.setup_interactive import prompt_aws_profile_map
+
+    mock_confirm.return_value.ask.side_effect = [True, False]
+    mock_select.return_value.ask.return_value = "Standard format (enter profiles one by one)"
+    profile_config = (
+        "sso_start_url = https://example.awsapps.com/start\n"
+        "sso_region = us-west-2\n"
+        "sso_account_name = example-dev-account\n"
+        "sso_account_id = 123456789012\n"
+        "sso_role_name = DeveloperAccess\n"
+        "region = us-west-2"
+    )
+    mock_text.return_value.ask.side_effect = ["default", profile_config]
+
+    result = prompt_aws_profile_map()
+
+    assert "default" in result
+    assert result["default"]["region"] == "us-west-2"
+    assert result["default"]["account_name"] == "example-dev-account"
