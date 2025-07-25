@@ -10,48 +10,56 @@ import pytest
 
 
 # Tests for KeyboardInterrupt and None response handling
+@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
 @patch("questionary.confirm")
-def test_prompt_use_template_keyboard_interrupt(mock_confirm):
+@patch("sys.exit")
+def test_prompt_use_template_keyboard_interrupt(mock_exit, mock_confirm, mock_list_templates):
     """Test prompt_use_template with KeyboardInterrupt."""
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_use_template
 
     mock_confirm.return_value.ask.side_effect = KeyboardInterrupt()
 
-    with pytest.raises(SystemExit):
-        prompt_use_template()
+    prompt_use_template()
+    mock_exit.assert_called_once_with(0)
 
 
+@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
 @patch("questionary.confirm")
-def test_prompt_use_template_none_response(mock_confirm):
+@patch("sys.exit")
+def test_prompt_use_template_none_response(mock_exit, mock_confirm, mock_list_templates):
     """Test prompt_use_template with None response."""
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_use_template
 
     mock_confirm.return_value.ask.return_value = None
 
-    with pytest.raises(SystemExit):
-        prompt_use_template()
+    prompt_use_template()
+    mock_exit.assert_called_once_with(0)
 
 
+@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
 @patch("questionary.select")
-def test_select_template_keyboard_interrupt(mock_select):
+@patch("sys.exit")
+def test_select_template_keyboard_interrupt(mock_exit, mock_select, mock_list_templates):
     """Test select_template with KeyboardInterrupt."""
     from caylent_devcontainer_cli.commands.setup_interactive import select_template
 
     mock_select.return_value.ask.side_effect = KeyboardInterrupt()
 
-    with pytest.raises(SystemExit):
-        select_template()
+    select_template()
+    mock_exit.assert_called_once_with(0)
 
 
+@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
 @patch("questionary.select")
-def test_select_template_none_response(mock_select):
+@patch("sys.exit")
+def test_select_template_none_response(mock_exit, mock_select, mock_list_templates):
     """Test select_template with None response."""
     from caylent_devcontainer_cli.commands.setup_interactive import select_template
 
     mock_select.return_value.ask.return_value = None
 
-    with pytest.raises(SystemExit):
-        select_template()
+    select_template()
+    mock_exit.assert_called_once_with(0)
 
 
 @patch("questionary.select")

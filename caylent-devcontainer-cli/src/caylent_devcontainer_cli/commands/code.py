@@ -85,15 +85,32 @@ def handle_code(args):
 
         sys.exit(1)
 
+    # Load environment variables from shell.env into current process
+    log("INFO", "Loading environment variables...")
+    try:
+        with open(shell_env, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    # Remove export prefix if present
+                    if key.startswith("export "):
+                        key = key[7:]
+                    # Remove quotes if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    os.environ[key] = value
+    except Exception as e:
+        log("WARN", f"Failed to load environment variables: {e}")
+
     # Launch IDE
     log("INFO", f"Launching {ide_name}...")
 
-    # Create a command that sources the environment and runs the IDE
-    command = f"source {shell_env} && {ide_command} {project_root}"
-
     try:
-        # Execute the command in a new shell
-        process = subprocess.Popen(command, shell=True, executable=os.environ.get("SHELL", "/bin/bash"))
+        # Launch IDE with inherited environment variables
+        process = subprocess.Popen([ide_command, project_root], env=os.environ)
         process.wait()
         log("OK", f"{ide_name} launched. Accept the prompt to reopen in container when it appears.")
     except Exception as e:

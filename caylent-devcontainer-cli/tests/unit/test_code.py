@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -74,8 +74,7 @@ def test_handle_code_regenerate_env(
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("subprocess.Popen")
-@patch("os.environ.get", return_value="/bin/zsh")
-def test_handle_code_custom_shell(mock_environ_get, mock_popen, mock_gitignore, mock_which, capsys):
+def test_handle_code_custom_shell(mock_popen, mock_gitignore, mock_which, capsys):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process
@@ -83,24 +82,21 @@ def test_handle_code_custom_shell(mock_environ_get, mock_popen, mock_gitignore, 
     with patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path"):
         with patch("os.path.isfile", side_effect=[True, True]):
             with patch("os.path.getmtime", side_effect=[100, 200]):  # shell_env is newer than env_json
-                args = MagicMock()
-                args.project_root = "/test/path"
-                args.ide = "vscode"
+                with patch("builtins.open", mock_open(read_data="export TEST_VAR=test_value\n")):
+                    args = MagicMock()
+                    args.project_root = "/test/path"
+                    args.ide = "vscode"
 
-                handle_code(args)
+                    handle_code(args)
 
-                mock_popen.assert_called_once()
-                mock_environ_get.assert_called_once_with("SHELL", "/bin/bash")
+                    mock_popen.assert_called_once()
+                    # Check that the command launches the IDE directly
+                    cmd_args = mock_popen.call_args[0][0]
+                    assert cmd_args == ["code", "/test/path"]
 
-                # Check that the command uses the custom shell
-                cmd_args = mock_popen.call_args[0][0]
-                assert "source" in cmd_args
-                assert "shell.env" in cmd_args
-                assert "code" in cmd_args
-
-                captured = capsys.readouterr()
-                assert "Using existing shell.env file" in captured.err
-                assert "VS Code launched" in captured.err
+                    captured = capsys.readouterr()
+                    assert "Using existing shell.env file" in captured.err
+                    assert "VS Code launched" in captured.err
 
 
 @patch("shutil.which", return_value="/usr/bin/cursor")
