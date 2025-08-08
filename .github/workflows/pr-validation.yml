@@ -28,11 +28,8 @@ jobs:
         id: cache-system-deps
         uses: actions/cache@v4
         with:
-          path: |
-            /tmp/apt-cache
-            !/tmp/apt-cache/lock
-            !/tmp/apt-cache/partial
-          key: system-deps-${{ runner.os }}-ubuntu-2404-v2
+          path: /tmp/apt-cache
+          key: system-deps-${{ runner.os }}-ubuntu-2404-v3
 
       - name: Install system dependencies for Python build
         run: |
@@ -41,10 +38,17 @@ jobs:
           echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
 
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-            libbz2-dev libreadline-dev libsqlite3-dev curl \
-            libncursesw5-dev xz-utils tk-dev libxml2-dev \
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
+            libbz2-dev libreadline-dev libsqlite3-dev curl
+            libncursesw5-dev xz-utils tk-dev libxml2-dev
             libxmlsec1-dev libffi-dev liblzma-dev bc
+
+      - name: Fix cache permissions
+        if: always()
+        run: |
+          # Fix permissions on cache directories to allow GitHub Actions to access them
+          sudo chmod -R 755 /tmp/apt-cache 2>/dev/null || true
+          sudo chown -R $USER:$USER /tmp/apt-cache 2>/dev/null || true
 
       - name: Cache ASDF installation
         uses: actions/cache@v4
