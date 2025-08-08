@@ -390,38 +390,58 @@ jobs:
           # Get the version that was updated in the previous step
           VERSION=$(grep 'version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "VERSION: $VERSION"
+          echo "✓ Version extracted successfully"
 
           if [[ -z "$VERSION" ]]; then
             echo "ERROR: version is empty. Exiting."
             exit 1
           fi
+          echo "✓ Version validation passed"
 
           git config --global user.name "caylent-platform-bot[bot]"
+          echo "✓ Git user name configured"
+          
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
+          echo "✓ Git user email configured"
+          
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
+          echo "✓ Git remote URL configured"
 
           # Check git status
-          echo "Git status before branch creation:"
+          echo "Git status before staging:"
           git status --porcelain
-
+          
           # Stage the modified files first (with correct paths from repo root)
           git add caylent-devcontainer-cli/CHANGELOG.md caylent-devcontainer-cli/pyproject.toml
-
-          # Now create and checkout new branch
-          git checkout -b release-$VERSION
-
-          # Commit the staged changes
+          echo "✓ Files staged successfully"
+          
+          # Check git status after staging
+          echo "Git status after staging:"
+          git status --porcelain
+          
+          # Commit the changes on current branch first
           git commit -m "chore(release): $VERSION"
+          echo "✓ Changes committed on main branch"
+          
+          # Now create and checkout new branch from the commit
+          git checkout -b release-$VERSION
+          echo "✓ New branch 'release-$VERSION' created and checked out"
+          
           git push origin release-$VERSION
+          echo "✓ Branch pushed to origin"
 
           PR_URL=$(gh pr create \
             --title "Release $VERSION" \
             --body "Automated release PR for version $VERSION" \
             --base main \
             --head release-$VERSION)
+          echo "✓ Pull request created: $PR_URL"
 
           echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+          echo "✓ PR URL saved to GitHub output"
+          
           gh pr merge ${PR_URL} --admin --merge
+          echo "✓ Pull request merged successfully"
 
       - name: Wait for PR to merge and create Git tag
         env:
