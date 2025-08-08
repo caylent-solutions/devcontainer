@@ -48,7 +48,7 @@
         "gitlens.statusBar.enabled": false,
         "gitlens.blame.line.enabled": false,
         "gitlens.blame.file.enabled": false,
-        "python.defaultInterpreterPath": "/home/vscode/.asdf/installs/python/3.12.9/bin/python",
+        "python.defaultInterpreterPath": "/home/vscode/.asdf/installs/python/${env:DEFAULT_PYTHON_VERSION}/bin/python",
         "python.linting.enabled": true,
         "python.defaultFormatter": "charliermarsh.ruff",
         "[python]": {
