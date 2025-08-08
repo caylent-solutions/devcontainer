@@ -25,12 +25,11 @@ jobs:
           git merge --no-commit --no-ff ${{ github.event.pull_request.head.sha }}
 
       - name: Cache system dependencies
+        id: cache-system-deps
         uses: actions/cache@v4
         with:
           path: /var/cache/apt
-          key: ${{ runner.os }}-apt-${{ hashFiles('**/pr-validation.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-apt-
+          key: system-deps-${{ runner.os }}-ubuntu-noble-v1
 
       - name: Install system dependencies for Python build
         run: |

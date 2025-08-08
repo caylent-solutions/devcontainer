@@ -18,12 +18,11 @@ jobs:
           fetch-depth: 0
 
       - name: Cache system dependencies
+        id: cache-system-deps
         uses: actions/cache@v4
         with:
           path: /var/cache/apt
-          key: ${{ runner.os }}-apt-${{ hashFiles('**/main-validation.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-apt-
+          key: system-deps-${{ runner.os }}-ubuntu-noble-v1
 
       - name: Install system dependencies for Python build
         run: |
@@ -247,13 +246,11 @@ jobs:
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
       - name: Cache system dependencies for release
+        id: cache-system-deps-release
         uses: actions/cache@v4
         with:
           path: /var/cache/apt
-          key: ${{ runner.os }}-apt-release-${{ hashFiles('**/main-validation.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-apt-release-
-            ${{ runner.os }}-apt-
+          key: system-deps-release-${{ runner.os }}-ubuntu-noble-v1
 
       - name: Install system dependencies
         run: |
