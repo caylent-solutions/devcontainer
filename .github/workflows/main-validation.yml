@@ -399,17 +399,17 @@ jobs:
           git config --global user.name "caylent-platform-bot[bot]"
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
-          
+
           # Check git status
           echo "Git status before branch creation:"
           git status --porcelain
-          
+
           # Stage the modified files first
           git add CHANGELOG.md pyproject.toml
-          
+
           # Now create and checkout new branch
           git checkout -b release-$VERSION
-          
+
           # Commit the staged changes
           git commit -m "chore(release): $VERSION"
           git push origin release-$VERSION
@@ -462,7 +462,7 @@ jobs:
           git pull origin main
           git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
           git push origin "$NEW_VERSION"
-          
+
           # Clean up the release branch
           echo "Cleaning up release branch: release-$NEW_VERSION"
           git push origin --delete release-$NEW_VERSION || echo "Branch already deleted or doesn't exist"
