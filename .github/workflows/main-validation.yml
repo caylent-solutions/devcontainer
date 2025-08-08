@@ -30,11 +30,19 @@ jobs:
           sudo mkdir -p /tmp/apt-cache
           echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
 
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-            libbz2-dev libreadline-dev libsqlite3-dev curl \
-            libncursesw5-dev xz-utils tk-dev libxml2-dev \
-            libxmlsec1-dev libffi-dev liblzma-dev bc
+          # Check if we have a cache hit by looking for cached .deb files
+          if [ -n "$(ls /tmp/apt-cache/*.deb 2>/dev/null)" ]; then
+            echo "Cache hit detected - restoring packages from cache"
+            sudo dpkg -i /tmp/apt-cache/*.deb || true
+            sudo apt-get install -f -y  # Fix any broken dependencies
+          else
+            echo "No cache found - downloading packages"
+            sudo apt-get update
+            sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+              libbz2-dev libreadline-dev libsqlite3-dev curl \
+              libncursesw5-dev xz-utils tk-dev libxml2-dev \
+              libxmlsec1-dev libffi-dev liblzma-dev bc
+          fi
 
       - name: Fix cache permissions
         if: always()
