@@ -80,8 +80,10 @@ allowed_tags = [
   "fix",
   "perf",
   "refactor",
+  "revert",
+  "security",
   "style",
   "test"
 ]
 minor_tags = ["feat"]
-patch_tags = ["fix", "perf"]
+patch_tags = ["fix", "perf", "security", "revert"]
