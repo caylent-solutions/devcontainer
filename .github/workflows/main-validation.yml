@@ -379,7 +379,7 @@ jobs:
           echo "Updated version: $NEW_VERSION"
 
           # Manually update __init__.py (semantic-release isn't updating it properly)
-          sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$NEW_VERSION\"/" src/caylent_devcontainer_cli/__init__.py
+          sed -i 's/__version__ = "[^"]*"/__version__ = "'$NEW_VERSION'"/' src/caylent_devcontainer_cli/__init__.py
 
           echo "Updated all three files to version $NEW_VERSION"
 
