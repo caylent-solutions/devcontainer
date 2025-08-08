@@ -383,12 +383,12 @@ jobs:
 
       - name: Commit changelog and version bump
         id: commit-changes
-        working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           # Get the version that was updated in the previous step
-          VERSION=$(grep 'version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
+          VERSION=$(grep 'version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "VERSION: $VERSION"
 
           if [[ -z "$VERSION" ]]; then
@@ -404,8 +404,8 @@ jobs:
           echo "Git status before branch creation:"
           git status --porcelain
 
-          # Stage the modified files first
-          git add CHANGELOG.md pyproject.toml
+          # Stage the modified files first (with correct paths from repo root)
+          git add caylent-devcontainer-cli/CHANGELOG.md caylent-devcontainer-cli/pyproject.toml
 
           # Now create and checkout new branch
           git checkout -b release-$VERSION
