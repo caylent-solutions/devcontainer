@@ -370,8 +370,21 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          # Generate changelog and update all version files (pyproject.toml, __init__.py, CHANGELOG.md)
-          python -m semantic_release version --no-push --no-vcs-release
+          # Use semantic-release to update pyproject.toml and CHANGELOG.md
+          # The --no-commit flag updates files without committing
+          python -m semantic_release version --no-push --no-vcs-release --no-commit
+          
+          # Get the version that was just set in pyproject.toml
+          NEW_VERSION=$(grep 'version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
+          echo "Updated version: $NEW_VERSION"
+          
+          # Manually update __init__.py (semantic-release isn't updating it properly)
+          sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$NEW_VERSION\"/" src/caylent_devcontainer_cli/__init__.py
+          
+          echo "Updated all three files to version $NEW_VERSION"
+          
+          # Clean up build artifacts created by semantic-release
+          rm -rf dist/ build/ src/caylent_devcontainer_cli.egg-info/
 
       - name: Commit changelog and version bump
         id: commit-changes
@@ -379,8 +392,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          # Use the correct output variable name
-          VERSION="${{ steps.semantic-release.outputs.version }}"
+          # Get the version that was updated in the previous step
+          VERSION=$(grep 'version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "VERSION: $VERSION"
 
           if [[ -z "$VERSION" ]]; then
@@ -414,7 +427,8 @@ jobs:
 
           PR_URL="${{ steps.commit-changes.outputs.pr_url }}"
           PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]\+$')
-          NEW_VERSION="${{ steps.semantic-release.outputs.version }}"
+          # Get the version from pyproject.toml since we're not using the semantic-release step output anymore
+          NEW_VERSION=$(grep 'version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
 
           echo "Waiting for PR #$PR_NUMBER to be merged..."
 
