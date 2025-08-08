@@ -51,7 +51,7 @@ For more detailed setup instructions, see the [Quick Start](../README.md#-quick-
 We use the following tools to maintain code quality:
 
 - **Black**: For code formatting
-- **isort**: For import sorting  
+- **isort**: For import sorting
 - **flake8**: For linting
 - **yamllint**: For YAML validation and formatting
 
@@ -76,7 +76,7 @@ From the repository root, you can run comprehensive quality checks:
 make pre-commit-check
 
 # Check GitHub workflow YAML files specifically
-make github-workflow-yaml-lint  
+make github-workflow-yaml-lint
 
 # Fix YAML formatting and validation issues
 make yaml-fix

@@ -568,7 +568,7 @@ This repository includes comprehensive quality checks:
 # Run all pre-commit checks (formatting, linting, YAML validation, security)
 make pre-commit-check
 
-# Check GitHub workflow YAML files specifically  
+# Check GitHub workflow YAML files specifically
 make github-workflow-yaml-lint
 
 # Fix YAML formatting and validation issues
@@ -581,7 +581,7 @@ The `pre-commit-check` task runs automatically in CI/CD and includes:
 - JSON and YAML validation with yamllint
 - Large file detection
 - AWS credential detection
-- Merge conflict detection  
+- Merge conflict detection
 - End-of-file fixing
 - Private key detection
 - Secret scanning with gitleaks

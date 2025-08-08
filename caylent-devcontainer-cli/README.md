@@ -187,7 +187,7 @@ make github-workflow-yaml-lint
 # Run comprehensive pre-commit checks (from repository root)
 make pre-commit-check
 
-# Fix YAML formatting issues (from repository root) 
+# Fix YAML formatting issues (from repository root)
 make yaml-fix
 ```
 
