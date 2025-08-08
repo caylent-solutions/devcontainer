@@ -59,7 +59,6 @@
           }
         },
         "editor.formatOnSave": true,
-
         "files.associations": {
           "*.yml": "yaml",
           "*.yaml": "yaml",
@@ -71,7 +70,13 @@
       }
     }
   },
-  "forwardPorts": [5678, 9229, 5005, 8080, 5050],
+  "forwardPorts": [
+    5678,
+    9229,
+    5005,
+    8080,
+    5050
+  ],
   "userEnvProbe": "loginInteractiveShell",
   "containerEnv": {
     "AWS_CONFIG_ENABLED": "${localEnv:AWS_CONFIG_ENABLED}",
