@@ -38,7 +38,7 @@ jobs:
           echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
 
           # Check if cache was restored and packages are available
-          if [[ "${{ steps.cache-system-deps.outputs.cache-hit }}" == "true" ]] && ls /tmp/apt-cache/*.deb 2>/dev/null; then
+          if [[ "${{ steps.cache-system-deps.outputs.cache-hit }}" == "true" ]] && [ -d /tmp/apt-cache ] && [ "$(ls -A /tmp/apt-cache)" ]; then
             echo "✅ Using cached system dependencies"
             # Install from cache without updating package lists
             sudo dpkg -i /tmp/apt-cache/*.deb 2>/dev/null || true
@@ -57,8 +57,9 @@ jobs:
       - name: Fix cache permissions
         if: always()
         run: |
-          # Fix permissions on cache directories to allow GitHub Actions to access them
-          sudo chmod -R 755 /tmp/apt-cache 2>/dev/null || true
+          # Fix permissions on cache directories with appropriate security
+          sudo find /tmp/apt-cache -type d -exec chmod 755 {} + 2>/dev/null || true
+          sudo find /tmp/apt-cache -type f -exec chmod 644 {} + 2>/dev/null || true
           sudo chown -R $USER:$USER /tmp/apt-cache 2>/dev/null || true
 
       - name: Cache ASDF installation

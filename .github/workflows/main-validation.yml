@@ -30,8 +30,8 @@ jobs:
           sudo mkdir -p /tmp/apt-cache
           echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
 
-          # Check if we have a cache hit by looking for cached .deb files
-          if [ -n "$(ls /tmp/apt-cache/*.deb 2>/dev/null)" ]; then
+          # Check if we have a cache hit by looking for cached files
+          if [ -d /tmp/apt-cache ] && [ "$(ls -A /tmp/apt-cache)" ]; then
             echo "Cache hit detected - restoring packages from cache"
             sudo dpkg -i /tmp/apt-cache/*.deb || true
             sudo apt-get install -f -y  # Fix any broken dependencies
@@ -47,8 +47,9 @@ jobs:
       - name: Fix cache permissions
         if: always()
         run: |
-          # Fix permissions on cache directories to allow GitHub Actions to access them
-          sudo chmod -R 755 /tmp/apt-cache 2>/dev/null || true
+          # Fix permissions on cache directories with appropriate security
+          sudo find /tmp/apt-cache -type d -exec chmod 755 {} + 2>/dev/null || true
+          sudo find /tmp/apt-cache -type f -exec chmod 644 {} + 2>/dev/null || true
           sudo chown -R $USER:$USER /tmp/apt-cache 2>/dev/null || true
 
       - name: Cache ASDF installation
@@ -282,16 +283,25 @@ jobs:
           sudo mkdir -p /tmp/apt-cache-release
           echo 'Dir::Cache::Archives "/tmp/apt-cache-release";' | sudo tee /etc/apt/apt.conf.d/99cache
 
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-            libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
-            xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc gh
+          # Check if we have a cache hit by looking for cached files
+          if [ -d /tmp/apt-cache-release ] && [ "$(ls -A /tmp/apt-cache-release)" ]; then
+            echo "Cache hit detected - restoring packages from cache"
+            sudo dpkg -i /tmp/apt-cache-release/*.deb || true
+            sudo apt-get install -f -y  # Fix any broken dependencies
+          else
+            echo "No cache found - downloading packages"
+            sudo apt-get update
+            sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+              libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
+              xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc gh
+          fi
 
       - name: Fix release cache permissions
         if: always()
         run: |
-          # Fix permissions on release cache directories to allow GitHub Actions to access them
-          sudo chmod -R 755 /tmp/apt-cache-release 2>/dev/null || true
+          # Fix permissions on release cache directories with appropriate security
+          sudo find /tmp/apt-cache-release -type d -exec chmod 755 {} + 2>/dev/null || true
+          sudo find /tmp/apt-cache-release -type f -exec chmod 644 {} + 2>/dev/null || true
           sudo chown -R $USER:$USER /tmp/apt-cache-release 2>/dev/null || true
 
       - name: Cache ASDF installation for release
