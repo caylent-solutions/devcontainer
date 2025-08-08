@@ -3,51 +3,101 @@
 
 ## Unreleased
 
+### Feature
+
+* feat: comprehensive dev environment optimization with enhanced quality assurance
+
+This comprehensive enhancement optimizes the development environment setup and implements
+a robust quality assurance pipeline to improve developer experience and CI/CD performance.
+
+## Python Environment Optimization
+- Install Python first via asdf and immediately reshim to ensure proper binary availability
+- Replace pip installation of aws-sso-util with pipx to prevent PyYAML conflicts  
+- Switch from isort to ruff extension to resolve formatting conflicts with black
+- Set explicit Python interpreter path to asdf-managed Python in VS Code settings
+- Add Python build dependencies required for asdf Python compilation
+- Remove python feature from devcontainer.json as Python is now managed entirely through asdf
+- Restructure postcreate script for proper dependency resolution order
+
+## Quality Assurance Pipeline
+- Add comprehensive YAML validation with yamllint and custom .yamllint configuration
+- Enhance pre-commit hooks with yamllint, security scanning (gitleaks), and formatting
+- Add new make tasks: github-workflow-yaml-lint, yaml-fix, pre-commit-check
+- Integrate pre-commit checks into CI/CD workflows for automated quality enforcement
+- Update documentation with new quality assurance workflows and make tasks
+
+## CI/CD Performance Optimization  
+- Implement comprehensive caching strategy for system dependencies, ASDF, and Python packages
+- Add intelligent cache hit detection to avoid unnecessary apt-get update operations
+- Use dpkg for cached package restoration with apt-get install -f fallback
+- Fix cache permission issues with proper ownership and accessibility
+- Optimize workflow performance with cache v3 keys and conditional package installation
+
+## Files Changed:
+- .devcontainer/: Enhanced Python setup and VS Code configuration
+- .github/workflows/: Added caching, pre-commit integration, and performance optimization
+- .yamllint: New comprehensive YAML validation rules for GitHub Actions
+- .pre-commit-config.yaml: Enhanced hooks with yamllint and security scanning
+- Makefile: New quality assurance tasks with clean output formatting
+- Documentation: Updated README and CONTRIBUTING files with new workflows
+
+This change improves build performance by up to 50% through intelligent caching while
+ensuring code quality through automated validation and formatting. ([`12907d9`](https://github.com/caylent-solutions/devcontainer/commit/12907d9ce011c47cfc978805f43b13636b98e264))
+
+
 
 ## v1.4.0 (2025-07-25)
 
-# 🚀 New Devcontainer CLI Release – Big Improvements! 🎉
+### Build
 
----
+* build: update asdf version to v0.15.0 and optimize zsh configuration  (#50)
 
-## ✨ Key New Features
-- 💻 **IDE Support**
-  Launch projects directly in **VS Code** or **Cursor** using `--ide` with automatic validation and helpful error messages.
+* build: update asdf version to v0.15.0 and optimize zsh configuration
 
-- 🔑 **Flexible AWS Profile Setup**
-  Create AWS profiles interactively in standard config format or all at once from a JSON file.
-  Built‑in validation, error prompts, and retry support.
+- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
+- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
+- Consolidate asdf zsh setup to reduce duplication in postcreate script
+- Ensure proper initialization order for zsh completions
 
-- 📜 **Makefile Help System**
-  `make help` now shows a clean, formatted list of all tasks.
-  Added pre‑commit validation and improved task descriptions.
+* build: update asdf version to v0.15.0 and optimize zsh configuration
 
-- ⚡ **Streamlined Setup Flow**
-  Skipping an overwrite now continues setup rather than exiting.
-  Secrets and environment files are auto‑added to `.gitignore` with a reminder to commit.
+- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
+- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
+- Consolidate asdf zsh setup to reduce duplication in postcreate script
+- Ensure proper initialization order for zsh completions ([`84516c0`](https://github.com/caylent-solutions/devcontainer/commit/84516c034c83e8a6ca9b67cf1db1f6b947437975))
 
-- 🔒 **Privacy Controls**
-  Default settings disable telemetry and AI model training for Amazon Q and GitHub Copilot.
+### Chore
 
----
+* chore(release): 1.4.0 - Major improvements to CLI with IDE support, AWS profile setup, and enhanced developer experience ([`e763945`](https://github.com/caylent-solutions/devcontainer/commit/e7639450216562540aac30395afeee75ced5ad23))
 
-## ✅ Quality Improvements
-- Increased unit test coverage to **91%**
-- Expanded functional test coverage
-- Fixed test mocks and improved interrupt handling
+* chore(release): 1.3.0 ([`51ace82`](https://github.com/caylent-solutions/devcontainer/commit/51ace826c1635ea3e92382597b0e3aebf36664e6))
 
-### Technical Details
+### Feature
 
-#### Build
-* build: update asdf version to v0.15.0 and optimize zsh configuration (#50)
-  - Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
-  - Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
-  - Consolidate asdf zsh setup to reduce duplication in postcreate script
-  - Ensure proper initialization order for zsh completions ([`84516c0`](https://github.com/caylent-solutions/devcontainer/commit/84516c034c83e8a6ca9b67cf1db1f6b947437975))
+* feat: add IDE support, AWS profile options, and major developer experience improvements
 
-#### Feature
-* feat: add IDE support, AWS profile options, and major developer experience improvements ([`1174d58`](https://github.com/caylent-solutions/devcontainer/commit/1174d58de12039946706a688df7c07436a5730a3))
+- add `--ide` flag with native support for VS Code and Cursor, with validation and clear error messages  
+- add two methods for AWS profile setup (standard format and JSON) with validation and retry prompts  
+- add an interactive help system to Makefiles with descriptive comments and a pre‑commit validation task  
+- improve setup flow so declining overwrite continues setup, and automatically manage `.gitignore` for secrets and environment files  
+- increase test coverage to 91% with expanded functional tests  
+- add privacy settings to disable data sharing for Amazon Q and GitHub Copilot  
 
+fix: correct test mocks and improve interrupt handling
+
+docs: update setup instructions, prerequisites, and references for IDE support ([`1174d58`](https://github.com/caylent-solutions/devcontainer/commit/1174d58de12039946706a688df7c07436a5730a3))
+
+### Unknown
+
+* Merge pull request #58 from caylent-solutions/release-1.3.0
+
+Release 1.4.0 - Major improvements to CLI with IDE support, AWS profile setup, and enhanced developer experience ([`335f9d8`](https://github.com/caylent-solutions/devcontainer/commit/335f9d8cfb438bcbbd0c259fe0459d3442a3c55c))
+
+* fix formatting ([`195d944`](https://github.com/caylent-solutions/devcontainer/commit/195d94493ef14989d3438ecb56a08701476809b4))
+
+* Merge pull request #57 from caylent-solutions/release-1.3.0
+
+Release 1.3.0 ([`82dc9c4`](https://github.com/caylent-solutions/devcontainer/commit/82dc9c44ea075976e4b7866f5b3b08eb37f4ce41))
 
 
 ## v1.2.0 (2025-06-16)
@@ -501,7 +551,7 @@ This PR introduces a fully restructured and production-ready VS Code Devcontaine
 
 ## 🧪 How to Use
 
-1. Copy `.devcontainer` into your app repo
+1. Copy `.devcontainer` into your app repo  
 2. Copy and configure:
    ```bash
    cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
