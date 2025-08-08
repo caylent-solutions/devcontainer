@@ -69,6 +69,7 @@ commit_version_number = true
 
 [tool.semantic_release.changelog]
 changelog_file = "CHANGELOG.md"
+changelog_scope = false
 exclude_commit_patterns = []
 
 [tool.semantic_release.commit_parser_options]
