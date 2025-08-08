@@ -141,7 +141,7 @@ jobs:
               match = re.search(r'__version__ = [\"\'](.*?)[\"\']', content)
               print(match.group(1) if match else 'NOT_FOUND')
           ")
-          
+
           TOML_VERSION=$(python -c "
           import re
           with open('pyproject.toml', 'r') as f:
