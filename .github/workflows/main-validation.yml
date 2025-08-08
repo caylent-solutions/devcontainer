@@ -378,13 +378,6 @@ jobs:
           NEW_VERSION=$(grep 'version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "Updated version: $NEW_VERSION"
 
-          # Manually update __init__.py (semantic-release isn't updating it properly)
-          echo "import re; content = open('src/caylent_devcontainer_cli/__init__.py').read(); content = re.sub(r'__version__ = \"[^\"]*\"', '__version__ = \"$NEW_VERSION\"', content); open('src/caylent_devcontainer_cli/__init__.py', 'w').write(content)" > update_version.py
-          python3 update_version.py
-          rm update_version.py
-
-          echo "Updated all three files to version $NEW_VERSION"
-
           # Clean up build artifacts created by semantic-release
           rm -rf dist/ build/ src/caylent_devcontainer_cli.egg-info/
 
@@ -407,8 +400,8 @@ jobs:
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
           git checkout -b release-$VERSION
-          # Add ALL version-related files that semantic-release may have updated
-          git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py pyproject.toml
+          # Add version-related files that semantic-release updates
+          git add CHANGELOG.md pyproject.toml
           git commit -m "chore(release): $VERSION"
           git push origin release-$VERSION
 
