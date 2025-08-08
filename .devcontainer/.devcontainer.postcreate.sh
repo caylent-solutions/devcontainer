@@ -220,8 +220,8 @@ fi
 
 # Ensure pipx binaries are available in PATH
 log_info "Configuring pipx PATH..."
-echo 'export PATH="$PATH:/home/vscode/.local/bin"' >> ${BASH_RC}
-echo 'export PATH="$PATH:/home/vscode/.local/bin"' >> ${ZSH_RC}
+echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${BASH_RC}
+echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${ZSH_RC}
 
 log_info "Installing Python packages..."
 sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install aws-sso-util"
