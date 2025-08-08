@@ -125,7 +125,7 @@ a robust quality assurance pipeline to improve developer experience and CI/CD pe
 
 ## Python Environment Optimization
 - Install Python first via asdf and immediately reshim to ensure proper binary availability
-- Replace pip installation of aws-sso-util with pipx to prevent PyYAML conflicts  
+- Replace pip installation of aws-sso-util with pipx to prevent PyYAML conflicts
 - Switch from isort to ruff extension to resolve formatting conflicts with black
 - Set explicit Python interpreter path to asdf-managed Python in VS Code settings
 - Add Python build dependencies required for asdf Python compilation
@@ -139,7 +139,7 @@ a robust quality assurance pipeline to improve developer experience and CI/CD pe
 - Integrate pre-commit checks into CI/CD workflows for automated quality enforcement
 - Update documentation with new quality assurance workflows and make tasks
 
-## CI/CD Performance Optimization  
+## CI/CD Performance Optimization
 - Implement comprehensive caching strategy for system dependencies, ASDF, and Python packages
 - Add intelligent cache hit detection to avoid unnecessary apt-get update operations
 - Use dpkg for cached package restoration with apt-get install -f fallback
@@ -188,12 +188,12 @@ ensuring code quality through automated validation and formatting. ([`12907d9`](
 
 * feat: add IDE support, AWS profile options, and major developer experience improvements
 
-- add `--ide` flag with native support for VS Code and Cursor, with validation and clear error messages  
-- add two methods for AWS profile setup (standard format and JSON) with validation and retry prompts  
-- add an interactive help system to Makefiles with descriptive comments and a pre‑commit validation task  
-- improve setup flow so declining overwrite continues setup, and automatically manage `.gitignore` for secrets and environment files  
-- increase test coverage to 91% with expanded functional tests  
-- add privacy settings to disable data sharing for Amazon Q and GitHub Copilot  
+- add `--ide` flag with native support for VS Code and Cursor, with validation and clear error messages
+- add two methods for AWS profile setup (standard format and JSON) with validation and retry prompts
+- add an interactive help system to Makefiles with descriptive comments and a pre‑commit validation task
+- improve setup flow so declining overwrite continues setup, and automatically manage `.gitignore` for secrets and environment files
+- increase test coverage to 91% with expanded functional tests
+- add privacy settings to disable data sharing for Amazon Q and GitHub Copilot
 
 fix: correct test mocks and improve interrupt handling
 
@@ -665,7 +665,7 @@ This PR introduces a fully restructured and production-ready VS Code Devcontaine
 
 ## 🧪 How to Use
 
-1. Copy `.devcontainer` into your app repo  
+1. Copy `.devcontainer` into your app repo
 2. Copy and configure:
    ```bash
    cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
