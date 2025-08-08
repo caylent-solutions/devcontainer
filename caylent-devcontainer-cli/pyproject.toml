@@ -58,7 +58,7 @@ line_length = 120
 
 [tool.semantic_release]
 version_variable = "src/caylent_devcontainer_cli/__init__.py:__version__"
-version_toml = "pyproject.toml:project.version"
+version_toml = ["pyproject.toml:project.version"]
 build_command = "python -m build"
 tag_format = "{version}"
 major_on_zero = true
@@ -69,6 +69,7 @@ commit_version_number = true
 
 [tool.semantic_release.changelog]
 changelog_file = "CHANGELOG.md"
+changelog_scope = false
 exclude_commit_patterns = []
 
 [tool.semantic_release.commit_parser_options]
