@@ -1,70 +1,215 @@
 # CHANGELOG
 
 
-## Unreleased
+
+## v1.6.0 (2025-08-08)
+
+### Chore
+
+* chore: add comprehensive caching to PyPI publish workflow (#61)
+
+* optimize: add comprehensive caching to PyPI publish workflow
+
+- Add system dependencies cache with intelligent dpkg restoration
+- Add ASDF installation cache with conditional clone logic
+- Add Python dependencies cache for pip and site-packages
+- Implement cache hit detection and permission fixing
+- Optimize workflow performance by ~2-3 minutes
+- Reduce bandwidth usage and improve reliability
+
+These caching optimizations mirror the strategy used in main-validation.yml
+and provide significant performance improvements for both manual and
+automatic PyPI publishing workflows.
+
+* chore: remove redundant source command ([`6f4ad11`](https://github.com/caylent-solutions/devcontainer/commit/6f4ad1117ccd47beb6afa8000ab21084d3f7bf5a))
+
+### Feature
+
+* feat: add manual trigger capability to publish workflow
+
+- Add workflow_dispatch trigger to publish.yml for manual PyPI publishing
+- Support both automatic (tag push) and manual (workflow dispatch) triggers
+- Add dynamic tag detection and version consistency across all steps
+- Enable manual publishing of any existing tag (e.g., 1.5.0)
+- Fix kebab-case linting issue with skip-existing parameter
+- Keep semantic-release PyPI upload disabled for controlled publishing ([`d2c4bba`](https://github.com/caylent-solutions/devcontainer/commit/d2c4bba1fe676024b75fdafae118f58f94b772a6))
+
+### Fix
+
+* fix: resolve semantic-release version synchronization issues in CI/CD… (#63)
+
+* fix: resolve semantic-release version synchronization issues in CI/CD workflows
+
+- Fix main-validation workflow to properly update all version files (pyproject.toml, __init__.py, CHANGELOG.md)
+- Use &#39;semantic_release version --no-push --no-vcs-release&#39; instead of just &#39;changelog&#39; command
+- Add comprehensive version file commits to prevent version mismatches
+- Replace manual version overrides in publish workflow with version consistency verification
+- Update CHANGELOG.md to properly reflect current v1.5.0 release
+- Ensures git tags point to commits with synchronized version files across all locations
+
+This prevents the &#39;already released&#39; error by maintaining proper version file synchronization
+and ensures semantic-release can correctly calculate next versions from commit history.
+
+* fix: improve workflow comments and version parsing precision
+
+- Clarify semantic-release comment to specify which files are updated (pyproject.toml, __init__.py, CHANGELOG.md)
+- Use line-start anchored regex for pyproject.toml version parsing to avoid false matches
+- Add detailed comments explaining Python regex approach vs grep/sed limitations
+- Ensures robust version detection that handles both quote types and prevents pattern conflicts
+
+* fix: clean up trailing whitespace in publish workflow
+
+- Remove trailing whitespace automatically fixed by pre-commit hooks
+- Ensures consistent code formatting across workflow files ([`f593565`](https://github.com/caylent-solutions/devcontainer/commit/f593565c7fe563b0a6f6a4d5d5b0ade936ae3e60))
+
+* fix: optimize PyPI publish workflow with comprehensive caching and enhanced semantic versioning (#62)
+
+* optimize: add comprehensive caching to PyPI publish workflow
+
+- Add system dependencies cache with intelligent dpkg restoration
+- Add ASDF installation cache with conditional clone logic
+- Add Python dependencies cache for pip and site-packages
+- Implement cache hit detection and permission fixing
+- Optimize workflow performance by ~2-3 minutes
+- Reduce bandwidth usage and improve reliability
+
+These caching optimizations mirror the strategy used in main-validation.yml
+and provide significant performance improvements for both manual and
+automatic PyPI publishing workflows.
+
+* chore: remove redundant source command
+
+* fix: expand conventional commit support with comprehensive type definitions
+
+- Add support for &#39;security&#39; and &#39;revert&#39; commit types as patch triggers
+- Add comprehensive conventional commit documentation to CONTRIBUTING.md
+- Include examples and version bump mapping for all supported types
+- Clarify major version bump procedures with BREAKING CHANGE examples
+
+This enables better semantic versioning automation and provides clear
+guidelines for contributors on commit message formatting.
+
+* fix: improve cache key robustness across all GitHub workflows
+
+- Replace hardcoded &#39;ubuntu-2404&#39; with dynamic runner.arch in cache keys
+- Ensures cache compatibility across different GitHub runner architectures
+- Affects publish.yml, pr-validation.yml, and main-validation.yml workflows
+- Prevents potential cache misses when GitHub updates runner specifications
+
+This addresses the mismatch between runs-on: ubuntu-24.04 and hardcoded
+ubuntu-2404 in cache keys, making the caching strategy more resilient.
+
+* security: improve cache directory permissions with principle of least privilege
+
+- Replace overly permissive chmod -R 755 with granular permissions
+- Set directories to 755 (executable/searchable) and files to 644 (read-only)
+- Apply security improvements across all workflows: publish.yml, main-validation.yml, pr-validation.yml
+- Maintain functionality while reducing security exposure
+- Use find with -type flag for precise permission control
+
+This follows security best practices by granting only necessary permissions
+to cache files and directories while ensuring GitHub Actions can still
+access cached content effectively. ([`5384d5b`](https://github.com/caylent-solutions/devcontainer/commit/5384d5b57cc07e3b95eece22f769418e9d6e9d42))
+
+* fix: apply pre-commit trailing whitespace fixes to publish workflow ([`2bba852`](https://github.com/caylent-solutions/devcontainer/commit/2bba85264c67b98e28f247d774cb535ebaeb5664))
 
 
 ## v1.5.0 (2025-08-08)
 
-### Features
+### Feature
 
-* feat: add manual trigger capability to publish workflow
 * feat: comprehensive dev environment optimization with enhanced quality assurance
 
-### Fixes
+This comprehensive enhancement optimizes the development environment setup and implements
+a robust quality assurance pipeline to improve developer experience and CI/CD performance.
 
-* fix: apply pre-commit trailing whitespace fixes to publish workflow
-* fix: optimize PyPI publish workflow with comprehensive caching and enhanced semantic versioning
+## Python Environment Optimization
+- Install Python first via asdf and immediately reshim to ensure proper binary availability
+- Replace pip installation of aws-sso-util with pipx to prevent PyYAML conflicts
+- Switch from isort to ruff extension to resolve formatting conflicts with black
+- Set explicit Python interpreter path to asdf-managed Python in VS Code settings
+- Add Python build dependencies required for asdf Python compilation
+- Remove python feature from devcontainer.json as Python is now managed entirely through asdf
+- Restructure postcreate script for proper dependency resolution order
 
-### Chores
+## Quality Assurance Pipeline
+- Add comprehensive YAML validation with yamllint and custom .yamllint configuration
+- Enhance pre-commit hooks with yamllint, security scanning (gitleaks), and formatting
+- Add new make tasks: github-workflow-yaml-lint, yaml-fix, pre-commit-check
+- Integrate pre-commit checks into CI/CD workflows for automated quality enforcement
+- Update documentation with new quality assurance workflows and make tasks
 
-* chore: add comprehensive caching to PyPI publish workflow
+## CI/CD Performance Optimization
+- Implement comprehensive caching strategy for system dependencies, ASDF, and Python packages
+- Add intelligent cache hit detection to avoid unnecessary apt-get update operations
+- Use dpkg for cached package restoration with apt-get install -f fallback
+- Fix cache permission issues with proper ownership and accessibility
+- Optimize workflow performance with cache v3 keys and conditional package installation
+
+## Files Changed:
+- .devcontainer/: Enhanced Python setup and VS Code configuration
+- .github/workflows/: Added caching, pre-commit integration, and performance optimization
+- .yamllint: New comprehensive YAML validation rules for GitHub Actions
+- .pre-commit-config.yaml: Enhanced hooks with yamllint and security scanning
+- Makefile: New quality assurance tasks with clean output formatting
+- Documentation: Updated README and CONTRIBUTING files with new workflows
+
+This change improves build performance by up to 50% through intelligent caching while
+ensuring code quality through automated validation and formatting. ([`12907d9`](https://github.com/caylent-solutions/devcontainer/commit/12907d9ce011c47cfc978805f43b13636b98e264))
 
 
 ## v1.4.0 (2025-07-25)
 
-# 🚀 New Devcontainer CLI Release – Big Improvements! 🎉
+### Build
 
----
+* build: update asdf version to v0.15.0 and optimize zsh configuration  (#50)
 
-## ✨ Key New Features
-- 💻 **IDE Support**
-  Launch projects directly in **VS Code** or **Cursor** using `--ide` with automatic validation and helpful error messages.
+* build: update asdf version to v0.15.0 and optimize zsh configuration
 
-- 🔑 **Flexible AWS Profile Setup**
-  Create AWS profiles interactively in standard config format or all at once from a JSON file.
-  Built‑in validation, error prompts, and retry support.
+- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
+- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
+- Consolidate asdf zsh setup to reduce duplication in postcreate script
+- Ensure proper initialization order for zsh completions
 
-- 📜 **Makefile Help System**
-  `make help` now shows a clean, formatted list of all tasks.
-  Added pre‑commit validation and improved task descriptions.
+* build: update asdf version to v0.15.0 and optimize zsh configuration
 
-- ⚡ **Streamlined Setup Flow**
-  Skipping an overwrite now continues setup rather than exiting.
-  Secrets and environment files are auto‑added to `.gitignore` with a reminder to commit.
+- Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
+- Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
+- Consolidate asdf zsh setup to reduce duplication in postcreate script
+- Ensure proper initialization order for zsh completions ([`84516c0`](https://github.com/caylent-solutions/devcontainer/commit/84516c034c83e8a6ca9b67cf1db1f6b947437975))
 
-- 🔒 **Privacy Controls**
-  Default settings disable telemetry and AI model training for Amazon Q and GitHub Copilot.
+### Chore
 
----
+* chore(release): 1.4.0 - Major improvements to CLI with IDE support, AWS profile setup, and enhanced developer experience ([`e763945`](https://github.com/caylent-solutions/devcontainer/commit/e7639450216562540aac30395afeee75ced5ad23))
 
-## ✅ Quality Improvements
-- Increased unit test coverage to **91%**
-- Expanded functional test coverage
-- Fixed test mocks and improved interrupt handling
+* chore(release): 1.3.0 ([`51ace82`](https://github.com/caylent-solutions/devcontainer/commit/51ace826c1635ea3e92382597b0e3aebf36664e6))
 
-### Technical Details
+### Feature
 
-#### Build
-* build: update asdf version to v0.15.0 and optimize zsh configuration (#50)
-  - Upgrade asdf from v0.14.0 to v0.15.0 for latest features and bug fixes
-  - Move asdf zsh configuration to be sourced after oh-my-zsh to prevent conflicts
-  - Consolidate asdf zsh setup to reduce duplication in postcreate script
-  - Ensure proper initialization order for zsh completions ([`84516c0`](https://github.com/caylent-solutions/devcontainer/commit/84516c034c83e8a6ca9b67cf1db1f6b947437975))
+* feat: add IDE support, AWS profile options, and major developer experience improvements
 
-#### Feature
-* feat: add IDE support, AWS profile options, and major developer experience improvements ([`1174d58`](https://github.com/caylent-solutions/devcontainer/commit/1174d58de12039946706a688df7c07436a5730a3))
+- add `--ide` flag with native support for VS Code and Cursor, with validation and clear error messages
+- add two methods for AWS profile setup (standard format and JSON) with validation and retry prompts
+- add an interactive help system to Makefiles with descriptive comments and a pre‑commit validation task
+- improve setup flow so declining overwrite continues setup, and automatically manage `.gitignore` for secrets and environment files
+- increase test coverage to 91% with expanded functional tests
+- add privacy settings to disable data sharing for Amazon Q and GitHub Copilot
 
+fix: correct test mocks and improve interrupt handling
+
+docs: update setup instructions, prerequisites, and references for IDE support ([`1174d58`](https://github.com/caylent-solutions/devcontainer/commit/1174d58de12039946706a688df7c07436a5730a3))
+
+### Unknown
+
+* Merge pull request #58 from caylent-solutions/release-1.3.0
+
+Release 1.4.0 - Major improvements to CLI with IDE support, AWS profile setup, and enhanced developer experience ([`335f9d8`](https://github.com/caylent-solutions/devcontainer/commit/335f9d8cfb438bcbbd0c259fe0459d3442a3c55c))
+
+* fix formatting ([`195d944`](https://github.com/caylent-solutions/devcontainer/commit/195d94493ef14989d3438ecb56a08701476809b4))
+
+* Merge pull request #57 from caylent-solutions/release-1.3.0
+
+Release 1.3.0 ([`82dc9c4`](https://github.com/caylent-solutions/devcontainer/commit/82dc9c44ea075976e4b7866f5b3b08eb37f4ce41))
 
 
 ## v1.2.0 (2025-06-16)
@@ -105,6 +250,10 @@
 
 * fix: remove apt install of jq as it is installed already by asdf in github actions (#36) ([`bc35705`](https://github.com/caylent-solutions/devcontainer/commit/bc357057eaa4ff95db64155795294850a563eb3d))
 
+### Revert
+
+* revert: Revert version changes to fix unit tests ([`321df27`](https://github.com/caylent-solutions/devcontainer/commit/321df27230a29f83e51aba2363775b5f8a9262ec))
+
 ### Unknown
 
 * Release 1.2.0 (#48)
@@ -112,8 +261,6 @@
 * docs: Update release process documentation with manual steps
 
 * feat: improve release process ([`56846ee`](https://github.com/caylent-solutions/devcontainer/commit/56846eeeb117a9cec9c5dccd848f29f7615cc00a))
-
-* revert: Revert version changes to fix unit tests ([`321df27`](https://github.com/caylent-solutions/devcontainer/commit/321df27230a29f83e51aba2363775b5f8a9262ec))
 
 * Merge pull request #47 from caylent-solutions/release-1.1.0
 
