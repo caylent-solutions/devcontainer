@@ -370,7 +370,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          # Generate changelog AND update version files
+          # Generate changelog and update all version files (pyproject.toml, __init__.py, CHANGELOG.md)
           python -m semantic_release version --no-push --no-vcs-release
 
       - name: Commit changelog and version bump
