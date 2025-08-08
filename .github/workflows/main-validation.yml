@@ -22,7 +22,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /var/cache/apt
-          key: system-deps-${{ runner.os }}-ubuntu-noble-v1
+          key: system-deps-${{ runner.os }}-ubuntu-2404-v1
 
       - name: Install system dependencies for Python build
         run: |
@@ -250,7 +250,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /var/cache/apt
-          key: system-deps-release-${{ runner.os }}-ubuntu-noble-v1
+          key: system-deps-release-${{ runner.os }}-ubuntu-2404-v1
 
       - name: Install system dependencies
         run: |
