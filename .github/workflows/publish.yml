@@ -127,27 +127,30 @@ jobs:
           make install
           asdf reshim
 
-      - name: Update version in package files
+      - name: Verify version consistency
         run: |
           TAG_VERSION="${{ env.TAG_VERSION }}"
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
 
-          # Update version in __init__.py
-          if [ -f "src/caylent_devcontainer_cli/__init__.py" ]; then
-            sed -i "s/__version__ = .*/__version__ = \"$TAG_VERSION\"/" src/caylent_devcontainer_cli/__init__.py
+          # Verify that the tag version matches the version in source files
+          INIT_VERSION=$(grep '__version__ = ' src/caylent_devcontainer_cli/__init__.py | sed 's/__version__ = "\(.*\)"/\1/')
+          TOML_VERSION=$(grep 'version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+
+          echo "Tag version: $TAG_VERSION"
+          echo "__init__.py version: $INIT_VERSION"
+          echo "pyproject.toml version: $TOML_VERSION"
+
+          if [[ "$TAG_VERSION" != "$INIT_VERSION" ]]; then
+            echo "::error::Version mismatch: tag ($TAG_VERSION) != __init__.py ($INIT_VERSION)"
+            exit 1
           fi
 
-          # Update version in pyproject.toml if it exists
-          if [ -f "pyproject.toml" ]; then
-            sed -i "s/version = .*/version = \"$TAG_VERSION\"/" pyproject.toml
+          if [[ "$TAG_VERSION" != "$TOML_VERSION" ]]; then
+            echo "::error::Version mismatch: tag ($TAG_VERSION) != pyproject.toml ($TOML_VERSION)"
+            exit 1
           fi
 
-          # Update version in setup.py if it exists
-          if [ -f "setup.py" ]; then
-            sed -i "s/version=['\"][^'\"]*['\"]/version=\"$TAG_VERSION\"/" setup.py
-          fi
-
-          echo "Updated package version to $TAG_VERSION"
+          echo "✅ Version consistency verified: $TAG_VERSION"
 
       - name: Build package
         run: |
