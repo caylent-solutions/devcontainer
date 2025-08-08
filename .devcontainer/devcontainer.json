@@ -4,11 +4,18 @@
   "image": "mcr.microsoft.com/devcontainers/base:noble",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "features": {
-    "ghcr.io/devcontainers/features/aws-cli:1": { "version": "latest" },
-    "ghcr.io/devcontainers/features/python:1": { "version": "latest" },
-    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": { "version": "latest" },
-    "ghcr.io/devcontainers/features/common-utils:2": { "version": "latest" },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": { "version": "latest" }
+    "ghcr.io/devcontainers/features/aws-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
   },
   "customizations": {
     "vscode": {
@@ -24,7 +31,7 @@
         "GitHub.vscode-github-actions",
         "ms-azuretools.vscode-docker",
         "ms-python.debugpy",
-        "ms-python.isort",
+        "charliermarsh.ruff",
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-vscode.makefile-tools",
@@ -41,35 +48,42 @@
         "gitlens.statusBar.enabled": false,
         "gitlens.blame.line.enabled": false,
         "gitlens.blame.file.enabled": false,
-        "github.copilot.enable": {
-          "*": true,
-          "yaml": false,
-          "plaintext": false
+        "python.defaultInterpreterPath": "/home/vscode/.asdf/installs/python/3.12.9/bin/python",
+        "python.linting.enabled": true,
+        "python.defaultFormatter": "charliermarsh.ruff",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
         },
-        "github.copilot.advanced": {
-          "debug.overrideEngine": "codex",
-          "debug.testOverrideProxyUrl": "",
-          "debug.overrideProxyUrl": "",
-          "length": 500
+        "editor.formatOnSave": true,
+
+        "files.associations": {
+          "*.yml": "yaml",
+          "*.yaml": "yaml",
+          "Dockerfile*": "dockerfile",
+          "*.sql": "sql"
         },
-        "amazonQ.telemetry": false,
-        "amazonQ.shareCodeWhispererContentWithAWS": false
+        "makefile.extensionOutputFolder": ".vscode",
+        "docker.attachShellCommand.linuxContainer": "/bin/bash"
       }
     }
   },
   "forwardPorts": [5678, 9229, 5005, 8080, 5050],
   "userEnvProbe": "loginInteractiveShell",
   "containerEnv": {
-    "AWS_CONFIG_ENABLED":     "${localEnv:AWS_CONFIG_ENABLED}",
-    "DEFAULT_GIT_BRANCH":     "${localEnv:DEFAULT_GIT_BRANCH}",
+    "AWS_CONFIG_ENABLED": "${localEnv:AWS_CONFIG_ENABLED}",
+    "DEFAULT_GIT_BRANCH": "${localEnv:DEFAULT_GIT_BRANCH}",
     "DEFAULT_PYTHON_VERSION": "${localEnv:DEFAULT_PYTHON_VERSION}",
-    "DEVELOPER_NAME":         "${localEnv:DEVELOPER_NAME}",
-    "DEVCONTAINER":           "true",
-    "EXTRA_APT_PACKAGES":     "${localEnv:EXTRA_APT_PACKAGES}",
-    "GIT_PROVIDER_URL":       "${localEnv:GIT_PROVIDER_URL}",
-    "GIT_TOKEN":              "${localEnv:GIT_TOKEN}",
-    "GIT_USER":               "${localEnv:GIT_USER}",
-    "GIT_USER_EMAIL":         "${localEnv:GIT_USER_EMAIL}"
+    "DEVELOPER_NAME": "${localEnv:DEVELOPER_NAME}",
+    "DEVCONTAINER": "true",
+    "EXTRA_APT_PACKAGES": "${localEnv:EXTRA_APT_PACKAGES}",
+    "GIT_PROVIDER_URL": "${localEnv:GIT_PROVIDER_URL}",
+    "GIT_TOKEN": "${localEnv:GIT_TOKEN}",
+    "GIT_USER": "${localEnv:GIT_USER}",
+    "GIT_USER_EMAIL": "${localEnv:GIT_USER_EMAIL}"
   },
   "postCreateCommand": "sudo apt-get update; sudo apt-get install -y gettext-base jq; sudo bash .devcontainer/.devcontainer.postcreate.sh vscode"
 }
