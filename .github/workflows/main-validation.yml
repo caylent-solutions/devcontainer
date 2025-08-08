@@ -373,16 +373,16 @@ jobs:
           # Use semantic-release to update pyproject.toml and CHANGELOG.md
           # The --no-commit flag updates files without committing
           python -m semantic_release version --no-push --no-vcs-release --no-commit
-          
+
           # Get the version that was just set in pyproject.toml
           NEW_VERSION=$(grep 'version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "Updated version: $NEW_VERSION"
-          
+
           # Manually update __init__.py (semantic-release isn't updating it properly)
           sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$NEW_VERSION\"/" src/caylent_devcontainer_cli/__init__.py
-          
+
           echo "Updated all three files to version $NEW_VERSION"
-          
+
           # Clean up build artifacts created by semantic-release
           rm -rf dist/ build/ src/caylent_devcontainer_cli.egg-info/
 
