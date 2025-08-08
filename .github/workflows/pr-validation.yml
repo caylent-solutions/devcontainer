@@ -38,9 +38,11 @@ jobs:
           echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
 
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev
-            libbz2-dev libreadline-dev libsqlite3-dev curl
-            libncursesw5-dev xz-utils tk-dev libxml2-dev
+          # Note: Use backslash continuation for multi-line apt-get install commands
+          # Each continuation line should be indented and start with package names
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+            libbz2-dev libreadline-dev libsqlite3-dev curl \
+            libncursesw5-dev xz-utils tk-dev libxml2-dev \
             libxmlsec1-dev libffi-dev liblzma-dev bc
 
       - name: Fix cache permissions
