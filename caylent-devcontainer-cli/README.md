@@ -147,6 +147,15 @@ make unit-test
 # Run functional tests
 make functional-test
 
+### Testing
+
+```bash
+# Run unit tests
+make unit-test
+
+# Run functional tests
+make functional-test
+
 # Run all tests
 make test
 
@@ -163,15 +172,26 @@ make functional-test-report
 - **Functional Tests**: Must test CLI commands as they would be used by actual users
 - All tests must pass before merging code
 
-### Linting and Formatting
+### Code Quality and Validation
 
 ```bash
-# Check code style
+# Check code style (Python linting)
 make lint
 
-# Format code
+# Format code (Python formatting)
 make format
+
+# Check GitHub workflow YAML files (from repository root)
+make github-workflow-yaml-lint
+
+# Run comprehensive pre-commit checks (from repository root)
+make pre-commit-check
+
+# Fix YAML formatting issues (from repository root) 
+make yaml-fix
 ```
+
+The repository includes comprehensive quality assurance with pre-commit hooks that run automatically in CI/CD, including YAML validation, security scanning, and code formatting.
 
 ### Building and Publishing
 
