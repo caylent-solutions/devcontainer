@@ -17,6 +17,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache system dependencies
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt
+          key: ${{ runner.os }}-apt-${{ hashFiles('**/main-validation.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
+
       - name: Install system dependencies for Python build
         run: |
           sudo apt-get update
@@ -25,9 +33,19 @@ jobs:
             libncursesw5-dev xz-utils tk-dev libxml2-dev \
             libxmlsec1-dev libffi-dev liblzma-dev bc
 
+      - name: Cache ASDF installation
+        uses: actions/cache@v4
+        with:
+          path: ~/.asdf
+          key: ${{ runner.os }}-asdf-v0.15.0-${{ hashFiles('.tool-versions') }}
+          restore-keys: |
+            ${{ runner.os }}-asdf-v0.15.0-
+
       - name: Install ASDF
         run: |
-          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          if [ ! -d ~/.asdf ]; then
+            git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          fi
           echo "$HOME/.asdf/bin" >> $GITHUB_PATH
           echo "$HOME/.asdf/shims" >> $GITHUB_PATH
           source $HOME/.asdf/asdf.sh
@@ -35,29 +53,44 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
+          source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python*/site-packages
+          key: ${{ runner.os }}-pip-${{ hashFiles('caylent-devcontainer-cli/requirements.txt', 'caylent-devcontainer-cli/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install CLI
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make install
           asdf reshim
 
       - name: Lint
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make lint
 
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make publish
 
       - name: Run unit tests with coverage threshold
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make unit-test
           coverage json
           coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
@@ -70,17 +103,20 @@ jobs:
       - name: Run functional tests
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make functional-test
 
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make coverage
           make coverage-json
 
       - name: Print coverage summary
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make coverage-text
 
       - name: Send success notification to Slack
@@ -210,6 +246,15 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
+      - name: Cache system dependencies for release
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt
+          key: ${{ runner.os }}-apt-release-${{ hashFiles('**/main-validation.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-release-
+            ${{ runner.os }}-apt-
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -217,9 +262,20 @@ jobs:
             libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
             xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc gh
 
+      - name: Cache ASDF installation for release
+        uses: actions/cache@v4
+        with:
+          path: ~/.asdf
+          key: ${{ runner.os }}-asdf-release-v0.15.0-${{ hashFiles('.tool-versions') }}
+          restore-keys: |
+            ${{ runner.os }}-asdf-release-v0.15.0-
+            ${{ runner.os }}-asdf-v0.15.0-
+
       - name: Install ASDF
         run: |
-          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          if [ ! -d ~/.asdf ]; then
+            git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          fi
           echo "$HOME/.asdf/bin" >> $GITHUB_PATH
           echo "$HOME/.asdf/shims" >> $GITHUB_PATH
           source $HOME/.asdf/asdf.sh
@@ -227,13 +283,26 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
+          source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
 
+      - name: Cache Python dependencies for release
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python*/site-packages
+          key: ${{ runner.os }}-pip-release-${{ hashFiles('caylent-devcontainer-cli/requirements.txt', 'caylent-devcontainer-cli/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-release-
+            ${{ runner.os }}-pip-
+
       - name: Install CLI and dependencies
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         run: |
+          source $HOME/.asdf/asdf.sh
           pip install --upgrade pip
           make install
           asdf reshim
