@@ -1,5 +1,7 @@
 .PHONY: help install lint format unit-test functional-test functional-test-report test clean build coverage coverage-text coverage-json distcheck publish
 
+MAKEFLAGS += --no-print-directory
+
 help: ## Show this help message
 	@echo "Available make tasks:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -13,6 +15,10 @@ lint: ## Check code formatting and style
 	black --check src tests
 	isort --check-only src tests
 	flake8 src tests
+
+github-workflow-yaml-lint: ## Check GitHub workflow YAML files for syntax and style issues
+	@which yamllint > /dev/null 2>&1 || (echo "Installing yamllint..." && pip install -q yamllint)
+	@yamllint ../.github/workflows/*.yml
 
 format: ## Format code using black and isort
 	black src tests

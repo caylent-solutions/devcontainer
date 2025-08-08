@@ -17,17 +17,53 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache system dependencies
+        id: cache-system-deps
+        uses: actions/cache@v4
+        with:
+          path: /tmp/apt-cache
+          key: system-deps-${{ runner.os }}-ubuntu-2404-v3
+
       - name: Install system dependencies for Python build
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-            libbz2-dev libreadline-dev libsqlite3-dev curl \
-            libncursesw5-dev xz-utils tk-dev libxml2-dev \
-            libxmlsec1-dev libffi-dev liblzma-dev bc
+          # Configure apt to use our cache directory
+          sudo mkdir -p /tmp/apt-cache
+          echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
+
+          # Check if we have a cache hit by looking for cached .deb files
+          if [ -n "$(ls /tmp/apt-cache/*.deb 2>/dev/null)" ]; then
+            echo "Cache hit detected - restoring packages from cache"
+            sudo dpkg -i /tmp/apt-cache/*.deb || true
+            sudo apt-get install -f -y  # Fix any broken dependencies
+          else
+            echo "No cache found - downloading packages"
+            sudo apt-get update
+            sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
+              libbz2-dev libreadline-dev libsqlite3-dev curl \
+              libncursesw5-dev xz-utils tk-dev libxml2-dev \
+              libxmlsec1-dev libffi-dev liblzma-dev bc
+          fi
+
+      - name: Fix cache permissions
+        if: always()
+        run: |
+          # Fix permissions on cache directories to allow GitHub Actions to access them
+          sudo chmod -R 755 /tmp/apt-cache 2>/dev/null || true
+          sudo chown -R $USER:$USER /tmp/apt-cache 2>/dev/null || true
+
+      - name: Cache ASDF installation
+        uses: actions/cache@v4
+        with:
+          path: ~/.asdf
+          key: ${{ runner.os }}-asdf-v0.15.0-${{ hashFiles('.tool-versions') }}
+          restore-keys: |
+            ${{ runner.os }}-asdf-v0.15.0-
 
       - name: Install ASDF
         run: |
-          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          if [ ! -d ~/.asdf ]; then
+            git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          fi
           echo "$HOME/.asdf/bin" >> $GITHUB_PATH
           echo "$HOME/.asdf/shims" >> $GITHUB_PATH
           source $HOME/.asdf/asdf.sh
@@ -35,29 +71,49 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
+          source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python*/site-packages
+          key: ${{ runner.os }}-pip-${{ hashFiles('caylent-devcontainer-cli/requirements.txt', 'caylent-devcontainer-cli/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install CLI
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make install
           asdf reshim
+
+      - name: Run pre-commit checks
+        run: |
+          cd $GITHUB_WORKSPACE
+          make pre-commit-check
 
       - name: Lint
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make lint
 
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make publish
 
       - name: Run unit tests with coverage threshold
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make unit-test
           coverage json
           coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
@@ -70,17 +126,20 @@ jobs:
       - name: Run functional tests
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make functional-test
 
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make coverage
           make coverage-json
 
       - name: Print coverage summary
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
+          source $HOME/.asdf/asdf.sh
           make coverage-text
 
       - name: Send success notification to Slack
@@ -210,16 +269,45 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
+      - name: Cache system dependencies for release
+        id: cache-system-deps-release
+        uses: actions/cache@v4
+        with:
+          path: /tmp/apt-cache-release
+          key: system-deps-release-${{ runner.os }}-ubuntu-2404-v3
+
       - name: Install system dependencies
         run: |
+          # Configure apt to use our cache directory
+          sudo mkdir -p /tmp/apt-cache-release
+          echo 'Dir::Cache::Archives "/tmp/apt-cache-release";' | sudo tee /etc/apt/apt.conf.d/99cache
+
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
             libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
             xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc gh
 
+      - name: Fix release cache permissions
+        if: always()
+        run: |
+          # Fix permissions on release cache directories to allow GitHub Actions to access them
+          sudo chmod -R 755 /tmp/apt-cache-release 2>/dev/null || true
+          sudo chown -R $USER:$USER /tmp/apt-cache-release 2>/dev/null || true
+
+      - name: Cache ASDF installation for release
+        uses: actions/cache@v4
+        with:
+          path: ~/.asdf
+          key: ${{ runner.os }}-asdf-release-v0.15.0-${{ hashFiles('.tool-versions') }}
+          restore-keys: |
+            ${{ runner.os }}-asdf-release-v0.15.0-
+            ${{ runner.os }}-asdf-v0.15.0-
+
       - name: Install ASDF
         run: |
-          git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          if [ ! -d ~/.asdf ]; then
+            git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.15.0
+          fi
           echo "$HOME/.asdf/bin" >> $GITHUB_PATH
           echo "$HOME/.asdf/shims" >> $GITHUB_PATH
           source $HOME/.asdf/asdf.sh
@@ -227,13 +315,26 @@ jobs:
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
+          source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
           asdf reshim
 
+      - name: Cache Python dependencies for release
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python*/site-packages
+          key: ${{ runner.os }}-pip-release-${{ hashFiles('caylent-devcontainer-cli/requirements.txt', 'caylent-devcontainer-cli/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-release-
+            ${{ runner.os }}-pip-
+
       - name: Install CLI and dependencies
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         run: |
+          source $HOME/.asdf/asdf.sh
           pip install --upgrade pip
           make install
           asdf reshim

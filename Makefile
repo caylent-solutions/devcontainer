@@ -1,10 +1,19 @@
-.PHONY: help configure install-hooks pre-commit-check
+.PHONY: help configure install-hooks pre-commit-check github-workflow-yaml-lint yaml-fix
 
 help: ## Show this help message
 	@echo "Available make tasks:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 configure: install-hooks ## Configure the development environment
+
+github-workflow-yaml-lint: ## Check GitHub workflow YAML files for syntax and style issues
+	@cd caylent-devcontainer-cli && (which yamllint > /dev/null 2>&1 || (echo "Installing yamllint..." && pip install -q yamllint)) && yamllint ../.github/workflows/*.yml
+
+yaml-fix: ## Run pre-commit hooks specifically for YAML formatting and validation
+	pre-commit run yamllint --all-files
+	pre-commit run check-yaml --all-files
+	pre-commit run trailing-whitespace --all-files
+	pre-commit run end-of-file-fixer --all-files
 
 pre-commit-check: ## Run pre-commit hooks and JSON validation like git hook
 	pre-commit run --all-files

@@ -115,6 +115,22 @@ log_info "Installing core packages..."
 sudo apt-get update
 sudo apt-get install -y curl vim git jq yq nmap sipcalc wget unzip zip
 
+# Install Python build dependencies for asdf Python compilation
+log_info "Installing Python build dependencies..."
+sudo apt-get install -y \
+  build-essential \
+  libbz2-dev \
+  libffi-dev \
+  libncurses5-dev \
+  libncursesw5-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  libssl-dev \
+  liblzma-dev \
+  tk-dev \
+  uuid-dev \
+  zlib1g-dev
+
 ##############################
 # Install Optional Extra Tools
 ##############################
@@ -142,16 +158,30 @@ export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
 # Create plugins directory if it doesn't exist
 mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
 
-python_in_tool_versions=false
 if [ -f "${WORK_DIR}/.tool-versions" ]; then
-  log_info "Installing asdf plugins and tools from .tool-versions..."
+  log_info "Installing asdf plugins from .tool-versions..."
   cut -d' ' -f1 "${WORK_DIR}/.tool-versions" | while read -r plugin; do
-    [[ "$plugin" == "python" ]] && python_in_tool_versions=true
     log_info "Installing asdf plugin: $plugin"
     install_asdf_plugin "$plugin"
   done
 
-  log_info "Installing tools from .tool-versions..."
+  # Install Python first (always required for other tools)
+  if grep -q "^python " "${WORK_DIR}/.tool-versions"; then
+    PYTHON_VERSION=$(grep "^python " "${WORK_DIR}/.tool-versions" | cut -d' ' -f2)
+    log_info "Installing Python ${PYTHON_VERSION} first (from .tool-versions, required for other tools)..."
+  else
+    PYTHON_VERSION="${DEFAULT_PYTHON_VERSION}"
+    log_info "Installing Python ${PYTHON_VERSION} first (fallback version, required for other tools)..."
+  fi
+
+  if ! asdf install python "$PYTHON_VERSION"; then
+    exit_with_error "❌ Failed to install python $PYTHON_VERSION"
+  fi
+  if ! asdf reshim python; then
+    exit_with_error "❌ Failed to reshim python after installation"
+  fi
+
+  log_info "Installing remaining tools from .tool-versions..."
   if ! asdf install; then
     log_warn "❌ asdf install failed — tool versions may not be fully installed"
   fi
@@ -159,25 +189,18 @@ else
   log_info "No .tool-versions file found — skipping general asdf install"
 fi
 
-# Always ensure Python is available
-install_asdf_plugin "python"
-
-if ! $python_in_tool_versions; then
-  log_info "Installing Python ${DEFAULT_PYTHON_VERSION} via asdf (fallback version)..."
-
-  if ! asdf install python "$DEFAULT_PYTHON_VERSION"; then
-    exit_with_error "❌ Failed to install python $DEFAULT_PYTHON_VERSION"
-  fi
-
-  if ! asdf global python "$DEFAULT_PYTHON_VERSION"; then
-    exit_with_error "❌ Failed to set global python version $DEFAULT_PYTHON_VERSION"
-  fi
-fi
-
 # Ensure reshim is run for the current user
 log_info "Running asdf reshim..."
 if ! asdf reshim; then
   exit_with_error "❌ asdf reshim failed"
+fi
+
+# Install pipx right after Python is available
+log_info "Installing pipx..."
+python -m pip install --upgrade pip --root-user-action=ignore
+python -m pip install pipx --root-user-action=ignore
+if ! asdf reshim python; then
+  exit_with_error "❌ asdf reshim python failed after pipx install"
 fi
 
 # Verify asdf is working properly
@@ -195,9 +218,14 @@ if [[ -z "$ASDF_PYTHON_PATH" || "$ASDF_PYTHON_PATH" != *".asdf"* ]]; then
   exit_with_error "❌ 'python' is not provided by asdf. Found: $ASDF_PYTHON_PATH"
 fi
 
+# Ensure pipx binaries are available in PATH
+log_info "Configuring pipx PATH..."
+echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${BASH_RC}
+echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${ZSH_RC}
+
 log_info "Installing Python packages..."
-python -m pip install --upgrade pip --root-user-action=ignore
-python -m pip install aws-sso-util ruamel_yaml --root-user-action=ignore
+sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install aws-sso-util"
+python -m pip install ruamel_yaml --root-user-action=ignore
 
 #################
 # Configure Git #
