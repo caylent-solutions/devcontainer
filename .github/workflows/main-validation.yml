@@ -365,12 +365,13 @@ jobs:
           fi
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Generate changelog
+      - name: Generate changelog and update version files
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          python -m semantic_release changelog
+          # Generate changelog and update all version files (pyproject.toml, __init__.py, CHANGELOG.md)
+          python -m semantic_release version --no-push --no-vcs-release
 
       - name: Commit changelog and version bump
         id: commit-changes
@@ -391,7 +392,8 @@ jobs:
           git config --global user.email "caylent-platform-bot[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
           git checkout -b release-$VERSION
-          git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py
+          # Add ALL version-related files that semantic-release may have updated
+          git add CHANGELOG.md src/caylent_devcontainer_cli/__init__.py pyproject.toml
           git commit -m "chore(release): $VERSION"
           git push origin release-$VERSION
 

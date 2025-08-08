@@ -4,6 +4,23 @@
 ## Unreleased
 
 
+## v1.5.0 (2025-08-08)
+
+### Features
+
+* feat: add manual trigger capability to publish workflow
+* feat: comprehensive dev environment optimization with enhanced quality assurance
+
+### Fixes
+
+* fix: apply pre-commit trailing whitespace fixes to publish workflow
+* fix: optimize PyPI publish workflow with comprehensive caching and enhanced semantic versioning
+
+### Chores
+
+* chore: add comprehensive caching to PyPI publish workflow
+
+
 ## v1.4.0 (2025-07-25)
 
 # 🚀 New Devcontainer CLI Release – Big Improvements! 🎉

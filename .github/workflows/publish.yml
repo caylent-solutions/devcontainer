@@ -127,27 +127,45 @@ jobs:
           make install
           asdf reshim
 
-      - name: Update version in package files
+      - name: Verify version consistency
         run: |
           TAG_VERSION="${{ env.TAG_VERSION }}"
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
 
-          # Update version in __init__.py
-          if [ -f "src/caylent_devcontainer_cli/__init__.py" ]; then
-            sed -i "s/__version__ = .*/__version__ = \"$TAG_VERSION\"/" src/caylent_devcontainer_cli/__init__.py
+          # Use Python regex parsing for robust version extraction
+          # This handles both single/double quotes and avoids grep pattern matching issues
+          INIT_VERSION=$(python -c "
+          import re
+          with open('src/caylent_devcontainer_cli/__init__.py', 'r') as f:
+              content = f.read()
+              match = re.search(r'__version__ = [\"\'](.*?)[\"\']', content)
+              print(match.group(1) if match else 'NOT_FOUND')
+          ")
+
+          TOML_VERSION=$(python -c "
+          import re
+          with open('pyproject.toml', 'r') as f:
+              content = f.read()
+              # Match 'version =' at start of line in [project] section for precision
+              match = re.search(r'^version = [\"\'](.*?)[\"\']', content, re.MULTILINE)
+              print(match.group(1) if match else 'NOT_FOUND')
+          ")
+
+          echo "Tag version: $TAG_VERSION"
+          echo "__init__.py version: $INIT_VERSION"
+          echo "pyproject.toml version: $TOML_VERSION"
+
+          if [[ "$TAG_VERSION" != "$INIT_VERSION" ]]; then
+            echo "::error::Version mismatch: tag ($TAG_VERSION) != __init__.py ($INIT_VERSION)"
+            exit 1
           fi
 
-          # Update version in pyproject.toml if it exists
-          if [ -f "pyproject.toml" ]; then
-            sed -i "s/version = .*/version = \"$TAG_VERSION\"/" pyproject.toml
+          if [[ "$TAG_VERSION" != "$TOML_VERSION" ]]; then
+            echo "::error::Version mismatch: tag ($TAG_VERSION) != pyproject.toml ($TOML_VERSION)"
+            exit 1
           fi
 
-          # Update version in setup.py if it exists
-          if [ -f "setup.py" ]; then
-            sed -i "s/version=['\"][^'\"]*['\"]/version=\"$TAG_VERSION\"/" setup.py
-          fi
-
-          echo "Updated package version to $TAG_VERSION"
+          echo "✅ Version consistency verified: $TAG_VERSION"
 
       - name: Build package
         run: |
