@@ -84,6 +84,55 @@ make yaml-fix
 
 These checks run automatically in CI/CD and include trailing whitespace removal, debug statement detection, JSON/YAML validation, security scanning, and more.
 
+## Commit Message Conventions
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages. This enables automatic semantic versioning and changelog generation.
+
+### Commit Message Format
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Supported Commit Types
+
+| Type | Description | Version Bump | Example |
+|------|-------------|--------------|---------|
+| `feat` | New feature | **Minor** (1.2.0 → 1.3.0) | `feat: add new command option` |
+| `fix` | Bug fix | **Patch** (1.2.0 → 1.2.1) | `fix: resolve parsing error` |
+| `perf` | Performance improvement | **Patch** (1.2.0 → 1.2.1) | `perf: optimize file processing` |
+| `security` | Security fix | **Patch** (1.2.0 → 1.2.1) | `security: fix path traversal vulnerability` |
+| `revert` | Revert previous change | **Patch** (1.2.0 → 1.2.1) | `revert: undo feature X implementation` |
+| `build` | Build system changes | No bump | `build: update dependencies` |
+| `chore` | Maintenance tasks | No bump | `chore: update documentation` |
+| `ci` | CI/CD changes | No bump | `ci: add workflow caching` |
+| `docs` | Documentation changes | No bump | `docs: update API examples` |
+| `refactor` | Code refactoring | No bump | `refactor: simplify error handling` |
+| `style` | Code style changes | No bump | `style: fix formatting` |
+| `test` | Test changes | No bump | `test: add unit tests for parser` |
+
+### Breaking Changes
+
+Any commit with `BREAKING CHANGE:` in the footer will trigger a **Major** version bump (1.2.0 → 2.0.0), regardless of the commit type:
+
+```
+feat: change API interface
+
+BREAKING CHANGE: The parse() function now returns a different data structure
+```
+
+### Examples
+
+- `feat: add support for custom templates`
+- `fix: handle missing configuration files gracefully`
+- `perf: cache parsed templates for better performance`
+- `docs: add troubleshooting section to README`
+- `chore(deps): update semantic-release to v4.0.0`
+
 ## Testing
 
 ### Unit Tests
