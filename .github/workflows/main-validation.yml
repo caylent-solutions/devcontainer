@@ -85,6 +85,11 @@ jobs:
           make install
           asdf reshim
 
+      - name: Run pre-commit checks
+        run: |
+          cd $GITHUB_WORKSPACE
+          make pre-commit-check
+
       - name: Lint
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
