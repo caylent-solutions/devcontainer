@@ -2,7 +2,30 @@
 
 
 
+## v1.6.4 (2025-09-30)
+
+### Fix
+
+* fix: Cancel workflows triggered by intermediate PR operations
+
+- Add event-driven workflow cancellation after PR creation and merge
+- Use 30-second timeout instead of fixed sleep delays
+- Prevent unwanted workflow runs from PR operations
+- Only allow tag push to trigger publish workflow
+- Resolves issue where GitHub App token prevents publish workflow triggering ([`5b8fca8`](https://github.com/caylent-solutions/devcontainer/commit/5b8fca8ecada735deeac4a359819883c84e22493))
+
+### Unknown
+
+* Merge pull request #76 from caylent-solutions/fix/cancel-intermediate-workflows
+
+fix: Cancel workflows triggered by intermediate PR operations ([`7a48c05`](https://github.com/caylent-solutions/devcontainer/commit/7a48c0510414dc049a20be7f5d8b67473f02c38f))
+
+
 ## v1.6.3 (2025-09-30)
+
+### Chore
+
+* chore(release): 1.6.3 ([`c9f320e`](https://github.com/caylent-solutions/devcontainer/commit/c9f320eb6726fc9330b60d219cfa6c70262aeb7c))
 
 ### Fix
 
@@ -20,6 +43,10 @@
 * fix: Sync __init__.py version to match pyproject.toml (1.6.2) ([`c5ce5f8`](https://github.com/caylent-solutions/devcontainer/commit/c5ce5f8ba7dbd62b37cca30ee38acd1250adfd7b))
 
 ### Unknown
+
+* Merge pull request #75 from caylent-solutions/release-1.6.3
+
+Release 1.6.3 ([`1e3bd51`](https://github.com/caylent-solutions/devcontainer/commit/1e3bd51f511f33451b99decf1ab6bc327001d5d1))
 
 * Merge pull request #74 from caylent-solutions/fix/semantic-release-init-version-sync
 
