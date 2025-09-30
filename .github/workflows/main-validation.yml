@@ -374,8 +374,11 @@ jobs:
           # The --no-commit flag updates files without committing
           python -m semantic_release version --no-push --no-vcs-release --no-commit
 
+          # Fix trailing whitespace in modified files
+          sed -i 's/[[:space:]]*$//' CHANGELOG.md pyproject.toml
+
           # Get the version that was just set in pyproject.toml
-          NEW_VERSION=$(grep 'version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
+          NEW_VERSION=$(grep '^version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "Updated version: $NEW_VERSION"
 
           # Clean up build artifacts created by semantic-release
@@ -388,7 +391,7 @@ jobs:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           # Get the version that was updated in the previous step
-          VERSION=$(grep 'version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
+          VERSION=$(grep '^version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "VERSION: $VERSION"
           echo "✓ Version extracted successfully"
 
@@ -452,7 +455,7 @@ jobs:
           PR_URL="${{ steps.commit-changes.outputs.pr_url }}"
           PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]\+$')
           # Get the version from pyproject.toml since we're not using the semantic-release step output anymore
-          NEW_VERSION=$(grep 'version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
+          NEW_VERSION=$(grep '^version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
 
           echo "Waiting for PR #$PR_NUMBER to be merged..."
 
