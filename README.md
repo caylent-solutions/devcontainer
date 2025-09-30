@@ -584,6 +584,11 @@ cdevcontainer --help
 # Set up a devcontainer in a project directory
 cdevcontainer setup-devcontainer /path/to/your/project
 
+# Set up with specific git reference (branch, tag, or commit)
+cdevcontainer setup-devcontainer --ref main /path/to/your/project
+cdevcontainer setup-devcontainer --ref 1.0.0 /path/to/your/project
+cdevcontainer setup-devcontainer --ref feature/new-feature /path/to/your/project
+
 # Launch IDE with the devcontainer environment (default: VS Code)
 cdevcontainer code [/path/to/your/project]
 

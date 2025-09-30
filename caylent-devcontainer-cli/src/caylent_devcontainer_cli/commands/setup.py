@@ -42,6 +42,7 @@ def register_command(subparsers):
     parser.add_argument(
         "--update", action="store_true", help="Update existing devcontainer files to the current CLI version"
     )
+    parser.add_argument("--ref", help="Git reference (branch, tag, or commit) to clone instead of CLI version")
     parser.set_defaults(func=handle_setup)
 
 
@@ -50,6 +51,7 @@ def handle_setup(args):
     target_path = args.path
     manual_mode = args.manual
     update_mode = args.update
+    git_ref = args.ref if args.ref else __version__
 
     # Validate target path
     if not os.path.isdir(target_path):
@@ -91,8 +93,8 @@ def handle_setup(args):
     if should_clone:
         # Clone repository to temporary location
         with tempfile.TemporaryDirectory() as temp_dir:
-            log("INFO", f"Cloning devcontainer repository (version {__version__})...")
-            clone_repo(temp_dir, __version__)
+            log("INFO", f"Cloning devcontainer repository (ref: {git_ref})...")
+            clone_repo(temp_dir, git_ref)
 
             if manual_mode:
                 # Copy .devcontainer folder to target path
@@ -214,19 +216,19 @@ def ensure_gitignore_entries(target_path: str) -> None:
         print(f"  - {file_entry}")
 
 
-def clone_repo(temp_dir: str, version: str) -> None:
-    """Clone the repository at the specified version."""
+def clone_repo(temp_dir: str, git_ref: str) -> None:
+    """Clone the repository at the specified git reference (branch, tag, or commit)."""
     try:
         subprocess.run(
-            ["git", "clone", "--depth", "1", "--branch", version, REPO_URL, temp_dir],
+            ["git", "clone", "--depth", "1", "--branch", git_ref, REPO_URL, temp_dir],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
     except subprocess.CalledProcessError as e:
-        log("ERR", f"Failed to clone devcontainer repository at version {version}")
-        log("ERR", f"Version tag '{version}' does not exist in the repository")
-        log("ERR", f"Please check available versions at: {REPO_URL}/releases")
+        log("ERR", f"Failed to clone devcontainer repository at ref '{git_ref}'")
+        log("ERR", f"Reference '{git_ref}' does not exist in the repository")
+        log("ERR", f"Please check available branches/tags at: {REPO_URL}")
         log("ERR", f"Git error: {e}")
         import sys
 

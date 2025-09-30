@@ -186,3 +186,64 @@ def test_setup_finds_existing_tool_versions_file(temp_project_dir):
     assert "python 3.11.5" in content  # Original content preserved
     assert "Found .tool-versions file" in result.stderr
     assert ".tool-versions file not found" not in result.stderr
+
+
+def test_setup_with_ref_flag_main_branch(temp_project_dir):
+    """Test setup command with --ref flag using main branch."""
+    # Run the setup command with --ref main flag
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir])
+
+    # Check that the command succeeded
+    assert result.returncode == 0
+
+    # Check that the log message shows the correct ref
+    assert "Cloning devcontainer repository (ref: main)" in result.stderr
+
+    # Check that the .devcontainer directory was created
+    devcontainer_dir = os.path.join(temp_project_dir, ".devcontainer")
+    assert os.path.isdir(devcontainer_dir)
+
+    # Check that essential files were copied
+    assert os.path.isfile(os.path.join(devcontainer_dir, "devcontainer.json"))
+    assert os.path.isfile(os.path.join(devcontainer_dir, ".devcontainer.postcreate.sh"))
+
+
+def test_setup_with_ref_flag_invalid_reference(temp_project_dir):
+    """Test setup command with --ref flag using invalid reference."""
+    # Run the setup command with invalid ref
+    result = run_command(
+        ["cdevcontainer", "setup-devcontainer", "--ref", "nonexistent-branch", "--manual", temp_project_dir]
+    )
+
+    # Check that the command failed
+    assert result.returncode != 0
+
+    # Check that appropriate error messages are shown
+    assert "Failed to clone devcontainer repository at ref 'nonexistent-branch'" in result.stderr
+    assert "Reference 'nonexistent-branch' does not exist in the repository" in result.stderr
+
+
+def test_setup_help_shows_ref_flag():
+    """Test that setup-devcontainer help shows the --ref flag."""
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--help"])
+
+    # Check that the command succeeded
+    assert result.returncode == 0
+
+    # Check that the --ref flag is documented in help
+    assert "--ref" in result.stdout
+    assert "Git reference (branch, tag, or commit)" in result.stdout
+
+
+def test_setup_without_ref_uses_default_version(temp_project_dir):
+    """Test that setup command without --ref flag uses CLI version by default."""
+    # Run the setup command without --ref flag
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+
+    # Check that the command succeeded
+    assert result.returncode == 0
+
+    # Check that the log message shows the CLI version (not "main" or other ref)
+    # The exact version will vary, but it should not say "ref: main"
+    assert "Cloning devcontainer repository (ref:" in result.stderr
+    assert "ref: main)" not in result.stderr  # Should not use main when no --ref specified

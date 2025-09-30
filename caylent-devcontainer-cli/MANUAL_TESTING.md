@@ -161,6 +161,44 @@ cat .tool-versions
 # Should still contain: python 3.11.5
 ```
 
+### 7. Git Reference Override Test
+
+**Purpose**: Verify the --ref flag works with different git references
+
+```bash
+# Test 1: Use main branch instead of CLI version
+mkdir -p /tmp/test-ref-main
+cd /tmp/test-ref-main
+
+# Run setup with main branch
+cdevcontainer setup-devcontainer --ref main --manual .
+# Should clone from main branch instead of CLI version tag
+
+# Verify files were created
+ls -la .devcontainer/
+# Should see devcontainer files
+
+# Test 2: Use specific tag
+mkdir -p /tmp/test-ref-tag
+cd /tmp/test-ref-tag
+
+# Run setup with specific tag (use a known existing tag)
+cdevcontainer setup-devcontainer --ref 1.0.0 --manual .
+# Should clone from the specified tag
+
+# Verify files were created
+ls -la .devcontainer/
+# Should see devcontainer files
+
+# Test 3: Invalid reference should fail gracefully
+mkdir -p /tmp/test-ref-invalid
+cd /tmp/test-ref-invalid
+
+# Run setup with invalid reference
+cdevcontainer setup-devcontainer --ref nonexistent-branch --manual .
+# Should fail with clear error message about the reference not existing
+```
+
 ## Reporting Issues
 
 If any test fails:

@@ -53,6 +53,14 @@ def test_register_command():
     assert mock_parser.add_argument.call_count >= 1
     mock_parser.set_defaults.assert_called_once_with(func=handle_setup)
 
+    # Check that --ref argument was added
+    ref_call_found = False
+    for call in mock_parser.add_argument.call_args_list:
+        if call[0] and len(call[0]) > 0 and call[0][0] == "--ref":
+            ref_call_found = True
+            break
+    assert ref_call_found, "--ref argument should be added to parser"
+
 
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
@@ -70,11 +78,12 @@ def test_handle_setup_interactive(
     args.path = "/test/path"
     args.manual = False
     args.update = False
+    args.ref = None
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
 
-    mock_clone.assert_called_once()
+    mock_clone.assert_called_once_with("/tmp/test", __version__)
     mock_interactive.assert_called_once()
     mock_create_version.assert_called_once_with("/test/path")
 
@@ -103,11 +112,12 @@ def test_handle_setup_manual(
     args.path = "/test/path"
     args.manual = True
     args.update = False
+    args.ref = None
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
 
-    mock_clone.assert_called_once()
+    mock_clone.assert_called_once_with("/tmp/test", __version__)
     mock_copy.assert_called_once()
     mock_show.assert_called_once()
     mock_create_version.assert_called_once_with("/test/path")
@@ -124,6 +134,60 @@ def test_clone_repo_success(mock_run):
 def test_clone_repo_failure(mock_run):
     with pytest.raises(SystemExit):
         clone_repo("/tmp/test", "0.1.0")
+    mock_run.assert_called_once()
+
+
+@patch("subprocess.run")
+def test_clone_repo_with_branch(mock_run):
+    """Test cloning with a branch reference."""
+    clone_repo("/tmp/test", "main")
+    mock_run.assert_called_once_with(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            "main",
+            "https://github.com/caylent-solutions/devcontainer.git",
+            "/tmp/test",
+        ],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+
+@patch("subprocess.run")
+def test_clone_repo_with_commit_hash(mock_run):
+    """Test cloning with a commit hash reference."""
+    clone_repo("/tmp/test", "abc123def")
+    mock_run.assert_called_once_with(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            "abc123def",
+            "https://github.com/caylent-solutions/devcontainer.git",
+            "/tmp/test",
+        ],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+
+@patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "git"))
+def test_clone_repo_invalid_ref_failure(mock_run, capsys):
+    """Test cloning with invalid reference shows appropriate error."""
+    with pytest.raises(SystemExit):
+        clone_repo("/tmp/test", "nonexistent-branch")
+
+    captured = capsys.readouterr()
+    assert "Failed to clone devcontainer repository at ref 'nonexistent-branch'" in captured.err
+    assert "Reference 'nonexistent-branch' does not exist in the repository" in captured.err
     mock_run.assert_called_once()
 
 
@@ -1216,6 +1280,87 @@ def test_check_and_create_tool_versions_different_version(mock_file, mock_input,
 
     mock_file.assert_called_once_with("/test/path/.tool-versions", "w")
     mock_file().write.assert_called_once_with("python 3.11.5\n")
+
+
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
+@patch("caylent_devcontainer_cli.commands.setup.clone_repo")
+@patch("tempfile.TemporaryDirectory")
+def test_handle_setup_with_ref_flag(mock_temp_dir, mock_clone, mock_interactive, mock_create_version, mock_gitignore):
+    """Test handle_setup uses custom ref when --ref flag is provided."""
+    mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
+
+    args = MagicMock()
+    args.path = "/test/path"
+    args.manual = False
+    args.update = False
+    args.ref = "main"
+
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
+        handle_setup(args)
+
+    mock_clone.assert_called_once_with("/tmp/test", "main")
+    mock_interactive.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
+
+
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions")
+@patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
+@patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
+@patch("caylent_devcontainer_cli.commands.setup.clone_repo")
+@patch("tempfile.TemporaryDirectory")
+def test_handle_setup_manual_with_ref_flag(
+    mock_temp_dir,
+    mock_clone,
+    mock_copy,
+    mock_show,
+    mock_tool_versions,
+    mock_create_version,
+    mock_gitignore,
+):
+    """Test handle_setup manual mode uses custom ref when --ref flag is provided."""
+    mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
+
+    args = MagicMock()
+    args.path = "/test/path"
+    args.manual = True
+    args.update = False
+    args.ref = "feature/test-branch"
+
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
+        handle_setup(args)
+
+    mock_clone.assert_called_once_with("/tmp/test", "feature/test-branch")
+    mock_copy.assert_called_once()
+    mock_show.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
+    mock_tool_versions.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
+@patch("caylent_devcontainer_cli.commands.setup.clone_repo")
+@patch("tempfile.TemporaryDirectory")
+def test_handle_setup_with_tag_ref(mock_temp_dir, mock_clone, mock_interactive, mock_create_version, mock_gitignore):
+    """Test handle_setup uses tag ref when provided."""
+    mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
+
+    args = MagicMock()
+    args.path = "/test/path"
+    args.manual = False
+    args.update = False
+    args.ref = "1.0.0"
+
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
+        handle_setup(args)
+
+    mock_clone.assert_called_once_with("/tmp/test", "1.0.0")
+    mock_interactive.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
 
 
 # Tests for JsonValidator class

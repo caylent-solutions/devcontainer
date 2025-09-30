@@ -78,6 +78,11 @@ cdevcontainer setup-devcontainer --manual /path/to/your/project
 
 # Update existing devcontainer files to the current CLI version
 cdevcontainer setup-devcontainer --update /path/to/your/project
+
+# Use specific git reference (branch, tag, or commit) instead of CLI version
+cdevcontainer setup-devcontainer --ref main /path/to/your/project
+cdevcontainer setup-devcontainer --ref 1.0.0 /path/to/your/project
+cdevcontainer setup-devcontainer --ref feature/new-feature /path/to/your/project
 ```
 
 The interactive setup will guide you through:
