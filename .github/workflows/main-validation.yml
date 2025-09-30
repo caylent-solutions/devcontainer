@@ -485,6 +485,7 @@ jobs:
           fi
 
       - name: Wait for PR to merge and create Git tag
+        id: create-tag
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -528,9 +529,11 @@ jobs:
           echo "Cleaning up release branch: release-$NEW_VERSION"
           git push origin --delete release-$NEW_VERSION || echo "Branch already deleted or doesn't exist"
 
+          # Store version for next step
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Trigger publish workflow
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          NEW_VERSION=$(grep '^version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
-          gh workflow run publish.yml -f tag="$NEW_VERSION"
+          gh workflow run publish.yml -f tag="${{ steps.create-tag.outputs.version }}"
