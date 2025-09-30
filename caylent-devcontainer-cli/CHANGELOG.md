@@ -36,6 +36,18 @@ automatic PyPI publishing workflows.
 
 ### Fix
 
+* fix: fix ([`cacb04a`](https://github.com/caylent-solutions/devcontainer/commit/cacb04acedb50880ea155c36cd14cdafee05101a))
+
+* fix: fix ([`54db91f`](https://github.com/caylent-solutions/devcontainer/commit/54db91f6c83fe07df6d133817b445bb877484b28))
+
+* fix: fix ([`2f44215`](https://github.com/caylent-solutions/devcontainer/commit/2f44215fc5fbdb04b8c7be06bf3e727c73ace2c8))
+
+* fix: fix ([`4514c73`](https://github.com/caylent-solutions/devcontainer/commit/4514c73c4d198d0b5f87f67852f32667047a2400))
+
+* fix: fix ([`e428180`](https://github.com/caylent-solutions/devcontainer/commit/e428180b303b674dfcb1b552408b336ef29a71db))
+
+* fix: fix ([`8238efd`](https://github.com/caylent-solutions/devcontainer/commit/8238efd825154ef4f385d0b21276fe86d8cef6f9))
+
 * fix: fix ([`ad39e96`](https://github.com/caylent-solutions/devcontainer/commit/ad39e969f82957fc5a039fa3bdba03e9bdbc300c))
 
 * fix(workflow): use temporary file approach for __init__.py update
@@ -45,10 +57,14 @@ automatic PyPI publishing workflows.
 - Creates temporary Python script, executes it, then removes it
 - More reliable across different shell environments ([`90dcb2e`](https://github.com/caylent-solutions/devcontainer/commit/90dcb2eaf60d68209cd752cc1e662571cec6127c))
 
+* fix: sed ([`3515848`](https://github.com/caylent-solutions/devcontainer/commit/35158485806e5b0b2c6daeacab3c6473bb44bec4))
+
 * fix(workflow): fix sed quoting issue for __init__.py update
 
 - Change sed command to use single quotes to avoid shell quoting issues
 - This fixes the &#39;unterminated s command&#39; error in GitHub Actions ([`9334f22`](https://github.com/caylent-solutions/devcontainer/commit/9334f22e0efbec0952e978484de05b6eceb659d4))
+
+* fix: white space ([`f9a19a4`](https://github.com/caylent-solutions/devcontainer/commit/f9a19a40d7a6c612f98d2035eccc540bf79bc88b))
 
 * fix(workflow): fix semantic-release version file synchronization
 
@@ -68,6 +84,8 @@ branch → PR → merge → tag workflow for releases. ([`229d0a7`](https://gith
 - Reset CHANGELOG.md to start with v1.5.0 as latest version
 - This resolves the mismatch between git tags (1.5.0) and version files (1.6.0)
 - Now semantic-release can properly calculate 1.6.0 based on commits since 1.5.0 tag ([`7655573`](https://github.com/caylent-solutions/devcontainer/commit/765557359ac75ab66236ac01ddba511441aa688e))
+
+* fix: semantic release ([`9fd8b8a`](https://github.com/caylent-solutions/devcontainer/commit/9fd8b8ac00e27b16ca25b26310c48cf22b334b5c))
 
 * fix: semantic release v8 config (#64)
 
