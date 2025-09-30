@@ -11,19 +11,13 @@ WARNINGS=()
 # Source shared functions
 source "${WORK_DIR}/.devcontainer/devcontainer-functions.sh"
 
-# Validate .tool-versions file and python entry
+# Ensure .tool-versions file exists with python entry
 if [ ! -f "${WORK_DIR}/.tool-versions" ]; then
-  echo "❌ Missing .tool-versions file in project root" >&2
-  echo "   The Caylent devcontainer requires asdf to manage runtimes and tools" >&2
-  echo "   Create a .tool-versions file with: echo 'python 3.12.9' > .tool-versions" >&2
-  exit 1
-fi
-
-if ! grep -q "^python " "${WORK_DIR}/.tool-versions"; then
-  echo "❌ .tool-versions file must contain a python version entry" >&2
-  echo "   The Caylent devcontainer requires asdf to manage runtimes and tools" >&2
-  echo "   Add python to .tool-versions: echo 'python 3.12.9' >> .tool-versions" >&2
-  exit 1
+  log_info "Creating .tool-versions file with Python ${DEFAULT_PYTHON_VERSION}"
+  echo "python ${DEFAULT_PYTHON_VERSION}" > "${WORK_DIR}/.tool-versions"
+elif ! grep -q "^python " "${WORK_DIR}/.tool-versions"; then
+  log_info "Adding Python ${DEFAULT_PYTHON_VERSION} to .tool-versions"
+  echo "python ${DEFAULT_PYTHON_VERSION}" >> "${WORK_DIR}/.tool-versions"
 fi
 
 # Configure and log CICD environment
