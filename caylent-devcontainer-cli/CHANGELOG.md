@@ -2,9 +2,51 @@
 
 
 
+## v1.6.1 (2025-09-30)
+
+### Chore
+
+* chore: revert CHANGELOG.md to remove unwanted changes ([`72fb727`](https://github.com/caylent-solutions/devcontainer/commit/72fb7272b17c77f9cb210ac7557010807ebd086c))
+
+### Fix
+
+* fix: revert caylent-devcontainer-cli/CHANGELOG.md to main ([`9164634`](https://github.com/caylent-solutions/devcontainer/commit/91646345b236462a866eab083968a65aa1d9f7a0))
+
+* fix: format ([`4db0745`](https://github.com/caylent-solutions/devcontainer/commit/4db0745d69166389ea470d25bb9d5a9946ef3d99))
+
+* fix: make CLI version dynamic to match package metadata
+
+- Replace hardcoded version in __init__.py with dynamic version reading
+- Version now automatically syncs with pyproject.toml
+- Fixes issue where CLI showed 1.0.0 instead of actual package version ([`464caf9`](https://github.com/caylent-solutions/devcontainer/commit/464caf9d7626bb3996ded0b8f16b0a6e981f70de))
+
+### Test
+
+* test: fix version test for dynamic version loading
+
+- Mock importlib_metadata module to avoid import errors during testing
+- Ensures test passes when package metadata is not available ([`dd2f626`](https://github.com/caylent-solutions/devcontainer/commit/dd2f626ce4e907e903616fa06f47b08b746a0401))
+
+### Unknown
+
+* Fix issues with Github Action Create Release and dynamic cli release version
+
+Fix issues with Github Action Create Release and dynamic cli release version ([`2e57c87`](https://github.com/caylent-solutions/devcontainer/commit/2e57c87b332cbdd6bff5eb1b907e8da0709f1703))
+
+* fix: ([`8485264`](https://github.com/caylent-solutions/devcontainer/commit/84852649f5d6e9ddd49ecaec24248aa94abb4a35))
+
+
 ## v1.6.0 (2025-09-30)
 
 ### Chore
+
+* chore(release): 1.6.0 ([`ba3101e`](https://github.com/caylent-solutions/devcontainer/commit/ba3101ecdd8d3008bacc18ef2b028d00e748c960))
+
+* chore(release): 1.6.0 ([`53403a8`](https://github.com/caylent-solutions/devcontainer/commit/53403a8e14d5b05e2aac86fe91d9b6e0f08b9798))
+
+* chore(release): 1.6.0 ([`8d74dc0`](https://github.com/caylent-solutions/devcontainer/commit/8d74dc0404f8395cb827548a6c3708a07ae9aec7))
+
+* chore(release): 1.6.0 ([`258e7cc`](https://github.com/caylent-solutions/devcontainer/commit/258e7ccf1d0f64ff04bf7b9420b127ec12ec365f))
 
 * chore: add comprehensive caching to PyPI publish workflow (#61)
 
@@ -194,6 +236,10 @@ access cached content effectively. ([`5384d5b`](https://github.com/caylent-solut
 * fix: apply pre-commit trailing whitespace fixes to publish workflow ([`2bba852`](https://github.com/caylent-solutions/devcontainer/commit/2bba85264c67b98e28f247d774cb535ebaeb5664))
 
 ### Unknown
+
+* Merge pull request #69 from caylent-solutions/release-1.6.0
+
+Release 1.6.0 ([`070a40b`](https://github.com/caylent-solutions/devcontainer/commit/070a40be443dd8abcb5fabef391d4440a26a4624))
 
 * Expand devcontainer validation, CICD toggle, tooling improvements, and WSL support (#68)
 
