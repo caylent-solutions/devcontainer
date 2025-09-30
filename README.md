@@ -79,7 +79,7 @@ These extensions are auto-installed on container start and work with both VS Cod
 > git config --global core.autocrlf false
 > git config --global core.eol lf
 > ```
-> 
+>
 > This prevents issues with shell scripts and other text files when running in WSL environments. The devcontainer includes automatic line ending conversion for WSL compatibility.
 
 ### IDE Command Line Setup
