@@ -7,33 +7,18 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 
-@patch("importlib.metadata.PackageNotFoundError", ImportError)  # For Python < 3.8 compatibility
-def test_version_from_package():
-    # Since we now use a direct version string, just skip this test
-    assert True
-
-
-@patch("importlib.metadata.PackageNotFoundError", ImportError)  # For Python < 3.8 compatibility
-def test_version_from_env():
-    # Since we now use a direct version string, just skip this test
-    assert True
-
-
-@patch("importlib.metadata.PackageNotFoundError", ImportError)  # For Python < 3.8 compatibility
-def test_version_default():
-    # Mock both importlib.metadata.version and create a fake importlib_metadata module
-    with patch("importlib.metadata.version", side_effect=ImportError()):
-        with patch.dict("sys.modules", {"importlib_metadata": type(sys)("importlib_metadata")}):
-            # Add the version function to the fake module
-            sys.modules["importlib_metadata"].version = lambda x: "1.6.0"
-
-            with patch.dict("os.environ", {}, clear=True):
-                # We need to patch the import itself
-                with patch.dict("sys.modules"):
-                    if "caylent_devcontainer_cli" in sys.modules:
-                        del sys.modules["caylent_devcontainer_cli"]
-
-                    from caylent_devcontainer_cli import __version__
-
-                    # Verify that version matches expected fallback
-                    assert __version__ == "1.6.0"
+def test_version_consistency():
+    """Test that __init__.py version matches pyproject.toml version."""
+    import re
+    from caylent_devcontainer_cli import __version__
+    
+    # Read version from pyproject.toml
+    pyproject_path = os.path.join(os.path.dirname(__file__), "../../pyproject.toml")
+    with open(pyproject_path, 'r') as f:
+        content = f.read()
+        match = re.search(r'version = "([^"]+)"', content)
+        toml_version = match.group(1) if match else None
+    
+    # Verify versions match
+    assert toml_version is not None, "Could not find version in pyproject.toml"
+    assert __version__ == toml_version, f"Version mismatch: __init__.py={__version__}, pyproject.toml={toml_version}"
