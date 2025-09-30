@@ -2,7 +2,37 @@
 
 
 
+## v1.6.3 (2025-09-30)
+
+### Fix
+
+* fix: sync ver ([`9800e8a`](https://github.com/caylent-solutions/devcontainer/commit/9800e8a175c1066e4051164fbb55eb68dabc5a39))
+
+* fix: whitespace ([`54e841c`](https://github.com/caylent-solutions/devcontainer/commit/54e841c9976aad824d0f981d4a585838d0aa8f03))
+
+* fix: Ensure __init__.py version stays in sync with pyproject.toml during releases
+
+- Add manual update of __init__.py after semantic-release
+- Include __init__.py in whitespace cleanup
+- Stage __init__.py file for commit with other version files
+- Resolves version mismatch issues that prevent PyPI publishing ([`8499676`](https://github.com/caylent-solutions/devcontainer/commit/8499676975087e84e350cfa802223124ad4e5447))
+
+* fix: Sync __init__.py version to match pyproject.toml (1.6.2) ([`c5ce5f8`](https://github.com/caylent-solutions/devcontainer/commit/c5ce5f8ba7dbd62b37cca30ee38acd1250adfd7b))
+
+### Unknown
+
+* Merge pull request #74 from caylent-solutions/fix/semantic-release-init-version-sync
+
+Fix create release GitHub action and fix: make CLI version dynamic to match package metadata  - Replace hardcoded version in __init__.py with dynamic version reading - Version now automatically syncs with pyproject.toml - Fixes issue where CLI showed 1.0.0 instead of actual package version&#34; ([`7f0915e`](https://github.com/caylent-solutions/devcontainer/commit/7f0915e4b0b37cf73c431526e1a800b5b956d3df))
+
+* fix: ([`086dc83`](https://github.com/caylent-solutions/devcontainer/commit/086dc835df0eb3a7e6442974b53652742aded52a))
+
+
 ## v1.6.2 (2025-09-30)
+
+### Chore
+
+* chore(release): 1.6.2 ([`01c3c57`](https://github.com/caylent-solutions/devcontainer/commit/01c3c57050d09af6c02975d394f1e19d19a9a4b3))
 
 ### Fix
 
@@ -17,6 +47,10 @@
 * fix: Replace dynamic version loading with hardcoded version for semantic-release compatibility ([`e42484c`](https://github.com/caylent-solutions/devcontainer/commit/e42484cf10d8d8b8f85dd325a01be412b4b1dfef))
 
 ### Unknown
+
+* Merge pull request #73 from caylent-solutions/release-1.6.2
+
+Release 1.6.2 ([`63f3167`](https://github.com/caylent-solutions/devcontainer/commit/63f3167f9ba122880bac907707f195a7b2491861))
 
 * Merge pull request #72 from caylent-solutions/fix/version-handling-semantic-release
 
