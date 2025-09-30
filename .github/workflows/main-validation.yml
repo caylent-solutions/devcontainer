@@ -533,4 +533,4 @@ jobs:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           NEW_VERSION=$(grep '^version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
-          gh workflow run publish.yml --ref "$NEW_VERSION"
+          gh workflow run publish.yml -f tag="$NEW_VERSION"
