@@ -2,13 +2,32 @@
 
 
 
+## v1.8.0 (2025-09-30)
+
+### Feature
+
+* feat: remove workflow cancellation logic from release process (#85)
+
+- Simplify release workflow by removing GitHub job cancellation code
+- Reduces complexity and potential race conditions during PR creation/merge
+- Allows natural workflow execution without interference ([`18b5511`](https://github.com/caylent-solutions/devcontainer/commit/18b5511a4d3889047467d412f51ebcf75f2ebcfa))
+
+
 ## v1.7.1 (2025-09-30)
+
+### Chore
+
+* chore(release): 1.7.1 ([`be3334a`](https://github.com/caylent-solutions/devcontainer/commit/be3334a981146bcdff11eba177194673e88f0569))
 
 ### Fix
 
 * fix: fix wf (#83) ([`ca15a19`](https://github.com/caylent-solutions/devcontainer/commit/ca15a19ed5bb39a1ad44b06942d9da730f03e5d3))
 
 ### Unknown
+
+* Merge pull request #84 from caylent-solutions/release-1.7.1
+
+Release 1.7.1 ([`205cc74`](https://github.com/caylent-solutions/devcontainer/commit/205cc747dbbb4abbbe10c29e007dabb7192fc1da))
 
 * Feat/trigger publish workflow (#82)
 
