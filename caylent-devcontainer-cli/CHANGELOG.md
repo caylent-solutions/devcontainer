@@ -2,7 +2,18 @@
 
 
 
+## v1.6.3 (2025-09-30)
+
+### Fix
+
+* fix: Sync __init__.py version to match pyproject.toml (1.6.2) ([`c5ce5f8`](https://github.com/caylent-solutions/devcontainer/commit/c5ce5f8ba7dbd62b37cca30ee38acd1250adfd7b))
+
+
 ## v1.6.2 (2025-09-30)
+
+### Chore
+
+* chore(release): 1.6.2 ([`01c3c57`](https://github.com/caylent-solutions/devcontainer/commit/01c3c57050d09af6c02975d394f1e19d19a9a4b3))
 
 ### Fix
 
@@ -17,6 +28,10 @@
 * fix: Replace dynamic version loading with hardcoded version for semantic-release compatibility ([`e42484c`](https://github.com/caylent-solutions/devcontainer/commit/e42484cf10d8d8b8f85dd325a01be412b4b1dfef))
 
 ### Unknown
+
+* Merge pull request #73 from caylent-solutions/release-1.6.2
+
+Release 1.6.2 ([`63f3167`](https://github.com/caylent-solutions/devcontainer/commit/63f3167f9ba122880bac907707f195a7b2491861))
 
 * Merge pull request #72 from caylent-solutions/fix/version-handling-semantic-release
 
