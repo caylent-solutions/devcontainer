@@ -269,6 +269,7 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          trigger-workflows: true
 
       - name: Cache system dependencies for release
         id: cache-system-deps-release
@@ -444,11 +445,45 @@ jobs:
             --head release-$VERSION)
           echo "✓ Pull request created: $PR_URL"
 
+          # Cancel any workflows triggered by the PR creation
+          TIMEOUT=30
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            WORKFLOW_IDS=$(gh run list --branch release-$VERSION --status queued,in_progress --json databaseId --jq '.[].databaseId' 2>/dev/null || echo "")
+            if [ -n "$WORKFLOW_IDS" ]; then
+              echo "$WORKFLOW_IDS" | xargs -I {} gh run cancel {} || true
+              echo "✓ Cancelled workflows triggered by PR creation"
+              break
+            fi
+            sleep 1
+            ELAPSED=$((ELAPSED + 1))
+          done
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "⏳ No workflows found to cancel after ${TIMEOUT}s timeout"
+          fi
+
           echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
           echo "✓ PR URL saved to GitHub output"
 
           gh pr merge ${PR_URL} --admin --merge
           echo "✓ Pull request merged successfully"
+
+          # Cancel any workflows triggered by the PR merge
+          TIMEOUT=30
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            WORKFLOW_IDS=$(gh run list --branch main --status queued,in_progress --json databaseId --jq '.[].databaseId' 2>/dev/null || echo "")
+            if [ -n "$WORKFLOW_IDS" ]; then
+              echo "$WORKFLOW_IDS" | xargs -I {} gh run cancel {} || true
+              echo "✓ Cancelled workflows triggered by PR merge"
+              break
+            fi
+            sleep 1
+            ELAPSED=$((ELAPSED + 1))
+          done
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "⏳ No workflows found to cancel after ${TIMEOUT}s timeout"
+          fi
 
       - name: Wait for PR to merge and create Git tag
         env:
