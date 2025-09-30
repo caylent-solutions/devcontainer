@@ -10,11 +10,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 def test_version_consistency():
     """Test that __init__.py version matches pyproject.toml version."""
     import re
+
     from caylent_devcontainer_cli import __version__
 
     # Read version from pyproject.toml
     pyproject_path = os.path.join(os.path.dirname(__file__), "../../pyproject.toml")
-    with open(pyproject_path, 'r') as f:
+    with open(pyproject_path, "r") as f:
         content = f.read()
         match = re.search(r'version = "([^"]+)"', content)
         toml_version = match.group(1) if match else None
