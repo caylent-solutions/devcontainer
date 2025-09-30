@@ -21,16 +21,19 @@ def test_version_from_env():
 
 @patch("importlib.metadata.PackageNotFoundError", ImportError)  # For Python < 3.8 compatibility
 def test_version_default():
-    # We need to patch both the version function and the environment
+    # Mock both importlib.metadata.version and create a fake importlib_metadata module
     with patch("importlib.metadata.version", side_effect=ImportError()):
-        with patch.dict("os.environ", {}, clear=True):
-            # We need to patch the import itself
-            with patch.dict("sys.modules"):
-                if "caylent_devcontainer_cli" in sys.modules:
-                    del sys.modules["caylent_devcontainer_cli"]
+        with patch.dict("sys.modules", {"importlib_metadata": type(sys)("importlib_metadata")}):
+            # Add the version function to the fake module
+            sys.modules["importlib_metadata"].version = lambda x: "1.6.0"
+            
+            with patch.dict("os.environ", {}, clear=True):
+                # We need to patch the import itself
+                with patch.dict("sys.modules"):
+                    if "caylent_devcontainer_cli" in sys.modules:
+                        del sys.modules["caylent_devcontainer_cli"]
 
-                from caylent_devcontainer_cli import __version__
+                    from caylent_devcontainer_cli import __version__
 
-                # Just verify that version is a non-empty string
-                assert isinstance(__version__, str)
-                assert len(__version__) > 0
+                    # Verify that version matches expected fallback
+                    assert __version__ == "1.6.0"
