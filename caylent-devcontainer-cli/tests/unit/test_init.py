@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
+import re
 import sys
-
 
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -9,8 +9,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 def test_version_consistency():
     """Test that __init__.py version matches pyproject.toml version."""
-    import re
-
     from caylent_devcontainer_cli import __version__
 
     # Read version from pyproject.toml
