@@ -260,6 +260,29 @@ def prompt_env_values() -> Dict[str, Any]:
             sys.exit(0)
         env_values["EXTRA_APT_PACKAGES"] = extra_packages
 
+        # Pager selection
+        pager_choice = questionary.select(
+            "Select default pager:", choices=["cat", "less", "more", "most"], default="cat"
+        ).ask()
+        if pager_choice is None:
+            log("INFO", "Setup cancelled by user.")
+            import sys
+
+            sys.exit(0)
+        env_values["PAGER"] = pager_choice
+
+        # AWS output format (only if AWS is enabled)
+        if aws_config == "true":
+            aws_output = questionary.select(
+                "Select default AWS CLI output format:", choices=["json", "table", "text", "yaml"], default="json"
+            ).ask()
+            if aws_output is None:
+                log("INFO", "Setup cancelled by user.")
+                import sys
+
+                sys.exit(0)
+            env_values["AWS_DEFAULT_OUTPUT"] = aws_output
+
         return env_values
     except KeyboardInterrupt:
         log("INFO", "Setup cancelled by user.")
@@ -556,10 +579,18 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
 
     log("OK", f"Environment variables saved to {env_file_path}")
 
-    # Create AWS profile map if needed
-    # Check both containerEnv and env_values for backward compatibility
+    # Check and create .tool-versions file
     container_env = template_data.get("containerEnv", {})
     env_values = template_data.get("env_values", {})
+    python_version = container_env.get("DEFAULT_PYTHON_VERSION") or env_values.get("DEFAULT_PYTHON_VERSION")
+
+    if python_version:
+        from caylent_devcontainer_cli.commands.setup import check_and_create_tool_versions
+
+        check_and_create_tool_versions(target_path, python_version)
+
+    # Create AWS profile map if needed
+    # Check both containerEnv and env_values for backward compatibility
     aws_config_enabled = container_env.get("AWS_CONFIG_ENABLED", env_values.get("AWS_CONFIG_ENABLED", "false"))
 
     if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
@@ -590,10 +621,18 @@ def apply_template_without_clone(template_data: Dict[str, Any], target_path: str
 
     log("OK", f"Environment variables saved to {env_file_path}")
 
-    # Create AWS profile map if needed
-    # Check both containerEnv and env_values for backward compatibility
+    # Check and create .tool-versions file
     container_env = template_data.get("containerEnv", {})
     env_values = template_data.get("env_values", {})
+    python_version = container_env.get("DEFAULT_PYTHON_VERSION") or env_values.get("DEFAULT_PYTHON_VERSION")
+
+    if python_version:
+        from caylent_devcontainer_cli.commands.setup import check_and_create_tool_versions
+
+        check_and_create_tool_versions(target_path, python_version)
+
+    # Create AWS profile map if needed
+    # Check both containerEnv and env_values for backward compatibility
     aws_config_enabled = container_env.get("AWS_CONFIG_ENABLED", env_values.get("AWS_CONFIG_ENABLED", "false"))
 
     if aws_config_enabled == "true" and template_data.get("aws_profile_map"):

@@ -255,6 +255,66 @@ def test_prompt_env_values_none_extra_packages(mock_select, mock_text, mock_pass
         prompt_env_values()
 
 
+@patch("questionary.password")
+@patch("questionary.text")
+@patch("questionary.select")
+def test_prompt_env_values_complete_with_aws_enabled(mock_select, mock_text, mock_password):
+    """Test prompt_env_values with complete input and AWS enabled."""
+    from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
+
+    mock_select.return_value.ask.side_effect = ["true", "less", "table"]
+    mock_text.return_value.ask.side_effect = [
+        "main",
+        "3.12.9",
+        "Developer",
+        "github.com",
+        "user",
+        "user@example.com",
+        "curl wget",
+    ]
+    mock_password.return_value.ask.return_value = "token123"
+
+    result = prompt_env_values()
+
+    assert result["AWS_CONFIG_ENABLED"] == "true"
+    assert result["DEFAULT_GIT_BRANCH"] == "main"
+    assert result["DEFAULT_PYTHON_VERSION"] == "3.12.9"
+    assert result["DEVELOPER_NAME"] == "Developer"
+    assert result["GIT_PROVIDER_URL"] == "github.com"
+    assert result["GIT_USER"] == "user"
+    assert result["GIT_USER_EMAIL"] == "user@example.com"
+    assert result["GIT_TOKEN"] == "token123"
+    assert result["EXTRA_APT_PACKAGES"] == "curl wget"
+    assert result["PAGER"] == "less"
+    assert result["AWS_DEFAULT_OUTPUT"] == "table"
+
+
+@patch("questionary.password")
+@patch("questionary.text")
+@patch("questionary.select")
+def test_prompt_env_values_complete_with_aws_disabled(mock_select, mock_text, mock_password):
+    """Test prompt_env_values with complete input and AWS disabled."""
+    from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
+
+    mock_select.return_value.ask.side_effect = ["false", "cat"]
+    mock_text.return_value.ask.side_effect = [
+        "main",
+        "3.12.9",
+        "Developer",
+        "github.com",
+        "user",
+        "user@example.com",
+        "",
+    ]
+    mock_password.return_value.ask.return_value = "token123"
+
+    result = prompt_env_values()
+
+    assert result["AWS_CONFIG_ENABLED"] == "false"
+    assert result["PAGER"] == "cat"
+    assert "AWS_DEFAULT_OUTPUT" not in result
+
+
 @patch("questionary.select")
 def test_load_template_version_mismatch_upgrade(mock_select):
     """Test load_template_from_file with version mismatch - upgrade choice."""

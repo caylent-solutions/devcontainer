@@ -10,7 +10,7 @@ def run_command(cmd, cwd=None, input_text=None):
     result = subprocess.run(
         cmd,
         cwd=cwd,
-        input=input_text.encode() if input_text else None,
+        input=input_text,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -139,3 +139,50 @@ def test_setup_update_mode_no_devcontainer():
 
         assert result.returncode != 0
         assert "No .devcontainer directory found" in result.stderr
+
+
+def test_setup_creates_tool_versions_file(temp_project_dir):
+    """Test that setup command creates .tool-versions file when missing."""
+    # Ensure .tool-versions doesn't exist initially
+    tool_versions_path = os.path.join(temp_project_dir, ".tool-versions")
+    assert not os.path.exists(tool_versions_path)
+
+    # Run the setup command with --manual flag and simulate pressing enter
+    result = run_command(
+        ["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir],
+        input_text="\n",  # Simulate pressing enter when prompted
+    )
+
+    assert result.returncode == 0
+
+    # Check that .tool-versions was created
+    assert os.path.exists(tool_versions_path)
+
+    # Check the content
+    with open(tool_versions_path, "r") as f:
+        content = f.read()
+
+    assert "python 3.12.9" in content
+    assert "Found .tool-versions file" not in result.stderr  # Should not find existing file
+    assert ".tool-versions file not found but is required" in result.stderr
+
+
+def test_setup_finds_existing_tool_versions_file(temp_project_dir):
+    """Test that setup command finds existing .tool-versions file."""
+    # Create existing .tool-versions file
+    tool_versions_path = os.path.join(temp_project_dir, ".tool-versions")
+    with open(tool_versions_path, "w") as f:
+        f.write("python 3.11.5\n")
+
+    # Run the setup command
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+
+    assert result.returncode == 0
+
+    # Check that the existing file was found and not modified
+    with open(tool_versions_path, "r") as f:
+        content = f.read()
+
+    assert "python 3.11.5" in content  # Original content preserved
+    assert "Found .tool-versions file" in result.stderr
+    assert ".tool-versions file not found" not in result.stderr

@@ -8,6 +8,8 @@
     "GIT_PROVIDER_URL":       "github.com",
     "GIT_TOKEN":              "<Personal Access Token>",
     "GIT_USER":               "john.doe",
-    "GIT_USER_EMAIL":         "john.doe@caylent.com"
+    "GIT_USER_EMAIL":         "john.doe@caylent.com",
+    "PAGER":                  "cat",
+    "AWS_DEFAULT_OUTPUT":     "json"
   }
 }

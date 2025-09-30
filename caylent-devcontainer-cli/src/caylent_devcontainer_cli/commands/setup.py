@@ -99,6 +99,8 @@ def handle_setup(args):
                 copy_devcontainer_files(temp_dir, target_path, keep_examples=True)
                 # Create VERSION file
                 create_version_file(target_path)
+                # Check and create .tool-versions file with default Python version
+                check_and_create_tool_versions(target_path, EXAMPLE_ENV_VALUES["DEFAULT_PYTHON_VERSION"])
                 # Ensure .gitignore entries
                 ensure_gitignore_entries(target_path)
                 show_manual_instructions(target_path)
@@ -112,6 +114,8 @@ def handle_setup(args):
     else:
         # User declined overwrite, continue with existing .devcontainer
         if manual_mode:
+            # Check and create .tool-versions file with default Python version
+            check_and_create_tool_versions(target_path, EXAMPLE_ENV_VALUES["DEFAULT_PYTHON_VERSION"])
             # Ensure .gitignore entries
             ensure_gitignore_entries(target_path)
             show_manual_instructions(target_path)
@@ -128,6 +132,36 @@ def create_version_file(target_path: str) -> None:
     with open(version_file, "w") as f:
         f.write(__version__ + "\n")  # Add newline
     log("INFO", f"Created VERSION file with version {__version__}")
+
+
+def check_and_create_tool_versions(target_path: str, python_version: str) -> None:
+    """Check for .tool-versions file and create if missing."""
+    tool_versions_path = os.path.join(target_path, ".tool-versions")
+
+    if os.path.exists(tool_versions_path):
+        log("OK", "Found .tool-versions file")
+        return
+
+    log(
+        "INFO",
+        ".tool-versions file not found but is required as the Caylent Devcontainer "
+        "requires runtimes and tools to be managed by asdf",
+    )
+
+    file_content = f"python {python_version}\n"
+    print(f"\nWill create file: {tool_versions_path}")
+    print(f"With content:\n{file_content}")
+
+    try:
+        input("Press any key to create the file...")
+    except (EOFError, KeyboardInterrupt):
+        # Handle non-interactive environments (like tests) or user cancellation
+        pass
+
+    with open(tool_versions_path, "w") as f:
+        f.write(file_content)
+
+    log("OK", f"Created .tool-versions file with Python {python_version}")
 
 
 def ensure_gitignore_entries(target_path: str) -> None:
@@ -190,20 +224,13 @@ def clone_repo(temp_dir: str, version: str) -> None:
             stderr=subprocess.PIPE,
         )
     except subprocess.CalledProcessError as e:
-        log("ERR", f"Failed to clone repository: {e}")
-        log("INFO", "Attempting to clone main branch instead...")
-        try:
-            subprocess.run(
-                ["git", "clone", "--depth", "1", REPO_URL, temp_dir],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-        except subprocess.CalledProcessError as e:
-            log("ERR", f"Failed to clone repository: {e}")
-            import sys
+        log("ERR", f"Failed to clone devcontainer repository at version {version}")
+        log("ERR", f"Version tag '{version}' does not exist in the repository")
+        log("ERR", f"Please check available versions at: {REPO_URL}/releases")
+        log("ERR", f"Git error: {e}")
+        import sys
 
-            sys.exit(1)
+        sys.exit(1)
 
 
 def copy_devcontainer_files(source_dir: str, target_path: str, keep_examples: bool = False) -> None:

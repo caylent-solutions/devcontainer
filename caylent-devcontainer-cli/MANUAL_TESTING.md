@@ -53,11 +53,14 @@ cdevcontainer setup-devcontainer .
 # - Git token: test-token
 # - Extra packages: (leave empty)
 # - Don't save as template
+# - Press any key when prompted to create .tool-versions file
 
 # Verify files were created
 ls -la .devcontainer/
 cat devcontainer-environment-variables.json
 # Should see the values you entered
+cat .tool-versions
+# Should contain: python 3.12.9
 ```
 
 ### 3. Template Save and Load Workflow
@@ -118,9 +121,44 @@ cdevcontainer setup-devcontainer .
 # Follow prompts, but this time set:
 # - AWS_CONFIG_ENABLED: true
 # - Add a simple AWS profile configuration
+# - Press any key when prompted to create .tool-versions file
 
 # Verify AWS profile map was created
 cat .devcontainer/aws-profile-map.json
+# Verify .tool-versions was created
+cat .tool-versions
+```
+
+### 6. .tool-versions File Management Test
+
+**Purpose**: Verify .tool-versions file detection and creation
+
+```bash
+# Test 1: Project without .tool-versions
+mkdir -p /tmp/test-no-tool-versions
+cd /tmp/test-no-tool-versions
+
+# Run setup (manual mode for simplicity)
+cdevcontainer setup-devcontainer --manual .
+# Should prompt to create .tool-versions file
+# Press any key to create it
+
+# Verify file was created with correct content
+cat .tool-versions
+# Should contain: python 3.12.9
+
+# Test 2: Project with existing .tool-versions
+mkdir -p /tmp/test-existing-tool-versions
+cd /tmp/test-existing-tool-versions
+echo "python 3.11.5" > .tool-versions
+
+# Run setup
+cdevcontainer setup-devcontainer --manual .
+# Should detect existing file and not prompt to create
+
+# Verify original content preserved
+cat .tool-versions
+# Should still contain: python 3.11.5
 ```
 
 ## Reporting Issues
