@@ -2,9 +2,32 @@
 
 
 
+## v1.6.2 (2025-09-30)
+
+### Fix
+
+* fix: lint ([`934171e`](https://github.com/caylent-solutions/devcontainer/commit/934171ee63041da4883da9bd49d2d764d981bce7))
+
+* fix: lint ([`5cb80a6`](https://github.com/caylent-solutions/devcontainer/commit/5cb80a6e0f41b7aef7fc18c7ba33f3657b620579))
+
+* fix: format ([`7aedde7`](https://github.com/caylent-solutions/devcontainer/commit/7aedde741866bb3608801f3662d7135b3a3bb1c9))
+
+* fix: white space ([`ac62849`](https://github.com/caylent-solutions/devcontainer/commit/ac6284985f13f2235a44ffc86a353d46675d7eb9))
+
+* fix: Replace dynamic version loading with hardcoded version for semantic-release compatibility ([`e42484c`](https://github.com/caylent-solutions/devcontainer/commit/e42484cf10d8d8b8f85dd325a01be412b4b1dfef))
+
+### Unknown
+
+* Merge pull request #72 from caylent-solutions/fix/version-handling-semantic-release
+
+fix: Replace dynamic version loading with hardcoded version for seman… ([`164918b`](https://github.com/caylent-solutions/devcontainer/commit/164918b2a73c4ceff9a49edc28700c431ba784d0))
+
+
 ## v1.6.1 (2025-09-30)
 
 ### Chore
+
+* chore(release): 1.6.1 ([`ed20b0e`](https://github.com/caylent-solutions/devcontainer/commit/ed20b0ef894d656f4f2ea5dc248a1b60aa4db870))
 
 * chore: revert CHANGELOG.md to remove unwanted changes ([`72fb727`](https://github.com/caylent-solutions/devcontainer/commit/72fb7272b17c77f9cb210ac7557010807ebd086c))
 
@@ -28,6 +51,10 @@
 - Ensures test passes when package metadata is not available ([`dd2f626`](https://github.com/caylent-solutions/devcontainer/commit/dd2f626ce4e907e903616fa06f47b08b746a0401))
 
 ### Unknown
+
+* Merge pull request #71 from caylent-solutions/release-1.6.1
+
+Release 1.6.1 ([`5188c6e`](https://github.com/caylent-solutions/devcontainer/commit/5188c6eff5d02a8e86cbf4cf22c74cc50308207e))
 
 * Fix issues with Github Action Create Release and dynamic cli release version
 
