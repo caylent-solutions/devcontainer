@@ -374,12 +374,16 @@ jobs:
           # The --no-commit flag updates files without committing
           python -m semantic_release version --no-push --no-vcs-release --no-commit
 
-          # Fix trailing whitespace in modified files
-          sed -i 's/[[:space:]]*$//' CHANGELOG.md pyproject.toml
-
           # Get the version that was just set in pyproject.toml
           NEW_VERSION=$(grep '^version = ' pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           echo "Updated version: $NEW_VERSION"
+
+          # Manually update __init__.py version to match pyproject.toml
+          sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$NEW_VERSION\"/" src/caylent_devcontainer_cli/__init__.py
+          echo "Updated __init__.py to version: $NEW_VERSION"
+
+          # Fix trailing whitespace in modified files
+          sed -i 's/[[:space:]]*$//' CHANGELOG.md pyproject.toml src/caylent_devcontainer_cli/__init__.py
 
           # Clean up build artifacts created by semantic-release
           rm -rf dist/ build/ src/caylent_devcontainer_cli.egg-info/
@@ -415,7 +419,7 @@ jobs:
           git status --porcelain
 
           # Stage the modified files first (with correct paths from repo root)
-          git add caylent-devcontainer-cli/CHANGELOG.md caylent-devcontainer-cli/pyproject.toml
+          git add caylent-devcontainer-cli/CHANGELOG.md caylent-devcontainer-cli/pyproject.toml caylent-devcontainer-cli/src/caylent_devcontainer_cli/__init__.py
           echo "✓ Files staged successfully"
 
           # Check git status after staging
