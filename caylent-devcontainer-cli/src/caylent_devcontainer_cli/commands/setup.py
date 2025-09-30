@@ -155,7 +155,7 @@ def check_and_create_tool_versions(target_path: str, python_version: str) -> Non
     print(f"With content:\n{file_content}")
 
     try:
-        input("Press any key to create the file...")
+        input("Press Enter to create the file...")
     except (EOFError, KeyboardInterrupt):
         # Handle non-interactive environments (like tests) or user cancellation
         pass

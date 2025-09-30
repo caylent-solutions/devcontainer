@@ -53,7 +53,7 @@ cdevcontainer setup-devcontainer .
 # - Git token: test-token
 # - Extra packages: (leave empty)
 # - Don't save as template
-# - Press any key when prompted to create .tool-versions file
+# - Press Enter when prompted to create .tool-versions file
 
 # Verify files were created
 ls -la .devcontainer/
@@ -121,7 +121,7 @@ cdevcontainer setup-devcontainer .
 # Follow prompts, but this time set:
 # - AWS_CONFIG_ENABLED: true
 # - Add a simple AWS profile configuration
-# - Press any key when prompted to create .tool-versions file
+# - Press Enter when prompted to create .tool-versions file
 
 # Verify AWS profile map was created
 cat .devcontainer/aws-profile-map.json
@@ -141,7 +141,7 @@ cd /tmp/test-no-tool-versions
 # Run setup (manual mode for simplicity)
 cdevcontainer setup-devcontainer --manual .
 # Should prompt to create .tool-versions file
-# Press any key to create it
+# Press Enter to create it
 
 # Verify file was created with correct content
 cat .tool-versions
