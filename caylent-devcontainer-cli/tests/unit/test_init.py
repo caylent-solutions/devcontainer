@@ -26,7 +26,7 @@ def test_version_default():
         with patch.dict("sys.modules", {"importlib_metadata": type(sys)("importlib_metadata")}):
             # Add the version function to the fake module
             sys.modules["importlib_metadata"].version = lambda x: "1.6.0"
-            
+
             with patch.dict("os.environ", {}, clear=True):
                 # We need to patch the import itself
                 with patch.dict("sys.modules"):
