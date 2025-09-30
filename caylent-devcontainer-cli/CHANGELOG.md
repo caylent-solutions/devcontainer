@@ -2,7 +2,39 @@
 
 
 
+## v1.7.1 (2025-09-30)
+
+### Fix
+
+* fix: fix wf (#83) ([`ca15a19`](https://github.com/caylent-solutions/devcontainer/commit/ca15a19ed5bb39a1ad44b06942d9da730f03e5d3))
+
+### Unknown
+
+* Feat/trigger publish workflow (#82)
+
+* feat: auto-trigger publish workflow from release process
+
+- Add step to trigger publish.yml workflow after tag creation in main-validation.yml
+- Remove push trigger on tags from publish.yml to prevent duplicate runs
+- Publish workflow now only runs on manual dispatch or automated trigger
+
+* fix: provide required tag input to publish workflow trigger
+
+- Use -f flag to pass tag parameter to workflow_dispatch
+- Fixes HTTP 422 error about missing required input
+
+* refactor: eliminate duplicate version extraction in workflow
+
+- Store version in step output to avoid duplication
+- Use stored version in trigger step for consistency
+- Improves maintainability and reduces potential inconsistencies ([`6c51176`](https://github.com/caylent-solutions/devcontainer/commit/6c5117612d7c72ab09be1de1a4f22c25b12941de))
+
+
 ## v1.7.0 (2025-09-30)
+
+### Chore
+
+* chore(release): 1.7.0 ([`92568bf`](https://github.com/caylent-solutions/devcontainer/commit/92568bf883e74c0adf819183b825f6ca68e6a239))
 
 ### Feature
 
@@ -11,6 +43,12 @@
 - Add step to trigger publish.yml workflow after tag creation in main-validation.yml
 - Remove push trigger on tags from publish.yml to prevent duplicate runs
 - Publish workflow now only runs on manual dispatch or automated trigger ([`9aaec70`](https://github.com/caylent-solutions/devcontainer/commit/9aaec708aaff16d8e1377df2396ed2572ecaed20))
+
+### Unknown
+
+* Merge pull request #81 from caylent-solutions/release-1.7.0
+
+Release 1.7.0 ([`ae15da7`](https://github.com/caylent-solutions/devcontainer/commit/ae15da72938d3696d4146eaee6f79a70d521fc98))
 
 
 ## v1.6.5 (2025-09-30)
