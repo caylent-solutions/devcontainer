@@ -80,6 +80,15 @@ log_info "Configuring ENV vars..."
 echo "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\"" >> ${BASH_RC}
 echo "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\"" >> ${ZSH_RC}
 
+# Source shell.env for WSL environments
+if uname -r | grep -i microsoft > /dev/null; then
+  log_info "WSL detected - configuring shell.env sourcing for all shells"
+  echo "# Source project shell.env for WSL" >> ${BASH_RC}
+  echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${BASH_RC}
+  echo "# Source project shell.env for WSL" >> ${ZSH_RC}
+  echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${ZSH_RC}
+fi
+
 # Handle PAGER configuration by checking shell.env first
 SHELL_ENV_PAGER=""
 if [ -f "${WORK_DIR}/shell.env" ] && grep -q "^export PAGER=" "${WORK_DIR}/shell.env"; then
