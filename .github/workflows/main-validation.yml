@@ -269,7 +269,6 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          trigger-workflows: true
 
       - name: Cache system dependencies for release
         id: cache-system-deps-release
