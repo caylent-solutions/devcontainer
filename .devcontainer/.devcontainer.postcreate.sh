@@ -295,7 +295,7 @@ echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${ZSH_RC}
 log_info "Installing Python packages..."
 if uname -r | grep -i microsoft > /dev/null; then
   # WSL compatibility: Do not use sudo -u in WSL as it fails
-  python -m pipx install aws-sso-util --root-user-action=ignore
+  python -m pipx install aws-sso-util
 else
   # Non-WSL: Use sudo -u to ensure correct user environment
   sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install aws-sso-util"
