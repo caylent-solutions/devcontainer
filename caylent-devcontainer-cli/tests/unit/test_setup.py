@@ -1268,7 +1268,7 @@ def test_check_and_create_tool_versions_not_exists(mock_file, mock_input, mock_e
 
     mock_file.assert_called_once_with("/test/path/.tool-versions", "w")
     mock_file().write.assert_called_once_with("python 3.12.9\n")
-    mock_input.assert_called_once_with("Press any key to create the file...")
+    mock_input.assert_called_once_with("Press Enter to create the file...")
 
 
 @patch("os.path.exists", return_value=False)
