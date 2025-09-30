@@ -2,13 +2,32 @@
 
 
 
+## v1.7.0 (2025-09-30)
+
+### Feature
+
+* feat: auto-trigger publish workflow from release process (#80)
+
+- Add step to trigger publish.yml workflow after tag creation in main-validation.yml
+- Remove push trigger on tags from publish.yml to prevent duplicate runs
+- Publish workflow now only runs on manual dispatch or automated trigger ([`9aaec70`](https://github.com/caylent-solutions/devcontainer/commit/9aaec708aaff16d8e1377df2396ed2572ecaed20))
+
+
 ## v1.6.5 (2025-09-30)
+
+### Chore
+
+* chore(release): 1.6.5 ([`c578f8b`](https://github.com/caylent-solutions/devcontainer/commit/c578f8bf0254cddc17a6b6ab391db58b624e12a1))
 
 ### Fix
 
 * fix: workflow ([`0001826`](https://github.com/caylent-solutions/devcontainer/commit/0001826d011a363fd77b06a860b6a8f71949d9e5))
 
 ### Unknown
+
+* Merge pull request #79 from caylent-solutions/release-1.6.5
+
+Release 1.6.5 ([`3663c45`](https://github.com/caylent-solutions/devcontainer/commit/3663c452e569f2f8019dc979455f6f978bc2338e))
 
 * Merge pull request #78 from caylent-solutions/fix-workflow
 
