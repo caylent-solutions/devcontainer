@@ -42,11 +42,14 @@ The CLI requires IDE command-line tools to launch projects:
 ### Install CLI
 
 ```bash
-# Install from PyPI (when available)
-pip install caylent-devcontainer-cli
+# Install from PyPI using pipx (recommended to avoid package conflicts)
+pipx install caylent-devcontainer-cli
 
 # Install from GitHub with a specific version tag
-pip install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
+pipx install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
+
+# If you don't have pipx installed, install it first:
+python -m pip install pipx
 ```
 
 ## Usage
@@ -75,12 +78,20 @@ cdevcontainer setup-devcontainer --manual /path/to/your/project
 
 # Update existing devcontainer files to the current CLI version
 cdevcontainer setup-devcontainer --update /path/to/your/project
+
+# Use specific git reference (branch, tag, or commit) instead of CLI version
+cdevcontainer setup-devcontainer --ref main /path/to/your/project
+cdevcontainer setup-devcontainer --ref 1.0.0 /path/to/your/project
+cdevcontainer setup-devcontainer --ref feature/new-feature /path/to/your/project
 ```
 
 The interactive setup will guide you through:
 1. Using an existing template or creating a new one
 2. Configuring environment variables
-3. Setting up AWS profiles (if enabled)
+3. Selecting pager preference (cat, less, more, most)
+4. Setting up AWS profiles (if enabled)
+5. Selecting AWS CLI output format (json, table, text, yaml) - only if AWS is enabled
+6. Automatically creating a `.tool-versions` file if one doesn't exist to ensure consistent runtime management via asdf
 
 ### Managing Templates
 

@@ -14,11 +14,12 @@ from caylent_devcontainer_cli.commands.setup_interactive import apply_template, 
 @patch("builtins.open", new_callable=mock_open)
 def test_apply_template_adds_newlines(mock_file, mock_copytree, mock_exists):
     template_data = {
-        "env_values": {"AWS_CONFIG_ENABLED": "true"},
+        "env_values": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    apply_template(template_data, "/target", "/source")
+    with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
+        apply_template(template_data, "/target", "/source")
 
     # Check that write was called with a newline for both files
     write_calls = mock_file().write.call_args_list

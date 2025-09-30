@@ -80,6 +80,7 @@
   "userEnvProbe": "loginInteractiveShell",
   "containerEnv": {
     "AWS_CONFIG_ENABLED": "${localEnv:AWS_CONFIG_ENABLED}",
+    "CICD": "${localEnv:CICD}",
     "DEFAULT_GIT_BRANCH": "${localEnv:DEFAULT_GIT_BRANCH}",
     "DEFAULT_PYTHON_VERSION": "${localEnv:DEFAULT_PYTHON_VERSION}",
     "DEVELOPER_NAME": "${localEnv:DEVELOPER_NAME}",
@@ -88,7 +89,9 @@
     "GIT_PROVIDER_URL": "${localEnv:GIT_PROVIDER_URL}",
     "GIT_TOKEN": "${localEnv:GIT_TOKEN}",
     "GIT_USER": "${localEnv:GIT_USER}",
-    "GIT_USER_EMAIL": "${localEnv:GIT_USER_EMAIL}"
+    "GIT_USER_EMAIL": "${localEnv:GIT_USER_EMAIL}",
+    "PAGER": "${localEnv:PAGER}",
+    "AWS_DEFAULT_OUTPUT": "${localEnv:AWS_DEFAULT_OUTPUT}"
   },
-  "postCreateCommand": "sudo apt-get update; sudo apt-get install -y gettext-base jq; sudo bash .devcontainer/.devcontainer.postcreate.sh vscode"
+  "postCreateCommand": "bash -c 'if uname -r | grep -i microsoft > /dev/null; then sudo apt-get update && sudo apt-get install -y gettext-base jq python3 && find .devcontainer -type f -exec sed -i \"s/\\r$//\" {} + && python3 .devcontainer/fix-line-endings.py && sudo apt-get remove -y python3 && sudo apt-get autoremove -y && source shell.env && exec bash .devcontainer/.devcontainer.postcreate.sh vscode; else sudo apt-get update && sudo apt-get install -y gettext-base jq && sudo bash .devcontainer/.devcontainer.postcreate.sh vscode; fi'"
 }

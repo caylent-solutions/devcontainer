@@ -15,13 +15,16 @@ def test_apply_template_with_container_env():
         "containerEnv": {
             "AWS_CONFIG_ENABLED": "true",
             "DEFAULT_GIT_BRANCH": "main",
+            "DEFAULT_PYTHON_VERSION": "3.12.9",
         },
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
     with patch("os.path.exists", return_value=False), patch("shutil.copytree"), patch("shutil.rmtree"), patch(
         "builtins.open"
-    ), patch("json.dump"), patch("os.remove"):
+    ), patch("json.dump"), patch("os.remove"), patch(
+        "caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"
+    ):
         apply_template(template_data, "/target/path", "/source/path")
 
 
@@ -31,13 +34,16 @@ def test_apply_template_with_env_values():
         "env_values": {
             "AWS_CONFIG_ENABLED": "true",
             "DEFAULT_GIT_BRANCH": "main",
+            "DEFAULT_PYTHON_VERSION": "3.12.9",
         },
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
     with patch("os.path.exists", return_value=False), patch("shutil.copytree"), patch("shutil.rmtree"), patch(
         "builtins.open"
-    ), patch("json.dump"), patch("os.remove"):
+    ), patch("json.dump"), patch("os.remove"), patch(
+        "caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"
+    ):
         apply_template(template_data, "/target/path", "/source/path")
 
 

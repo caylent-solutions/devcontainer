@@ -12,6 +12,7 @@ import pytest
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.setup import (
+    check_and_create_tool_versions,
     clone_repo,
     copy_devcontainer_files,
     create_version_file,
@@ -52,6 +53,14 @@ def test_register_command():
     assert mock_parser.add_argument.call_count >= 1
     mock_parser.set_defaults.assert_called_once_with(func=handle_setup)
 
+    # Check that --ref argument was added
+    ref_call_found = False
+    for call in mock_parser.add_argument.call_args_list:
+        if call[0] and len(call[0]) > 0 and call[0][0] == "--ref":
+            ref_call_found = True
+            break
+    assert ref_call_found, "--ref argument should be added to parser"
+
 
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
@@ -69,24 +78,33 @@ def test_handle_setup_interactive(
     args.path = "/test/path"
     args.manual = False
     args.update = False
+    args.ref = None
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
 
-    mock_clone.assert_called_once()
+    mock_clone.assert_called_once_with("/tmp/test", __version__)
     mock_interactive.assert_called_once()
     mock_create_version.assert_called_once_with("/test/path")
 
 
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
 @patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
 def test_handle_setup_manual(
-    mock_temp_dir, mock_clone, mock_copy, mock_show, mock_interactive, mock_create_version, mock_gitignore
+    mock_temp_dir,
+    mock_clone,
+    mock_copy,
+    mock_show,
+    mock_interactive,
+    mock_tool_versions,
+    mock_create_version,
+    mock_gitignore,
 ):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
@@ -94,14 +112,16 @@ def test_handle_setup_manual(
     args.path = "/test/path"
     args.manual = True
     args.update = False
+    args.ref = None
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
 
-    mock_clone.assert_called_once()
+    mock_clone.assert_called_once_with("/tmp/test", __version__)
     mock_copy.assert_called_once()
     mock_show.assert_called_once()
     mock_create_version.assert_called_once_with("/test/path")
+    mock_tool_versions.assert_called_once()
 
 
 @patch("subprocess.run")
@@ -110,10 +130,65 @@ def test_clone_repo_success(mock_run):
     mock_run.assert_called_once()
 
 
-@patch("subprocess.run", side_effect=[subprocess.CalledProcessError(1, "git"), None])
-def test_clone_repo_fallback(mock_run):
-    clone_repo("/tmp/test", "0.1.0")
-    assert mock_run.call_count == 2
+@patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "git"))
+def test_clone_repo_failure(mock_run):
+    with pytest.raises(SystemExit):
+        clone_repo("/tmp/test", "0.1.0")
+    mock_run.assert_called_once()
+
+
+@patch("subprocess.run")
+def test_clone_repo_with_branch(mock_run):
+    """Test cloning with a branch reference."""
+    clone_repo("/tmp/test", "main")
+    mock_run.assert_called_once_with(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            "main",
+            "https://github.com/caylent-solutions/devcontainer.git",
+            "/tmp/test",
+        ],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+
+@patch("subprocess.run")
+def test_clone_repo_with_commit_hash(mock_run):
+    """Test cloning with a commit hash reference."""
+    clone_repo("/tmp/test", "abc123def")
+    mock_run.assert_called_once_with(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            "abc123def",
+            "https://github.com/caylent-solutions/devcontainer.git",
+            "/tmp/test",
+        ],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+
+@patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "git"))
+def test_clone_repo_invalid_ref_failure(mock_run, capsys):
+    """Test cloning with invalid reference shows appropriate error."""
+    with pytest.raises(SystemExit):
+        clone_repo("/tmp/test", "nonexistent-branch")
+
+    captured = capsys.readouterr()
+    assert "Failed to clone devcontainer repository at ref 'nonexistent-branch'" in captured.err
+    assert "Reference 'nonexistent-branch' does not exist in the repository" in captured.err
+    mock_run.assert_called_once()
 
 
 @patch("shutil.copytree")
@@ -411,9 +486,13 @@ def test_load_template_from_file_not_found(mock_exists):
 @patch("shutil.copytree")
 @patch("builtins.open", new_callable=mock_open)
 def test_apply_template_without_aws(mock_file, mock_copytree, mock_exists):
-    template_data = {"env_values": {"AWS_CONFIG_ENABLED": "false"}, "aws_profile_map": {}}
+    template_data = {
+        "env_values": {"AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
+        "aws_profile_map": {},
+    }
 
-    apply_template(template_data, "/target", "/source")
+    with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
+        apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
     assert mock_file.call_count == 1  # Only env file, no AWS file
@@ -424,11 +503,12 @@ def test_apply_template_without_aws(mock_file, mock_copytree, mock_exists):
 @patch("builtins.open", new_callable=mock_open)
 def test_apply_template_with_aws(mock_file, mock_copytree, mock_exists):
     template_data = {
-        "env_values": {"AWS_CONFIG_ENABLED": "true"},
+        "env_values": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    apply_template(template_data, "/target", "/source")
+    with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
+        apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
     assert mock_file.call_count == 2  # Both env file and AWS file
@@ -662,12 +742,13 @@ def test_handle_setup_creates_version_file(
 
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions")
 @patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
 @patch("tempfile.TemporaryDirectory")
 def test_handle_setup_manual_creates_version_file(
-    mock_temp_dir, mock_clone, mock_show, mock_copy, mock_create_version, mock_gitignore
+    mock_temp_dir, mock_clone, mock_show, mock_copy, mock_tool_versions, mock_create_version, mock_gitignore
 ):
     mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
 
@@ -683,6 +764,7 @@ def test_handle_setup_manual_creates_version_file(
     mock_copy.assert_called_once()
     mock_show.assert_called_once()
     mock_create_version.assert_called_once_with("/test/path")
+    mock_tool_versions.assert_called_once()
 
 
 @patch("builtins.open", new_callable=mock_open)
@@ -1083,9 +1165,13 @@ def test_apply_template_without_clone_containerenv(mock_file):
     """Test apply template without clone using containerEnv format."""
     from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
 
-    template_data = {"containerEnv": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false"}, "aws_profile_map": {}}
+    template_data = {
+        "containerEnv": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
+        "aws_profile_map": {},
+    }
 
-    apply_template_without_clone(template_data, "/target")
+    with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
+        apply_template_without_clone(template_data, "/target")
 
     # Check that environment file was written
     mock_file.assert_called_with("/target/devcontainer-environment-variables.json", "w")
@@ -1102,9 +1188,13 @@ def test_apply_template_without_clone_env_values(mock_file):
     """Test apply template without clone using old env_values format."""
     from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
 
-    template_data = {"env_values": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false"}, "aws_profile_map": {}}
+    template_data = {
+        "env_values": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
+        "aws_profile_map": {},
+    }
 
-    apply_template_without_clone(template_data, "/target")
+    with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
+        apply_template_without_clone(template_data, "/target")
 
     # Check that environment file was written with converted format
     mock_file.assert_called_with("/target/devcontainer-environment-variables.json", "w")
@@ -1122,11 +1212,12 @@ def test_apply_template_without_clone_with_aws(mock_file):
     from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
 
     template_data = {
-        "containerEnv": {"AWS_CONFIG_ENABLED": "true"},
+        "containerEnv": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    apply_template_without_clone(template_data, "/target")
+    with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
+        apply_template_without_clone(template_data, "/target")
 
     # Should be called twice - once for env file, once for AWS file
     assert mock_file.call_count == 2
@@ -1148,6 +1239,128 @@ def test_apply_template_without_clone_no_aws(mock_file):
 
     # Should only be called once for env file
     mock_file.assert_called_once_with("/target/devcontainer-environment-variables.json", "w")
+
+
+# Tests for check_and_create_tool_versions function
+@patch("os.path.exists", return_value=True)
+def test_check_and_create_tool_versions_exists(mock_exists, capsys):
+    """Test when .tool-versions file already exists."""
+    check_and_create_tool_versions("/test/path", "3.12.9")
+
+    captured = capsys.readouterr()
+    assert "Found .tool-versions file" in captured.err
+    mock_exists.assert_called_once_with("/test/path/.tool-versions")
+
+
+@patch("os.path.exists", return_value=False)
+@patch("builtins.input", return_value="")
+@patch("builtins.open", new_callable=mock_open)
+def test_check_and_create_tool_versions_not_exists(mock_file, mock_input, mock_exists, capsys):
+    """Test when .tool-versions file does not exist."""
+    check_and_create_tool_versions("/test/path", "3.12.9")
+
+    captured = capsys.readouterr()
+    assert ".tool-versions file not found but is required" in captured.err
+    assert "Will create file: /test/path/.tool-versions" in captured.out
+    assert "With content:" in captured.out
+    assert "python 3.12.9" in captured.out
+    assert "Created .tool-versions file with Python 3.12.9" in captured.err
+
+    mock_file.assert_called_once_with("/test/path/.tool-versions", "w")
+    mock_file().write.assert_called_once_with("python 3.12.9\n")
+    mock_input.assert_called_once_with("Press Enter to create the file...")
+
+
+@patch("os.path.exists", return_value=False)
+@patch("builtins.input", return_value="")
+@patch("builtins.open", new_callable=mock_open)
+def test_check_and_create_tool_versions_different_version(mock_file, mock_input, mock_exists):
+    """Test creating .tool-versions with different Python version."""
+    check_and_create_tool_versions("/test/path", "3.11.5")
+
+    mock_file.assert_called_once_with("/test/path/.tool-versions", "w")
+    mock_file().write.assert_called_once_with("python 3.11.5\n")
+
+
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
+@patch("caylent_devcontainer_cli.commands.setup.clone_repo")
+@patch("tempfile.TemporaryDirectory")
+def test_handle_setup_with_ref_flag(mock_temp_dir, mock_clone, mock_interactive, mock_create_version, mock_gitignore):
+    """Test handle_setup uses custom ref when --ref flag is provided."""
+    mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
+
+    args = MagicMock()
+    args.path = "/test/path"
+    args.manual = False
+    args.update = False
+    args.ref = "main"
+
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
+        handle_setup(args)
+
+    mock_clone.assert_called_once_with("/tmp/test", "main")
+    mock_interactive.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
+
+
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions")
+@patch("caylent_devcontainer_cli.commands.setup.show_manual_instructions")
+@patch("caylent_devcontainer_cli.commands.setup.copy_devcontainer_files")
+@patch("caylent_devcontainer_cli.commands.setup.clone_repo")
+@patch("tempfile.TemporaryDirectory")
+def test_handle_setup_manual_with_ref_flag(
+    mock_temp_dir,
+    mock_clone,
+    mock_copy,
+    mock_show,
+    mock_tool_versions,
+    mock_create_version,
+    mock_gitignore,
+):
+    """Test handle_setup manual mode uses custom ref when --ref flag is provided."""
+    mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
+
+    args = MagicMock()
+    args.path = "/test/path"
+    args.manual = True
+    args.update = False
+    args.ref = "feature/test-branch"
+
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
+        handle_setup(args)
+
+    mock_clone.assert_called_once_with("/tmp/test", "feature/test-branch")
+    mock_copy.assert_called_once()
+    mock_show.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
+    mock_tool_versions.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
+@patch("caylent_devcontainer_cli.commands.setup.create_version_file")
+@patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
+@patch("caylent_devcontainer_cli.commands.setup.clone_repo")
+@patch("tempfile.TemporaryDirectory")
+def test_handle_setup_with_tag_ref(mock_temp_dir, mock_clone, mock_interactive, mock_create_version, mock_gitignore):
+    """Test handle_setup uses tag ref when provided."""
+    mock_temp_dir.return_value.__enter__.return_value = "/tmp/test"
+
+    args = MagicMock()
+    args.path = "/test/path"
+    args.manual = False
+    args.update = False
+    args.ref = "1.0.0"
+
+    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
+        handle_setup(args)
+
+    mock_clone.assert_called_once_with("/tmp/test", "1.0.0")
+    mock_interactive.assert_called_once()
+    mock_create_version.assert_called_once_with("/test/path")
 
 
 # Tests for JsonValidator class

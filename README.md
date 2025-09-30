@@ -28,6 +28,8 @@ This repository provides the **base development container** configuration used a
 - 🔐 **Secure and configurable**: injects secrets via environment, not committed
 - 🧩 **Smart defaults**: tools, AWS profiles, aliases, Python setup, Git config, and more
 - 🧪 **Consistent environments**: ensures identical local dev setups across teams using `asdf` to pin and manage exact binary versions
+- 🚀 **CI/CD ready**: supports automated environments with `CICD=true` flag
+- 📝 **Windows line ending support**: automatically converts CRLF to LF on WSL for compatibility
 
 📦 Repo URL: [`https://github.com/caylent-solutions/devcontainer`](https://github.com/caylent-solutions/devcontainer)
 
@@ -37,6 +39,7 @@ This repository provides the **base development container** configuration used a
 
 - `devcontainer.json` — VS Code container definition
 - `.devcontainer.postcreate.sh` — container setup script
+- `fix-line-endings.py` — automatic Windows line ending conversion for WSL compatibility
 - `cdevcontainer` — Caylent Devcontainer CLI tool for environment management
 - `example-aws-profile-map.json` — declarative AWS SSO profile config template
 - Git, AWS CLI, Docker, Python, `asdf`, aliases, shell profile injection
@@ -71,6 +74,14 @@ These extensions are auto-installed on container start and work with both VS Cod
 - [VS Code](https://code.visualstudio.com/Download) or [Cursor](https://cursor.sh/)
 - Python 3.12.9 - [Installation Guide](supplemental-docs/PYTHON_INSTALL.md#for-windows-using-windows-store-or-official-installer)
 
+> ⚠️ **Important for Windows users**: When cloning Git repositories that will use this devcontainer, ensure Git is configured to use Unix line endings (LF) instead of Windows line endings (CRLF). Configure this globally with:
+> ```bash
+> git config --global core.autocrlf false
+> git config --global core.eol lf
+> ```
+>
+> This prevents issues with shell scripts and other text files when running in WSL environments. The devcontainer includes automatic line ending conversion for WSL compatibility.
+
 ### IDE Command Line Setup
 
 The `cdevcontainer` CLI requires IDE command-line tools to launch projects. Enable them as follows:
@@ -95,22 +106,27 @@ The `cdevcontainer` CLI requires IDE command-line tools to launch projects. Enab
 
 ### 1. Install the CLI Tool
 
-First, install the Caylent Devcontainer CLI:
+First, install the Caylent Devcontainer CLI using pipx (recommended to avoid package conflicts):
 
 ```bash
-pip install caylent-devcontainer-cli
+pipx install caylent-devcontainer-cli
 ```
 
 You can also install a specific version:
 
 ```bash
-pip install caylent-devcontainer-cli==1.1.0
+pipx install caylent-devcontainer-cli==1.1.0
 ```
 
 To install directly from GitHub (alternative method):
 
 ```bash
-pip install git+https://github.com/caylent-solutions/devcontainer.git@1.1.0#subdirectory=caylent-devcontainer-cli
+pipx install git+https://github.com/caylent-solutions/devcontainer.git@1.1.0#subdirectory=caylent-devcontainer-cli
+```
+
+If you don't have pipx installed, install it first:
+```bash
+python -m pip install pipx
 ```
 
 After installation, you can run the CLI from anywhere:
@@ -158,6 +174,8 @@ When running `cdevcontainer setup-devcontainer`, you'll be guided through config
 - Python version
 - Developer information
 - Extra Ubuntu packages
+- Pager selection (cat, less, more, most)
+- AWS CLI output format (json, table, text, yaml) - only if AWS is enabled
 
 The interactive setup will create a `devcontainer-environment-variables.json` file with your settings.
 
@@ -174,6 +192,8 @@ Then edit `devcontainer-environment-variables.json` with your values:
 - Git credentials: `GIT_USER`, `GIT_USER_EMAIL`, `GIT_TOKEN`
 - AWS SSO and account information (required if `AWS_CONFIG_ENABLED=true`)
 - Extra Ubuntu LTS packages: `EXTRA_APT_PACKAGES`
+- `PAGER` (default: `cat`) - Choose from: cat, less, more, most
+- `AWS_DEFAULT_OUTPUT` (default: `json`) - Choose from: json, table, text, yaml
 
 #### Client/Project Templates
 
@@ -332,6 +352,58 @@ cdevcontainer code -y
 
 ---
 
+## 🚀 CI/CD Support
+
+The devcontainer supports running in CI/CD environments where developer-specific configurations (Git credentials, AWS profiles, developer names) are not needed or are handled separately.
+
+To enable CI/CD mode, set the `CICD` environment variable to `true`:
+
+```bash
+export CICD=true
+```
+
+When `CICD=true`, the devcontainer will skip:
+- AWS configuration validation and setup
+- Git credential configuration
+- Developer name environment variable setup
+- AWS profile creation
+
+This allows the devcontainer to run in automated environments where:
+- Git authentication is handled by the CI/CD system
+- AWS credentials are provided through IAM roles or other mechanisms
+- Developer-specific personalization is not required
+
+### Required Environment Variables for CI/CD
+
+When running in CI/CD mode, you still need to set these core environment variables:
+
+```yaml
+# GitHub Actions example
+env:
+  CICD: "true"                           # Enable CI/CD mode
+  DEFAULT_GIT_BRANCH: "main"              # Required: Git branch for aliases
+  DEFAULT_PYTHON_VERSION: "3.12.9"        # Required: Python version to install
+  EXTRA_APT_PACKAGES: ""                  # Optional: Additional Ubuntu packages
+  PAGER: "cat"                            # Optional: Pager for command output (defaults to cat)
+  AWS_DEFAULT_OUTPUT: "json"              # Optional: AWS CLI output format (defaults to json)
+```
+
+### Environment Variables Skipped in CI/CD Mode
+
+These variables are not needed when `CICD=true` as they're handled by the CI/CD system:
+
+```yaml
+# These are SKIPPED in CI/CD mode - do not set them
+# AWS_CONFIG_ENABLED: "true"             # Skipped: AWS handled by CI/CD
+# DEVELOPER_NAME: "johndoe"              # Skipped: Not needed in CI/CD
+# GIT_PROVIDER_URL: "github.com"         # Skipped: Git handled by CI/CD
+# GIT_TOKEN: "<token>"                   # Skipped: Git handled by CI/CD
+# GIT_USER: "john.doe"                   # Skipped: Git handled by CI/CD
+# GIT_USER_EMAIL: "john.doe@example.com" # Skipped: Git handled by CI/CD
+```
+
+---
+
 ## 🧩 Post-Launch Setup
 
 ### 🧠 GitHub Copilot
@@ -380,6 +452,8 @@ Or open the Source Control tab in your IDE to confirm the repo is accessible.
 ```json
 "DEFAULT_PYTHON_VERSION": "3.12.9"
 ```
+
+> ✅ **Automatic .tool-versions creation**: The setup command will automatically check for a `.tool-versions` file in your project root. If not found, it will create one with your chosen Python version to ensure consistent runtime management via asdf.
 
 > ✅ Best practice: commit `.tool-versions` to your repo:
 ```bash
@@ -447,6 +521,7 @@ JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](http
 |------|---------|
 | `.devcontainer/devcontainer.json` | VS Code container setup |
 | `.devcontainer/.devcontainer.postcreate.sh` | Container provisioning logic |
+| `.devcontainer/fix-line-endings.py` | Windows line ending conversion for WSL compatibility |
 | `.devcontainer/example-aws-profile-map.json` | AWS profile template |
 | `.devcontainer/aws-profile-map.json` | Your active AWS profiles |
 | `.devcontainer/example-container-env-values.json` | Developer config example |
@@ -508,6 +583,11 @@ cdevcontainer --help
 
 # Set up a devcontainer in a project directory
 cdevcontainer setup-devcontainer /path/to/your/project
+
+# Set up with specific git reference (branch, tag, or commit)
+cdevcontainer setup-devcontainer --ref main /path/to/your/project
+cdevcontainer setup-devcontainer --ref 1.0.0 /path/to/your/project
+cdevcontainer setup-devcontainer --ref feature/new-feature /path/to/your/project
 
 # Launch IDE with the devcontainer environment (default: VS Code)
 cdevcontainer code [/path/to/your/project]
