@@ -2,7 +2,42 @@
 
 
 
+## v1.9.0 (2025-10-01)
+
+### Feature
+
+* feat: Add project-specific setup script and enhance shell environment configuration (#88)
+
+* feat: add project-specific setup script and enhance shell environment configuration
+
+- Add project-setup.sh for custom project initialization
+- Enhance shell.env sourcing for all environments (not just WSL)
+- Add BASH_ENV and .zshenv configuration for non-interactive shells
+- Add CICD environment variable support
+- Update CLI to handle CICD configuration
+- Add comprehensive documentation for project-specific setup
+
+* fix: add file existence check for project-setup.sh to prevent failures ([`1b3754c`](https://github.com/caylent-solutions/devcontainer/commit/1b3754cbb2d4c77e9769d40cf77f9196e63e8e1f))
+
+### Unknown
+
+* feat/auto-create-tool-versions (#87)
+
+* feat: auto-create .tool-versions file instead of erroring out
+
+- Create .tool-versions with DEFAULT_PYTHON_VERSION if missing
+- Add python entry to existing .tool-versions if missing
+- Remove fallback values, use only DEFAULT_PYTHON_VERSION
+- Improves user experience by automatically setting up required config
+- add postcreate setup to logs
+- postcreate setup upon success to exit 0 to ensure all new shells have shell.env vars loaded ([`827c778`](https://github.com/caylent-solutions/devcontainer/commit/827c7783d32e80f8f2d5e5ae85d520b6dcdb85c6))
+
+
 ## v1.8.0 (2025-09-30)
+
+### Chore
+
+* chore(release): 1.8.0 ([`419460a`](https://github.com/caylent-solutions/devcontainer/commit/419460aa04c378bc76c29f85a13e5b97d8cda9cb))
 
 ### Feature
 
@@ -11,6 +46,12 @@
 - Simplify release workflow by removing GitHub job cancellation code
 - Reduces complexity and potential race conditions during PR creation/merge
 - Allows natural workflow execution without interference ([`18b5511`](https://github.com/caylent-solutions/devcontainer/commit/18b5511a4d3889047467d412f51ebcf75f2ebcfa))
+
+### Unknown
+
+* Merge pull request #86 from caylent-solutions/release-1.8.0
+
+Release 1.8.0 ([`3ee23d6`](https://github.com/caylent-solutions/devcontainer/commit/3ee23d6865faf6606926775da20c164adcb0b178))
 
 
 ## v1.7.1 (2025-09-30)
