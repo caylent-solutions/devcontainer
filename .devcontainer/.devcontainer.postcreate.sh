@@ -375,7 +375,12 @@ fi
 # Project-Specific Setup #
 #########################
 log_info "Running project-specific setup script..."
-bash "${WORK_DIR}/.devcontainer/project-setup.sh"
+if [ -f "${WORK_DIR}/.devcontainer/project-setup.sh" ]; then
+  bash "${WORK_DIR}/.devcontainer/project-setup.sh"
+else
+  log_warn "No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh"
+  WARNINGS+=("No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh")
+fi
 
 echo "Setup complete. View logs: cat /tmp/devcontainer-setup.log"
 exit 0
