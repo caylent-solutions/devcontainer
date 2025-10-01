@@ -1364,3 +1364,11 @@ def test_handle_setup_with_tag_ref(mock_temp_dir, mock_clone, mock_interactive, 
 
 
 # Tests for JsonValidator class
+
+
+def test_example_env_values_includes_cicd():
+    """Test that EXAMPLE_ENV_VALUES includes CICD=false."""
+    from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
+
+    assert "CICD" in EXAMPLE_ENV_VALUES
+    assert EXAMPLE_ENV_VALUES["CICD"] == "false"
