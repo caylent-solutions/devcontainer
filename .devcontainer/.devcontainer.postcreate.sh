@@ -74,14 +74,21 @@ log_info "Configuring ENV vars..."
 echo "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\"" >> ${BASH_RC}
 echo "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\"" >> ${ZSH_RC}
 
-# Source shell.env for WSL environments
-if uname -r | grep -i microsoft > /dev/null; then
-  log_info "WSL detected - configuring shell.env sourcing for all shells"
-  echo "# Source project shell.env for WSL" >> ${BASH_RC}
-  echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${BASH_RC}
-  echo "# Source project shell.env for WSL" >> ${ZSH_RC}
-  echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${ZSH_RC}
-fi
+# Configure shell.env sourcing for all shells (interactive and non-interactive)
+log_info "Configuring shell.env sourcing for all shells"
+
+# For interactive shells (bash and zsh)
+echo "# Source project shell.env" >> ${BASH_RC}
+echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${BASH_RC}
+echo "# Source project shell.env" >> ${ZSH_RC}
+echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${ZSH_RC}
+
+# For non-interactive bash shells via BASH_ENV
+echo "export BASH_ENV=\"${WORK_DIR}/shell.env\"" >> ${BASH_RC}
+echo "export BASH_ENV=\"${WORK_DIR}/shell.env\"" >> ${ZSH_RC}
+
+# For non-interactive zsh shells via .zshenv
+echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" > /home/${CONTAINER_USER}/.zshenv
 
 # Handle PAGER configuration by checking shell.env first
 SHELL_ENV_PAGER=""
@@ -363,3 +370,17 @@ if [ ${#WARNINGS[@]} -ne 0 ]; then
 else
   log_success "Dev container setup completed with no warnings"
 fi
+
+#########################
+# Project-Specific Setup #
+#########################
+log_info "Running project-specific setup script..."
+if [ -f "${WORK_DIR}/.devcontainer/project-setup.sh" ]; then
+  bash "${WORK_DIR}/.devcontainer/project-setup.sh"
+else
+  log_warn "No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh"
+  WARNINGS+=("No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh")
+fi
+
+echo "Setup complete. View logs: cat /tmp/devcontainer-setup.log"
+exit 0

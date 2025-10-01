@@ -12,6 +12,7 @@ from caylent_devcontainer_cli.utils.ui import log
 REPO_URL = "https://github.com/caylent-solutions/devcontainer.git"
 EXAMPLE_ENV_VALUES = {
     "AWS_CONFIG_ENABLED": "true",
+    "CICD": "false",
     "DEFAULT_GIT_BRANCH": "main",
     "DEFAULT_PYTHON_VERSION": "3.12.9",
     "DEVELOPER_NAME": "Your Name",

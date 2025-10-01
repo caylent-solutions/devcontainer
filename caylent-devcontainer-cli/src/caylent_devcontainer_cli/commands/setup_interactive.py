@@ -149,6 +149,9 @@ def prompt_env_values() -> Dict[str, Any]:
             sys.exit(0)
         env_values["AWS_CONFIG_ENABLED"] = aws_config
 
+        # CICD mode (always false for interactive setup)
+        env_values["CICD"] = "false"
+
         # Git branch
         git_branch = questionary.text(
             "Default Git branch (e.g., main):",
