@@ -277,6 +277,7 @@ def test_prompt_env_values_complete_with_aws_enabled(mock_select, mock_text, moc
     result = prompt_env_values()
 
     assert result["AWS_CONFIG_ENABLED"] == "true"
+    assert result["CICD"] == "false"
     assert result["DEFAULT_GIT_BRANCH"] == "main"
     assert result["DEFAULT_PYTHON_VERSION"] == "3.12.9"
     assert result["DEVELOPER_NAME"] == "Developer"
@@ -312,6 +313,7 @@ def test_prompt_env_values_complete_with_aws_disabled(mock_select, mock_text, mo
 
     assert result["AWS_CONFIG_ENABLED"] == "false"
     assert result["PAGER"] == "cat"
+    assert result["CICD"] == "false"
     assert "AWS_DEFAULT_OUTPUT" not in result
 
 

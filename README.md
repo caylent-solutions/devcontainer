@@ -8,6 +8,7 @@
 - [🖥 Prerequisites](#-prerequisites)
 - [🪄 Quick Start](#-quick-start)
 - [🧩 Post-Launch Setup](#-post-launch-setup)
+- [🔧 Project-Specific Setup](#-project-specific-setup)
 - [🐍 Python Install Logic](#-python-install-logic)
 - [🔄 Rebuilding the Devcontainer](#-rebuilding-the-devcontainer)
 - [🐳 Docker-in-Docker Support](#-docker-in-docker-support)
@@ -39,6 +40,7 @@ This repository provides the **base development container** configuration used a
 
 - `devcontainer.json` — VS Code container definition
 - `.devcontainer.postcreate.sh` — container setup script
+- `project-setup.sh` — project-specific setup script for custom initialization
 - `fix-line-endings.py` — automatic Windows line ending conversion for WSL compatibility
 - `cdevcontainer` — Caylent Devcontainer CLI tool for environment management
 - `example-aws-profile-map.json` — declarative AWS SSO profile config template
@@ -445,6 +447,98 @@ Or open the Source Control tab in your IDE to confirm the repo is accessible.
 
 ---
 
+## 🔧 Project-Specific Setup
+
+The devcontainer includes a **project-specific setup script** that runs automatically after the main devcontainer setup is complete. This allows you to add project-specific initialization commands without modifying the core devcontainer files.
+
+### 📝 Setup Script Location
+
+The project setup script is located at:
+```
+.devcontainer/project-setup.sh
+```
+
+### 🚀 What to Add
+
+Add any commands needed to make your project immediately ready for development:
+
+```bash
+# Example project-specific setup commands
+if [ -f "Makefile" ]; then
+  log_info "Running make configure..."
+  make configure
+fi
+
+if [ -f "requirements.txt" ]; then
+  log_info "Installing Python dependencies..."
+  pip install -r requirements.txt
+fi
+
+if [ -f "package.json" ]; then
+  log_info "Installing Node.js dependencies..."
+  npm install
+fi
+
+if [ -f "docker-compose.yml" ]; then
+  log_info "Starting Docker services..."
+  docker-compose up -d
+fi
+```
+
+### 🌐 Environment Variables
+
+The project setup script has access to:
+- All environment variables from `shell.env`
+- All environment variables from `devcontainer.json`
+- Logging functions: `log_info`, `log_success`, `log_warn`, `log_error`
+
+### 🎨 IDE Customizations
+
+Projects can also customize IDE settings and extensions by modifying the `customizations` section in `.devcontainer/devcontainer.json`:
+
+```json
+{
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "your-project-specific-extension"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.tabSize": 2,
+        "files.exclude": {
+          "**/.git": true,
+          "**/node_modules": true
+        }
+      }
+    }
+  }
+}
+```
+
+This works for all supported IDEs including VS Code, Cursor, and others that support devcontainer customizations.
+
+### ⚠️ Important Notes
+
+- **DO NOT modify** `.devcontainer.postcreate.sh` for project-specific setup
+- **DO modify** `.devcontainer/project-setup.sh` for your project needs
+- **DO customize** `.devcontainer/devcontainer.json` for IDE settings and extensions
+- This approach ensures you can receive devcontainer updates without conflicts
+- The script runs with the same permissions and environment as the main setup
+
+### 📝 Example Use Cases
+
+- **Python projects**: Install dependencies, set up virtual environments
+- **Node.js projects**: Run `npm install`, build assets
+- **Docker projects**: Start required services with `docker-compose`
+- **Database projects**: Initialize databases, run migrations
+- **Configuration**: Generate config files, set up symlinks
+- **Build tools**: Run `make configure`, `cmake`, or other build setup
+
+---
+
 ## 🐍 Python Install Logic
 
 - `.tool-versions` present with Python? → installs that pinned Python version
@@ -521,6 +615,7 @@ JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](http
 |------|---------|
 | `.devcontainer/devcontainer.json` | VS Code container setup |
 | `.devcontainer/.devcontainer.postcreate.sh` | Container provisioning logic |
+| `.devcontainer/project-setup.sh` | Project-specific setup commands |
 | `.devcontainer/fix-line-endings.py` | Windows line ending conversion for WSL compatibility |
 | `.devcontainer/example-aws-profile-map.json` | AWS profile template |
 | `.devcontainer/aws-profile-map.json` | Your active AWS profiles |
