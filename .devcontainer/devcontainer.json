@@ -93,5 +93,5 @@
     "PAGER": "${localEnv:PAGER}",
     "AWS_DEFAULT_OUTPUT": "${localEnv:AWS_DEFAULT_OUTPUT}"
   },
-  "postCreateCommand": "bash -c 'if uname -r | grep -i microsoft > /dev/null; then sudo apt-get update && sudo apt-get install -y gettext-base jq python3 && find .devcontainer -type f -exec sed -i \"s/\\r$//\" {} + && python3 .devcontainer/fix-line-endings.py && sudo apt-get remove -y python3 && sudo apt-get autoremove -y && source shell.env && exec bash .devcontainer/.devcontainer.postcreate.sh vscode; else sudo apt-get update && sudo apt-get install -y gettext-base jq && sudo bash .devcontainer/.devcontainer.postcreate.sh vscode; fi'"
+  "postCreateCommand": "bash -c 'exec > >(tee /tmp/devcontainer-setup.log) 2>&1; if uname -r | grep -i microsoft > /dev/null; then sudo apt-get update && sudo apt-get install -y gettext-base jq python3 && find .devcontainer -type f -exec sed -i \"s/\\r$//\" {} + && python3 .devcontainer/fix-line-endings.py && sudo apt-get remove -y python3 && sudo apt-get autoremove -y && source shell.env && exec bash .devcontainer/.devcontainer.postcreate.sh vscode; else sudo apt-get update && sudo apt-get install -y gettext-base jq && sudo bash .devcontainer/.devcontainer.postcreate.sh vscode; fi && echo \"Setup complete. View logs: cat /tmp/devcontainer-setup.log\" && exit 0'"
 }
