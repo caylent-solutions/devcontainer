@@ -2,29 +2,6 @@
 
 set -euo pipefail
 
-# Setup logging
-exec > >(tee /tmp/devcontainer-setup.log) 2>&1
-
-# WSL compatibility and initial setup
-if uname -r | grep -i microsoft > /dev/null; then
-  echo "[INFO] WSL detected - performing line ending fixes"
-  sudo apt-get update
-  sudo apt-get install -y gettext-base jq python3
-  find .devcontainer -type f -exec sed -i "s/\r$//" {} +
-  python3 .devcontainer/fix-line-endings.py
-  sudo apt-get remove -y python3
-  sudo apt-get autoremove -y
-
-  # Source shell.env if it exists
-  if [ -f "shell.env" ]; then
-    source shell.env
-  fi
-else
-  echo "[INFO] Non-WSL environment detected"
-  sudo apt-get update
-  sudo apt-get install -y gettext-base jq
-fi
-
 WORK_DIR=$(pwd)
 CONTAINER_USER=$1
 BASH_RC="/home/${CONTAINER_USER}/.bashrc"
