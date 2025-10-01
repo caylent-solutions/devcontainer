@@ -14,7 +14,7 @@ if uname -r | grep -i microsoft > /dev/null; then
   python3 .devcontainer/fix-line-endings.py
   sudo apt-get remove -y python3
   sudo apt-get autoremove -y
-  
+
   # Source shell.env if it exists
   if [ -f "shell.env" ]; then
     source shell.env
