@@ -77,7 +77,6 @@ def test_handle_setup_interactive(
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
     args.ref = None
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
@@ -111,7 +110,6 @@ def test_handle_setup_manual(
     args = MagicMock()
     args.path = "/test/path"
     args.manual = True
-    args.update = False
     args.ref = None
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
@@ -607,37 +605,7 @@ def test_json_validator_with_json():
     validator.validate(document)  # Tests from test_setup_update.py
 
 
-def test_handle_setup_update_mode():
-    """Test handling setup in update mode."""
-    args = MagicMock()
-    args.path = "/test/path"
-    args.manual = False
-    args.update = True
 
-    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=True), patch(
-        "caylent_devcontainer_cli.commands.setup.clone_repo"
-    ), patch("caylent_devcontainer_cli.commands.setup.interactive_setup"), patch(
-        "caylent_devcontainer_cli.commands.setup.create_version_file"
-    ) as mock_create_version, patch(
-        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
-    ):
-        handle_setup(args)
-        mock_create_version.assert_called_once_with("/test/path")
-
-
-def test_handle_setup_update_mode_no_devcontainer():
-    """Test handling setup in update mode when no devcontainer exists."""
-    args = MagicMock()
-    args.path = "/test/path"
-    args.manual = False
-    args.update = True
-
-    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False), patch(
-        "sys.exit", side_effect=SystemExit(1)
-    ) as mock_exit:
-        with pytest.raises(SystemExit):
-            handle_setup(args)
-        mock_exit.assert_called_once_with(1)
 
 
 def test_handle_setup_with_existing_version():
@@ -645,7 +613,6 @@ def test_handle_setup_with_existing_version():
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
         "builtins.open", mock_open(read_data="1.0.0")
@@ -666,7 +633,6 @@ def test_handle_setup_with_existing_version_cancel():
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
         "builtins.open", mock_open(read_data="1.0.0")
@@ -684,7 +650,6 @@ def test_handle_setup_with_existing_no_version():
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
         "caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=True
@@ -703,7 +668,6 @@ def test_handle_setup_with_existing_no_version_cancel():
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
         "caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=False
@@ -730,7 +694,6 @@ def test_handle_setup_creates_version_file(
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
@@ -755,7 +718,6 @@ def test_handle_setup_manual_creates_version_file(
     args = MagicMock()
     args.path = "/test/path"
     args.manual = True
-    args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
         handle_setup(args)
@@ -790,7 +752,6 @@ def test_handle_setup_with_existing_version_2(
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=True), patch(
         "builtins.open", mock_open(read_data="0.1.0")
@@ -1294,7 +1255,6 @@ def test_handle_setup_with_ref_flag(mock_temp_dir, mock_clone, mock_interactive,
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
     args.ref = "main"
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
@@ -1327,7 +1287,6 @@ def test_handle_setup_manual_with_ref_flag(
     args = MagicMock()
     args.path = "/test/path"
     args.manual = True
-    args.update = False
     args.ref = "feature/test-branch"
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
@@ -1352,7 +1311,6 @@ def test_handle_setup_with_tag_ref(mock_temp_dir, mock_clone, mock_interactive, 
     args = MagicMock()
     args.path = "/test/path"
     args.manual = False
-    args.update = False
     args.ref = "1.0.0"
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=False):
@@ -1372,3 +1330,82 @@ def test_example_env_values_includes_cicd():
 
     assert "CICD" in EXAMPLE_ENV_VALUES
     assert EXAMPLE_ENV_VALUES["CICD"] == "false"
+
+
+def test_is_single_line_env_var():
+    """Test single line environment variable detection."""
+    from caylent_devcontainer_cli.commands.template import is_single_line_env_var
+    
+    # Single line strings
+    assert is_single_line_env_var("simple_string") is True
+    assert is_single_line_env_var("value with spaces") is True
+    assert is_single_line_env_var("") is True
+    
+    # Multiline strings
+    assert is_single_line_env_var("line1\nline2") is False
+    assert is_single_line_env_var("line1\n") is False
+    
+    # Complex types
+    assert is_single_line_env_var({"key": "value"}) is False
+    assert is_single_line_env_var(["item1", "item2"]) is False
+    assert is_single_line_env_var(123) is False
+    assert is_single_line_env_var(True) is False
+
+
+@patch('caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES', {
+    'VAR1': 'value1',
+    'VAR2': 'value2',
+    'VAR3': {'complex': 'object'},
+    'VAR4': 'multiline\nvalue'
+})
+def test_get_missing_single_line_vars():
+    """Test getting missing single line variables."""
+    from caylent_devcontainer_cli.commands.template import get_missing_single_line_vars
+    
+    container_env = {'VAR1': 'existing_value'}
+    missing = get_missing_single_line_vars(container_env)
+    
+    # Should only include VAR2 (single line, missing)
+    assert missing == {'VAR2': 'value2'}
+
+
+@patch('questionary.confirm')
+@patch('questionary.text')
+def test_prompt_for_missing_vars_use_defaults(mock_text, mock_confirm):
+    """Test using default values for missing variables."""
+    from caylent_devcontainer_cli.commands.template import prompt_for_missing_vars
+    
+    mock_confirm.return_value.ask.return_value = True
+    missing_vars = {'VAR1': 'default1', 'VAR2': 'default2'}
+    
+    result = prompt_for_missing_vars(missing_vars)
+    
+    assert result == {'VAR1': 'default1', 'VAR2': 'default2'}
+    assert mock_confirm.call_count == 2
+
+
+@patch('caylent_devcontainer_cli.commands.template.upgrade_template')
+@patch('caylent_devcontainer_cli.commands.template.get_missing_single_line_vars')
+@patch('caylent_devcontainer_cli.commands.template.prompt_for_missing_vars')
+def test_upgrade_template_with_missing_vars(mock_prompt, mock_get_missing, mock_upgrade):
+    """Test upgrading template with missing variables."""
+    from caylent_devcontainer_cli.commands.template import upgrade_template_with_missing_vars
+    from caylent_devcontainer_cli import __version__
+    
+    # Setup mocks
+    mock_upgrade.return_value = {
+        'containerEnv': {'existing_var': 'value'},
+        'cli_version': __version__,
+        'aws_profile_map': {}
+    }
+    mock_get_missing.return_value = {'NEW_VAR': 'default_value'}
+    mock_prompt.return_value = {'NEW_VAR': 'user_value'}
+    
+    template_data = {'containerEnv': {'existing_var': 'value'}}
+    result = upgrade_template_with_missing_vars(template_data)
+    
+    # Check that NEW_VAR was added
+    assert 'NEW_VAR' in result['containerEnv']
+    assert result['containerEnv']['NEW_VAR'] == 'user_value'
+    assert result['containerEnv']['existing_var'] == 'value'
+    assert result['cli_version'] == __version__

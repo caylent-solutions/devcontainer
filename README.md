@@ -157,11 +157,7 @@ If you prefer to set up manually, use the `--manual` flag:
 cdevcontainer setup-devcontainer --manual /path/to/your/project
 ```
 
-To update an existing devcontainer setup to the latest version:
 
-```bash
-cdevcontainer setup-devcontainer --update /path/to/your/project
-```
 
 > 💡 **Pro tip**: Consider committing the `.devcontainer` directory to your repository (excluding sensitive files) to speed up environment setup for your team. See the [Git Hygiene](#-git-hygiene) section for details.
 
@@ -209,6 +205,11 @@ Templates are saved in `~/.devcontainer-templates/` and can be reused across pro
 You can also manage templates directly:
 
 ```bash
+# Create a new template interactively
+cdevcontainer template create client1
+
+
+
 # Save current environment as a template
 cdevcontainer template save client1
 
@@ -224,6 +225,12 @@ cdevcontainer template delete template1 template2
 
 # Upgrade a template to the current CLI version
 cdevcontainer template upgrade my-template
+
+
+
+# Force upgrade with interactive prompts for missing variables
+cdevcontainer template upgrade --force my-template
+cdevcontainer template upgrade -f my-template
 ```
 
 When loading a template:
@@ -244,6 +251,31 @@ Templates are saved with version information that tracks which CLI version creat
 - **Exit**: Cancels the operation without making changes
 
 This version checking ensures templates remain compatible as the CLI evolves.
+
+#### Force Upgrade for Missing Variables
+
+The CLI can detect when your templates are missing new environment variables that have been added to newer versions. Use the `--force` flag to interactively add missing variables:
+
+```bash
+# Force upgrade with interactive prompts for missing variables
+cdevcontainer template upgrade --force my-template
+```
+
+During a force upgrade:
+- The CLI detects missing single-line environment variables
+- For each missing variable, you can choose the default value or enter a custom value
+- Only simple string variables are prompted (complex objects are skipped)
+- The template is updated with your choices
+
+#### Missing Variable Warnings
+
+When running `cdevcontainer code <path>`, the CLI checks for missing environment variables in your configuration. If missing variables are detected:
+
+- A colorful warning displays the missing variables
+- Instructions are provided to run `cdevcontainer template upgrade --force <template-name>`
+- You can choose to exit and upgrade, or continue with potential issues
+
+This ensures your development environment stays up-to-date with the latest requirements.
 
 ---
 
@@ -696,6 +728,7 @@ cdevcontainer code /path/to/another-project --ide cursor
 
 # Manage templates
 cdevcontainer template list
+cdevcontainer template create my-template
 cdevcontainer template save my-template
 cdevcontainer template load my-template
 cdevcontainer template delete template1 template2
@@ -779,4 +812,4 @@ The `pre-commit-check` task runs automatically in CI/CD and includes:
 5. Open a PR to `main` and request review
 
 > All PRs must pass CI, maintain 85% test coverage, and be reviewed before merge.
-> See [CONTRIBUTING.md](caylent-devcontainer-cli/CONTRIBUTING.md) for detailed guidelines.
+> See [CONTRIBUTING.md](caylent-devcontainer-cli/docs/CONTRIBUTING.md) for detailed guidelines.

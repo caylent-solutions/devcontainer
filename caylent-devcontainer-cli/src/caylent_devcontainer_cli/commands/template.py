@@ -9,6 +9,46 @@ from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
 from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
 from caylent_devcontainer_cli.utils.ui import confirm_action, log
+from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
+
+
+def is_single_line_env_var(value):
+    """Check if an environment variable value is a single line string."""
+    return isinstance(value, str) and '\n' not in value and not isinstance(value, (dict, list))
+
+
+def get_missing_single_line_vars(container_env):
+    """Get missing single-line environment variables from EXAMPLE_ENV_VALUES."""
+    missing_vars = {}
+    for key, value in EXAMPLE_ENV_VALUES.items():
+        if key not in container_env and is_single_line_env_var(value):
+            missing_vars[key] = value
+    return missing_vars
+
+
+def prompt_for_missing_vars(missing_vars):
+    """Prompt user for missing environment variables."""
+    import questionary
+    
+    updated_vars = {}
+    for var_name, default_value in missing_vars.items():
+        log("INFO", f"New environment variable '{var_name}' needs to be added to your template")
+        
+        use_default = questionary.confirm(
+            f"Use default value '{default_value}' for {var_name}?",
+            default=True
+        ).ask()
+        
+        if use_default:
+            updated_vars[var_name] = default_value
+        else:
+            custom_value = questionary.text(
+                f"Enter custom value for {var_name}:",
+                default=str(default_value)
+            ).ask()
+            updated_vars[var_name] = custom_value
+    
+    return updated_vars
 
 
 def register_command(subparsers):
@@ -45,10 +85,17 @@ def register_command(subparsers):
     delete_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     delete_parser.set_defaults(func=handle_template_delete)
 
+    # 'template create' command
+    create_parser = template_subparsers.add_parser("create", help="Create a new template interactively")
+    create_parser.add_argument("name", help="Template name")
+    create_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
+    create_parser.set_defaults(func=handle_template_create)
+
     # 'template upgrade' command
     upgrade_parser = template_subparsers.add_parser("upgrade", help="Upgrade a template to the current CLI version")
     upgrade_parser.add_argument("name", help="Template name to upgrade")
     upgrade_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
+    upgrade_parser.add_argument("-f", "--force", action="store_true", help="Force full upgrade with interactive prompts for missing variables")
     upgrade_parser.set_defaults(func=handle_template_upgrade)
 
 
@@ -80,9 +127,40 @@ def handle_template_delete(args):
         delete_template(name)
 
 
+def handle_template_create(args):
+    """Handle the template create command."""
+    create_new_template(args.name)
+
+
+
+
+
+def create_new_template(template_name):
+    """Create a new template interactively."""
+    from caylent_devcontainer_cli.commands.setup_interactive import create_template_interactive, save_template_to_file
+    
+    ensure_templates_dir()
+    
+    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    
+    # Check if template already exists
+    if os.path.exists(template_path):
+        if not confirm_action(f"Template '{template_name}' already exists. Overwrite?"):
+            log("INFO", "Template creation cancelled")
+            return
+    
+    log("INFO", f"Creating new template '{template_name}'")
+    
+    # Use current CLI version
+    template_data = create_template_interactive()
+    save_template_to_file(template_data, template_name)
+    
+    log("OK", f"Template '{template_name}' created successfully")
+
+
 def handle_template_upgrade(args):
     """Handle the template upgrade command."""
-    upgrade_template_file(args.name)
+    upgrade_template_file(args.name, force=args.force)
 
 
 def save_template(project_root, template_name):
@@ -282,7 +360,33 @@ def delete_template(template_name):
         log("ERR", f"Failed to delete template: {e}")
 
 
-def upgrade_template_file(template_name):
+def upgrade_template_with_missing_vars(template_data):
+    """Upgrade template with interactive prompts for missing variables."""
+    from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
+    
+    # First do the standard upgrade
+    upgraded_template = upgrade_template(template_data)
+    
+    # Check for missing single-line environment variables
+    container_env = upgraded_template.get("containerEnv", {})
+    missing_vars = get_missing_single_line_vars(container_env)
+    
+    if missing_vars:
+        log("INFO", f"Found {len(missing_vars)} missing environment variables")
+        new_vars = prompt_for_missing_vars(missing_vars)
+        
+        # Add the new variables to the container environment
+        container_env.update(new_vars)
+        upgraded_template["containerEnv"] = container_env
+        
+        log("OK", f"Added {len(new_vars)} new environment variables to template")
+    else:
+        log("INFO", "No missing environment variables found")
+    
+    return upgraded_template
+
+
+def upgrade_template_file(template_name, force=False):
     """Upgrade a template to the current CLI version."""
     template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
 
@@ -297,33 +401,38 @@ def upgrade_template_file(template_name):
         with open(template_path, "r") as f:
             template_data = json.load(f)
 
-        # Check if upgrade is needed
-        if "cli_version" in template_data:
-            template_version = template_data["cli_version"]
-            current_version = __version__
+        # Check if force upgrade is requested
+        if force:
+            log("INFO", "Force upgrade requested - performing full upgrade with missing variable detection")
+            upgraded_template = upgrade_template_with_missing_vars(template_data)
+        else:
+            # Check if upgrade is needed
+            if "cli_version" in template_data:
+                template_version = template_data["cli_version"]
+                current_version = __version__
 
-            try:
-                # Parse versions using semver
-                template_semver = semver.VersionInfo.parse(template_version)
-                current_semver = semver.VersionInfo.parse(current_version)
+                try:
+                    # Parse versions using semver
+                    template_semver = semver.VersionInfo.parse(template_version)
+                    current_semver = semver.VersionInfo.parse(current_version)
 
-                if template_semver.major == current_semver.major and template_semver.minor == current_semver.minor:
-                    # Even if the major and minor versions match, ensure the cli_version is updated
-                    template_data["cli_version"] = __version__
-                    with open(template_path, "w") as f:
-                        json.dump(template_data, f, indent=2)
-                        f.write("\n")  # Add newline at end of file
-                    log(
-                        "INFO",
-                        f"Template '{template_name}' version updated from {template_version} to {__version__}",
-                    )
-                    return
-            except ValueError:
-                # If version parsing fails, proceed with upgrade
-                pass
+                    if template_semver.major == current_semver.major and template_semver.minor == current_semver.minor:
+                        # Even if the major and minor versions match, ensure the cli_version is updated
+                        template_data["cli_version"] = __version__
+                        with open(template_path, "w") as f:
+                            json.dump(template_data, f, indent=2)
+                            f.write("\n")  # Add newline at end of file
+                        log(
+                            "INFO",
+                            f"Template '{template_name}' version updated from {template_version} to {__version__}",
+                        )
+                        return
+                except ValueError:
+                    # If version parsing fails, proceed with upgrade
+                    pass
 
-        # Upgrade the template
-        upgraded_template = upgrade_template(template_data)
+            # Upgrade the template
+            upgraded_template = upgrade_template(template_data)
 
         # Write back to the template file
         with open(template_path, "w") as f:

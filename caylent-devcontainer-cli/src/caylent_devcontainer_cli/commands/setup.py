@@ -12,6 +12,7 @@ from caylent_devcontainer_cli.utils.ui import log
 REPO_URL = "https://github.com/caylent-solutions/devcontainer.git"
 EXAMPLE_ENV_VALUES = {
     "AWS_CONFIG_ENABLED": "true",
+    "AWS_DEFAULT_OUTPUT": "json",
     "CICD": "false",
     "DEFAULT_GIT_BRANCH": "main",
     "DEFAULT_PYTHON_VERSION": "3.12.9",
@@ -21,6 +22,7 @@ EXAMPLE_ENV_VALUES = {
     "GIT_TOKEN": "your-git-token",
     "GIT_USER": "your-username",
     "GIT_USER_EMAIL": "your-email@example.com",
+    "PAGER": "cat",
 }
 
 
@@ -40,9 +42,7 @@ def register_command(subparsers):
     parser.add_argument(
         "--manual", action="store_true", help="Skip interactive prompts and copy files for manual configuration"
     )
-    parser.add_argument(
-        "--update", action="store_true", help="Update existing devcontainer files to the current CLI version"
-    )
+
     parser.add_argument("--ref", help="Git reference (branch, tag, or commit) to clone instead of CLI version")
     parser.set_defaults(func=handle_setup)
 
@@ -51,7 +51,7 @@ def handle_setup(args):
     """Handle the setup-devcontainer command."""
     target_path = args.path
     manual_mode = args.manual
-    update_mode = args.update
+
     git_ref = args.ref if args.ref else __version__
 
     # Validate target path
@@ -61,35 +61,25 @@ def handle_setup(args):
 
         sys.exit(1)
 
-    # Check if we're updating existing devcontainer files
+    # Check if devcontainer already exists
     target_devcontainer = os.path.join(target_path, ".devcontainer")
     should_clone = True  # Flag to determine if we need to clone repo
 
-    if update_mode:
-        if not os.path.exists(target_devcontainer):
-            log("ERR", f"No .devcontainer directory found at {target_path} to update")
-            import sys
-
-            sys.exit(1)
-
-        log("INFO", f"Updating devcontainer files to version {__version__}...")
-    else:
-        # Check if devcontainer already exists
-        if os.path.exists(target_devcontainer):
-            version_file = os.path.join(target_devcontainer, "VERSION")
-            if os.path.exists(version_file):
-                with open(version_file, "r") as f:
-                    current_version = f.read().strip()
-                log("INFO", f"Found existing devcontainer (version {current_version})")
-                if not confirm_overwrite(f"Devcontainer already exists. Overwrite with version {__version__}?"):
-                    log("INFO", "Overwrite declined by user.")
-                    should_clone = False  # Skip cloning, work with existing setup
-            else:
-                if not confirm_overwrite(
-                    f"Devcontainer already exists but has no version information. Overwrite with version {__version__}?"
-                ):
-                    log("INFO", "Overwrite declined by user.")
-                    should_clone = False  # Skip cloning, work with existing setup
+    if os.path.exists(target_devcontainer):
+        version_file = os.path.join(target_devcontainer, "VERSION")
+        if os.path.exists(version_file):
+            with open(version_file, "r") as f:
+                current_version = f.read().strip()
+            log("INFO", f"Found existing devcontainer (version {current_version})")
+            if not confirm_overwrite(f"Devcontainer already exists. Overwrite with version {__version__}?"):
+                log("INFO", "Overwrite declined by user.")
+                should_clone = False  # Skip cloning, work with existing setup
+        else:
+            if not confirm_overwrite(
+                f"Devcontainer already exists but has no version information. Overwrite with version {__version__}?"
+            ):
+                log("INFO", "Overwrite declined by user.")
+                should_clone = False  # Skip cloning, work with existing setup
 
     if should_clone:
         # Clone repository to temporary location

@@ -382,5 +382,4 @@ else
   WARNINGS+=("No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh")
 fi
 
-echo "Setup complete. View logs: cat /tmp/devcontainer-setup.log"
 exit 0

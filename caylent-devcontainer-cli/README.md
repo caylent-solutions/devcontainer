@@ -147,7 +147,7 @@ cdevcontainer code /path/to/another-project --ide cursor
 
 ### Setup
 
-For development, we recommend using the devcontainer itself. See the [Contributing Guide](CONTRIBUTING.md) for detailed setup instructions.
+For development, we recommend using the devcontainer itself. See the [Contributing Guide](docs/CONTRIBUTING.md) for detailed setup instructions.
 
 ### Testing
 
@@ -213,7 +213,7 @@ The package is automatically published to PyPI when a new tag is pushed to GitHu
 To create a new release:
 
 1. Ensure all tests pass (`make test`)
-2. Perform the [manual tests](MANUAL_TESTING.md) to verify functionality
+2. Perform the [manual tests](docs/MANUAL_TESTING.md) to verify functionality
 3. Create and push a new tag following semantic versioning:
 
 ```bash
@@ -228,7 +228,7 @@ The GitHub Actions workflow will:
 
 #### Manual Release Process
 
-Follow the manual release process documented in the [Contributing Guide](CONTRIBUTING.md#manual-release-process-when-github-actions-workflow-is-not-working).
+Follow the manual release process documented in the [Contributing Guide](docs/CONTRIBUTING.md#manual-release-process-when-github-actions-workflow-is-not-working).
 
 ## License
 

@@ -428,7 +428,7 @@ def create_template_interactive() -> Dict[str, Any]:
     else:
         template["aws_profile_map"] = {}
 
-    # Add version information
+    # Add version information (will be set by save_template_to_file)
     template["cli_version"] = __version__
 
     return template
@@ -439,8 +439,10 @@ def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
     if not os.path.exists(TEMPLATES_DIR):
         os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
-    # Always update version information to current version
-    template_data["cli_version"] = __version__
+    # Only update version information if no git_ref is present
+    # When git_ref is present, cli_version should match the git reference
+    if "git_ref" not in template_data:
+        template_data["cli_version"] = __version__
 
     template_path = os.path.join(TEMPLATES_DIR, f"{name}.json")
 
@@ -539,7 +541,12 @@ def upgrade_template(template_data: Dict[str, Any]) -> Dict[str, Any]:
         else:
             new_template["aws_profile_map"] = {}
 
-    # Ensure the cli_version is updated to the current version
+    # Preserve git reference information if it exists, but mark as upgraded
+    if "git_ref" in template_data:
+        new_template["git_ref"] = template_data["git_ref"]
+        new_template["original_git_ref"] = template_data["cli_version"]  # Preserve original git ref
+
+    # Always set cli_version to current version (this is an upgrade)
     new_template["cli_version"] = __version__
 
     return new_template
