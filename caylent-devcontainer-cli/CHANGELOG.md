@@ -2,13 +2,30 @@
 
 
 
+## v1.10.1 (2025-10-02)
+
+### Fix
+
+* fix: run project-setup.sh with proper user context and asdf environment (#93)
+
+* fix: run project-setup.sh with proper user context and asdf environment ([`15907be`](https://github.com/caylent-solutions/devcontainer/commit/15907be703b236fd163886e79f5dace9b466e284))
+
+
 ## v1.10.0 (2025-10-02)
+
+### Chore
+
+* chore(release): 1.10.0 ([`8c53c08`](https://github.com/caylent-solutions/devcontainer/commit/8c53c08a77b2ce919f569f566d46797ee9a1d481))
 
 ### Feature
 
 * feat: minor bump pre-commit (#91) ([`face7d7`](https://github.com/caylent-solutions/devcontainer/commit/face7d77ea51ae39c3033f4c036b1492c5adee68))
 
 ### Unknown
+
+* Merge pull request #92 from caylent-solutions/release-1.10.0
+
+Release 1.10.0 ([`a28ffd7`](https://github.com/caylent-solutions/devcontainer/commit/a28ffd795bca3cd3294b5f91878553978f6c0c2a))
 
 * Enhanced Template Management with Force Upgrade and Missing Variable Detection (#90)
 
