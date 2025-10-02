@@ -272,7 +272,9 @@ During a force upgrade:
 When running `cdevcontainer code <path>`, the CLI checks for missing environment variables in your configuration. If missing variables are detected:
 
 - A colorful warning displays the missing variables
-- Instructions are provided to run `cdevcontainer template upgrade --force <template-name>`
+- Instructions are provided to:
+  1. Run `cdevcontainer template upgrade --force <template-name>` to upgrade the template
+  2. Run `cdevcontainer template load --project-root <project-root> <template-name>` to load the upgraded template into the project
 - You can choose to exit and upgrade, or continue with potential issues
 
 This ensures your development environment stays up-to-date with the latest requirements.
