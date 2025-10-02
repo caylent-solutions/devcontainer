@@ -2,7 +2,81 @@
 
 
 
+## v1.10.0 (2025-10-02)
+
+### Feature
+
+* feat: minor bump pre-commit (#91) ([`face7d7`](https://github.com/caylent-solutions/devcontainer/commit/face7d77ea51ae39c3033f4c036b1492c5adee68))
+
+### Unknown
+
+* Enhanced Template Management with Force Upgrade and Missing Variable Detection (#90)
+
+* feat: enhance template management with upgrade and creation features
+
+- Add template create command for interactive template creation
+- Implement force upgrade flag (--force/-f) for template upgrades with missing variable detection
+- Add missing environment variable warnings in code command with upgrade guidance
+- Move documentation files to docs/ subdirectory for better organization
+- Remove deprecated --update flag from setup command
+- Add comprehensive test coverage for new features
+- Update documentation with new CLI commands and workflows
+- Remove setup completion message from postcreate script
+
+New features:
+- cdevcontainer template create &lt;name&gt; - Create templates interactively
+- cdevcontainer template upgrade --force &lt;name&gt; - Interactive upgrade with missing variable prompts
+- Automatic missing variable detection and user guidance in code command
+- Enhanced template version compatibility checking
+
+* style: apply code formatting fixes
+
+- Fix trailing whitespace and end-of-file issues
+- Apply black and isort formatting to Python files
+- Standardize code style across all modified files
+
+These changes were automatically applied by pre-commit hooks to ensure
+consistent code formatting and style compliance.
+
+* docs: remove redundant TEMPLATE_UPGRADE_ENHANCEMENTS.md
+
+The detailed implementation documentation in this file was redundant
+as the features are already well-documented in the main README.md
+and CLI help text. Removing to reduce maintenance overhead.
+
+* fix: resolve linting errors
+
+- Remove unused imports (pytest, unittest.mock, MagicMock)
+- Fix line length violations by properly breaking long strings
+- Ensure all code passes flake8, black, and isort checks
+
+* docs: update missing variable warnings section
+
+- Add both commands shown in the actual CLI output
+- Include template upgrade and template load steps
+- Provide complete workflow for fixing missing variables
+
+* fix: improve functional tests for missing variable detection
+
+- Use pytest.raises to properly handle SystemExit
+- Fix lambda function signature with MagicMock
+- Import pytest for proper exception handling
+- Ensure tests properly mock subprocess and questionary interactions
+
+* refactor: simplify TEMPLATES_DIR patching in functional tests
+
+- Remove complex __str__ and __fspath__ method patching
+- Use direct patch context manager for cleaner mocking
+- Simplify test method signatures by removing unused mock parameters
+
+* fix: Add missing newlines at end of files for pre-commit hook ([`efa06bd`](https://github.com/caylent-solutions/devcontainer/commit/efa06bdfec946b2396322fb62a3ea34dac0bf1b8))
+
+
 ## v1.9.0 (2025-10-01)
+
+### Chore
+
+* chore(release): 1.9.0 ([`2f26d44`](https://github.com/caylent-solutions/devcontainer/commit/2f26d44a468778ac3c91d34c5e56335cfc25c812))
 
 ### Feature
 
@@ -20,6 +94,10 @@
 * fix: add file existence check for project-setup.sh to prevent failures ([`1b3754c`](https://github.com/caylent-solutions/devcontainer/commit/1b3754cbb2d4c77e9769d40cf77f9196e63e8e1f))
 
 ### Unknown
+
+* Merge pull request #89 from caylent-solutions/release-1.9.0
+
+Release 1.9.0 ([`1380eaf`](https://github.com/caylent-solutions/devcontainer/commit/1380eaf05b9bacc05c8633f685aab0feb80b5296))
 
 * feat/auto-create-tool-versions (#87)
 
