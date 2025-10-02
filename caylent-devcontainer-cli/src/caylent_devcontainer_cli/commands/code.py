@@ -5,13 +5,9 @@ import shutil
 import subprocess
 
 from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
+from caylent_devcontainer_cli.utils.env import is_single_line_env_var
 from caylent_devcontainer_cli.utils.fs import find_project_root, generate_shell_env, load_json_config
 from caylent_devcontainer_cli.utils.ui import COLORS, log
-
-
-def is_single_line_env_var(value):
-    """Check if an environment variable value is a single line string."""
-    return isinstance(value, str) and "\n" not in value and not isinstance(value, (dict, list))
 
 
 def check_missing_env_vars(env_json_path):

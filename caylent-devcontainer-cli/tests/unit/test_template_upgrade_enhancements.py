@@ -8,10 +8,10 @@ from unittest.mock import patch
 from caylent_devcontainer_cli.commands.code import check_missing_env_vars, prompt_upgrade_or_continue
 from caylent_devcontainer_cli.commands.template import (
     get_missing_single_line_vars,
-    is_single_line_env_var,
     prompt_for_missing_vars,
     upgrade_template_with_missing_vars,
 )
+from caylent_devcontainer_cli.utils.env import is_single_line_env_var
 
 
 class TestSingleLineEnvVar:

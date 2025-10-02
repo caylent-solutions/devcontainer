@@ -1331,7 +1331,7 @@ def test_example_env_values_includes_cicd():
 
 def test_is_single_line_env_var():
     """Test single line environment variable detection."""
-    from caylent_devcontainer_cli.commands.template import is_single_line_env_var
+    from caylent_devcontainer_cli.utils.env import is_single_line_env_var
 
     # Single line strings
     assert is_single_line_env_var("simple_string") is True
@@ -1379,7 +1379,7 @@ def test_prompt_for_missing_vars_use_defaults(mock_text, mock_confirm):
     assert mock_confirm.call_count == 2
 
 
-@patch("caylent_devcontainer_cli.commands.template.upgrade_template")
+@patch("caylent_devcontainer_cli.commands.setup_interactive.upgrade_template")
 @patch("caylent_devcontainer_cli.commands.template.get_missing_single_line_vars")
 @patch("caylent_devcontainer_cli.commands.template.prompt_for_missing_vars")
 def test_upgrade_template_with_missing_vars(mock_prompt, mock_get_missing, mock_upgrade):

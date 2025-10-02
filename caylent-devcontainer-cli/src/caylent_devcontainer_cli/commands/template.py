@@ -9,12 +9,8 @@ from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
 from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
 from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
+from caylent_devcontainer_cli.utils.env import is_single_line_env_var
 from caylent_devcontainer_cli.utils.ui import confirm_action, log
-
-
-def is_single_line_env_var(value):
-    """Check if an environment variable value is a single line string."""
-    return isinstance(value, str) and "\n" not in value and not isinstance(value, (dict, list))
 
 
 def get_missing_single_line_vars(container_env):
