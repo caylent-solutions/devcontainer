@@ -24,17 +24,14 @@ class TestTemplateUpgradeForce:
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    @patch("caylent_devcontainer_cli.utils.constants.TEMPLATES_DIR")
     @patch(
         "caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES",
         {"EXISTING_VAR": "existing_default", "NEW_VAR": "new_default", "COMPLEX_VAR": {"key": "value"}},
     )
     @patch("questionary.confirm")
     @patch("questionary.text")
-    def test_force_upgrade_with_missing_vars(self, mock_text, mock_confirm, mock_templates_dir):
+    def test_force_upgrade_with_missing_vars(self, mock_text, mock_confirm):
         """Test force upgrade adds missing variables interactively."""
-        mock_templates_dir.__str__ = lambda: self.temp_dir
-        mock_templates_dir.__fspath__ = lambda: self.temp_dir
 
         # Create template file missing NEW_VAR
         template_data = {"containerEnv": {"EXISTING_VAR": "existing_value"}, "cli_version": "1.0.0"}
@@ -68,17 +65,14 @@ class TestTemplateUpgradeForce:
         # COMPLEX_VAR should not be added (not single line)
         assert "COMPLEX_VAR" not in updated_template["containerEnv"]
 
-    @patch("caylent_devcontainer_cli.utils.constants.TEMPLATES_DIR")
     @patch(
         "caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES",
         {"EXISTING_VAR": "existing_default", "NEW_VAR": "new_default"},
     )
     @patch("questionary.confirm")
     @patch("questionary.text")
-    def test_force_upgrade_custom_values(self, mock_text, mock_confirm, mock_templates_dir):
+    def test_force_upgrade_custom_values(self, mock_text, mock_confirm):
         """Test force upgrade with custom values for missing variables."""
-        mock_templates_dir.__str__ = lambda: self.temp_dir
-        mock_templates_dir.__fspath__ = lambda: self.temp_dir
 
         # Create template file
         template_data = {"containerEnv": {"EXISTING_VAR": "existing_value"}, "cli_version": "1.0.0"}
@@ -109,12 +103,9 @@ class TestTemplateUpgradeForce:
 
         assert updated_template["containerEnv"]["NEW_VAR"] == "custom_value"
 
-    @patch("caylent_devcontainer_cli.utils.constants.TEMPLATES_DIR")
     @patch("caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES", {"EXISTING_VAR": "existing_default"})
-    def test_force_upgrade_no_missing_vars(self, mock_templates_dir):
+    def test_force_upgrade_no_missing_vars(self):
         """Test force upgrade when no variables are missing."""
-        mock_templates_dir.__str__ = lambda: self.temp_dir
-        mock_templates_dir.__fspath__ = lambda: self.temp_dir
 
         # Create template file with all required vars
         template_data = {"containerEnv": {"EXISTING_VAR": "existing_value"}, "cli_version": "1.0.0"}
@@ -143,11 +134,8 @@ class TestTemplateUpgradeForce:
 
         assert updated_template["cli_version"] == __version__
 
-    @patch("caylent_devcontainer_cli.utils.constants.TEMPLATES_DIR")
-    def test_normal_upgrade_without_force(self, mock_templates_dir):
+    def test_normal_upgrade_without_force(self):
         """Test normal upgrade without --force flag."""
-        mock_templates_dir.__str__ = lambda: self.temp_dir
-        mock_templates_dir.__fspath__ = lambda: self.temp_dir
 
         # Create template file
         template_data = {"containerEnv": {"EXISTING_VAR": "existing_value"}, "cli_version": "1.0.0"}
