@@ -376,7 +376,7 @@ fi
 #########################
 log_info "Running project-specific setup script..."
 if [ -f "${WORK_DIR}/.devcontainer/project-setup.sh" ]; then
-  bash "${WORK_DIR}/.devcontainer/project-setup.sh"
+  sudo -u "${CONTAINER_USER}" bash -c "source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
 else
   log_warn "No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh"
   WARNINGS+=("No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh")
