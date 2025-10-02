@@ -3,10 +3,7 @@
 import json
 import os
 import tempfile
-import unittest.mock as mock
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from caylent_devcontainer_cli.commands.code import check_missing_env_vars, prompt_upgrade_or_continue
 from caylent_devcontainer_cli.commands.template import (

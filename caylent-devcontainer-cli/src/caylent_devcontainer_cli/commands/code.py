@@ -40,17 +40,21 @@ def prompt_upgrade_or_continue(missing_vars, template_name=None):
     print(f"\n{COLORS['BLUE']}To fix this issue:{COLORS['RESET']}")
     if template_name:
         print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force {template_name}{COLORS['RESET']} # To upgrade the template"
+            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force {template_name}{COLORS['RESET']} "
+            "# To upgrade the template"
         )
         print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root . {template_name}{COLORS['RESET']} # To load the upgraded template into the project"
+            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root . {template_name}{COLORS['RESET']} "
+            "# To load the upgraded template into the project"
         )
     else:
         print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force <template-name>{COLORS['RESET']} # To upgrade the template"
+            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force <template-name>{COLORS['RESET']} "
+            "# To upgrade the template"
         )
         print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root <project-root> <template-name>{COLORS['RESET']} # To load the upgraded template into the project"
+            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root <project-root> "
+            f"<template-name>{COLORS['RESET']} # To load the upgraded template into the project"
         )
 
     choice = questionary.select(

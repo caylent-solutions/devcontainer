@@ -5,8 +5,6 @@ import os
 import tempfile
 from unittest.mock import patch
 
-import pytest
-
 from caylent_devcontainer_cli.commands.template import handle_template_upgrade
 from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
 
