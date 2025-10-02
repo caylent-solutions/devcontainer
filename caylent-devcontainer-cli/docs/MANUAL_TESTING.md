@@ -199,6 +199,48 @@ cdevcontainer setup-devcontainer --ref nonexistent-branch --manual .
 # Should fail with clear error message about the reference not existing
 ```
 
+### 8. Template Create Test
+
+**Purpose**: Verify template create command works correctly
+
+```bash
+# Test 1: Create template with current CLI version
+cdevcontainer template create test-template
+
+# Follow the interactive prompts with test values:
+# - AWS Config: false
+# - Git branch: main
+# - Python version: 3.12.9
+# - Developer name: Test User
+# - Git provider: github.com
+# - Git username: testuser
+# - Git email: test@example.com
+# - Git token: test-token
+# - Extra packages: (leave empty)
+# - Pager: cat
+
+# Verify template was created
+cdevcontainer template list
+# Should see "test-template" in the list
+
+# Test 2: Verify template content
+cat ~/.devcontainer-templates/test-template.json
+# Should contain current CLI version
+
+# Clean up test template
+cdevcontainer template delete test-template
+```
+
+### 9. Template Create Help Test
+
+**Purpose**: Verify help text is correct
+
+```bash
+# Test help command
+cdevcontainer template create --help
+# Should display help text for template creation
+```
+
 ## Reporting Issues
 
 If any test fails:

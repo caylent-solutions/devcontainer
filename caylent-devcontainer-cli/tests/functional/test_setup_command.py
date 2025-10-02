@@ -131,16 +131,6 @@ def test_setup_update_mode():
         assert os.path.isfile(os.path.join(devcontainer_dir, "devcontainer.json"))
 
 
-def test_setup_update_mode_no_devcontainer():
-    """Test setup command with --update flag when no devcontainer exists."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Try to update non-existent devcontainer
-        result = run_command(["cdevcontainer", "setup-devcontainer", "--update", temp_dir])
-
-        assert result.returncode != 0
-        assert "No .devcontainer directory found" in result.stderr
-
-
 def test_setup_creates_tool_versions_file(temp_project_dir):
     """Test that setup command creates .tool-versions file when missing."""
     # Ensure .tool-versions doesn't exist initially

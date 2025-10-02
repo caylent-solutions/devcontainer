@@ -52,10 +52,29 @@ def test_code_command_ide_not_found():
         devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
         os.makedirs(devcontainer_dir)
 
-        # Create environment file
+        # Create environment file with required variables
         env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
         with open(env_file, "w") as f:
-            json.dump({"containerEnv": {"TEST": "value"}}, f)
+            json.dump(
+                {
+                    "containerEnv": {
+                        "AWS_CONFIG_ENABLED": "true",
+                        "CICD": "false",
+                        "DEFAULT_GIT_BRANCH": "main",
+                        "DEFAULT_PYTHON_VERSION": "3.12.9",
+                        "DEVELOPER_NAME": "test",
+                        "GIT_PROVIDER_URL": "github.com",
+                        "GIT_USER": "test",
+                        "GIT_USER_EMAIL": "test@example.com",
+                        "GIT_TOKEN": "test",
+                        "EXTRA_APT_PACKAGES": "",
+                        "PAGER": "cat",
+                        "AWS_DEFAULT_OUTPUT": "json",
+                        "TEST": "value",
+                    }
+                },
+                f,
+            )
 
         # Create shell.env to skip generation step
         shell_env = os.path.join(temp_dir, "shell.env")
@@ -96,10 +115,29 @@ def test_code_command_default_ide():
         devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
         os.makedirs(devcontainer_dir)
 
-        # Create environment file
+        # Create environment file with required variables
         env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
         with open(env_file, "w") as f:
-            json.dump({"containerEnv": {"TEST": "value"}}, f)
+            json.dump(
+                {
+                    "containerEnv": {
+                        "AWS_CONFIG_ENABLED": "true",
+                        "CICD": "false",
+                        "DEFAULT_GIT_BRANCH": "main",
+                        "DEFAULT_PYTHON_VERSION": "3.12.9",
+                        "DEVELOPER_NAME": "test",
+                        "GIT_PROVIDER_URL": "github.com",
+                        "GIT_USER": "test",
+                        "GIT_USER_EMAIL": "test@example.com",
+                        "GIT_TOKEN": "test",
+                        "EXTRA_APT_PACKAGES": "",
+                        "PAGER": "cat",
+                        "AWS_DEFAULT_OUTPUT": "json",
+                        "TEST": "value",
+                    }
+                },
+                f,
+            )
 
         # Create shell.env to skip generation step
         shell_env = os.path.join(temp_dir, "shell.env")
@@ -140,10 +178,29 @@ def test_code_command_cursor_ide():
         devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
         os.makedirs(devcontainer_dir)
 
-        # Create environment file
+        # Create environment file with required variables
         env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
         with open(env_file, "w") as f:
-            json.dump({"containerEnv": {"TEST": "value"}}, f)
+            json.dump(
+                {
+                    "containerEnv": {
+                        "AWS_CONFIG_ENABLED": "true",
+                        "CICD": "false",
+                        "DEFAULT_GIT_BRANCH": "main",
+                        "DEFAULT_PYTHON_VERSION": "3.12.9",
+                        "DEVELOPER_NAME": "test",
+                        "GIT_PROVIDER_URL": "github.com",
+                        "GIT_USER": "test",
+                        "GIT_USER_EMAIL": "test@example.com",
+                        "GIT_TOKEN": "test",
+                        "EXTRA_APT_PACKAGES": "",
+                        "PAGER": "cat",
+                        "AWS_DEFAULT_OUTPUT": "json",
+                        "TEST": "value",
+                    }
+                },
+                f,
+            )
 
         # Create shell.env to skip generation step
         shell_env = os.path.join(temp_dir, "shell.env")
@@ -176,10 +233,29 @@ def test_code_command_gitignore_creation():
         devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
         os.makedirs(devcontainer_dir)
 
-        # Create environment file
+        # Create environment file with required variables
         env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
         with open(env_file, "w") as f:
-            json.dump({"containerEnv": {"TEST": "value"}}, f)
+            json.dump(
+                {
+                    "containerEnv": {
+                        "AWS_CONFIG_ENABLED": "true",
+                        "CICD": "false",
+                        "DEFAULT_GIT_BRANCH": "main",
+                        "DEFAULT_PYTHON_VERSION": "3.12.9",
+                        "DEVELOPER_NAME": "test",
+                        "GIT_PROVIDER_URL": "github.com",
+                        "GIT_USER": "test",
+                        "GIT_USER_EMAIL": "test@example.com",
+                        "GIT_TOKEN": "test",
+                        "EXTRA_APT_PACKAGES": "",
+                        "PAGER": "cat",
+                        "AWS_DEFAULT_OUTPUT": "json",
+                        "TEST": "value",
+                    }
+                },
+                f,
+            )
 
         # Create shell.env to skip generation step
         shell_env = os.path.join(temp_dir, "shell.env")
@@ -229,10 +305,29 @@ def test_code_command_gitignore_update():
         devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
         os.makedirs(devcontainer_dir)
 
-        # Create environment file
+        # Create environment file with required variables
         env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
         with open(env_file, "w") as f:
-            json.dump({"containerEnv": {"TEST": "value"}}, f)
+            json.dump(
+                {
+                    "containerEnv": {
+                        "AWS_CONFIG_ENABLED": "true",
+                        "CICD": "false",
+                        "DEFAULT_GIT_BRANCH": "main",
+                        "DEFAULT_PYTHON_VERSION": "3.12.9",
+                        "DEVELOPER_NAME": "test",
+                        "GIT_PROVIDER_URL": "github.com",
+                        "GIT_USER": "test",
+                        "GIT_USER_EMAIL": "test@example.com",
+                        "GIT_TOKEN": "test",
+                        "EXTRA_APT_PACKAGES": "",
+                        "PAGER": "cat",
+                        "AWS_DEFAULT_OUTPUT": "json",
+                        "TEST": "value",
+                    }
+                },
+                f,
+            )
 
         # Create shell.env to skip generation step
         shell_env = os.path.join(temp_dir, "shell.env")

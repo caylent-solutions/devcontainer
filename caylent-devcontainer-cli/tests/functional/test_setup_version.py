@@ -35,11 +35,3 @@ def test_setup_creates_version_file(temp_project_dir):
 
     assert version, "VERSION file should not be empty"
     assert "." in version, "VERSION should be in semver format"
-
-
-# Skip this test as it requires interactive input which is difficult to automate in CI
-def test_setup_update_option(temp_project_dir):
-    """Test the --update option for setup-devcontainer."""
-    # This test is skipped because it requires interactive input
-    # The functionality is covered by unit tests
-    pass
