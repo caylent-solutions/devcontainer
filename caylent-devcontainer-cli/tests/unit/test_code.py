@@ -50,7 +50,15 @@ def test_handle_code_missing_config(mock_isfile, mock_find_project_root, capsys)
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 @patch("subprocess.Popen")
 def test_handle_code_regenerate_env(
-    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, mock_which, mock_check_missing, capsys
+    mock_popen,
+    mock_generate,
+    mock_getmtime,
+    mock_isfile,
+    mock_find_project_root,
+    mock_gitignore,
+    mock_which,
+    mock_check_missing,
+    capsys,
 ):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
@@ -114,7 +122,15 @@ def test_handle_code_custom_shell(mock_environ_get, mock_popen, mock_gitignore, 
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 @patch("subprocess.Popen")
 def test_handle_code_cursor(
-    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, mock_which, mock_check_missing, capsys
+    mock_popen,
+    mock_generate,
+    mock_getmtime,
+    mock_isfile,
+    mock_find_project_root,
+    mock_gitignore,
+    mock_which,
+    mock_check_missing,
+    capsys,
 ):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
@@ -145,7 +161,14 @@ def test_handle_code_cursor(
 @patch("os.path.getmtime", side_effect=[200, 100])
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 def test_handle_code_ide_not_found(
-    mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, mock_which, mock_check_missing, capsys
+    mock_generate,
+    mock_getmtime,
+    mock_isfile,
+    mock_find_project_root,
+    mock_gitignore,
+    mock_which,
+    mock_check_missing,
+    capsys,
 ):
     args = MagicMock()
     args.project_root = "/test/path"
@@ -168,7 +191,14 @@ def test_handle_code_ide_not_found(
 @patch("os.path.getmtime", side_effect=[200, 100])
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 def test_handle_code_cursor_not_found(
-    mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, mock_which, mock_check_missing, capsys
+    mock_generate,
+    mock_getmtime,
+    mock_isfile,
+    mock_find_project_root,
+    mock_gitignore,
+    mock_which,
+    mock_check_missing,
+    capsys,
 ):
     args = MagicMock()
     args.project_root = "/test/path"
@@ -192,7 +222,15 @@ def test_handle_code_cursor_not_found(
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
 @patch("subprocess.Popen", side_effect=Exception("Launch failed"))
 def test_handle_code_launch_failure(
-    mock_popen, mock_generate, mock_getmtime, mock_isfile, mock_find_project_root, mock_gitignore, mock_which, mock_check_missing, capsys
+    mock_popen,
+    mock_generate,
+    mock_getmtime,
+    mock_isfile,
+    mock_find_project_root,
+    mock_gitignore,
+    mock_which,
+    mock_check_missing,
+    capsys,
 ):
     args = MagicMock()
     args.project_root = "/test/path"
@@ -248,64 +286,60 @@ def test_ide_config_structure():
     assert IDE_CONFIG["cursor"]["name"] == "Cursor"
 
 
-@patch('caylent_devcontainer_cli.commands.code.EXAMPLE_ENV_VALUES', {
-    'EXISTING_VAR': 'default1',
-    'MISSING_VAR': 'default2',
-    'COMPLEX_VAR': {'key': 'value'}
-})
+@patch(
+    "caylent_devcontainer_cli.commands.code.EXAMPLE_ENV_VALUES",
+    {"EXISTING_VAR": "default1", "MISSING_VAR": "default2", "COMPLEX_VAR": {"key": "value"}},
+)
 def test_check_missing_env_vars():
     """Test checking for missing environment variables."""
-    import tempfile
     import json
+    import tempfile
+
     from caylent_devcontainer_cli.commands.code import check_missing_env_vars
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-        config_data = {
-            'containerEnv': {
-                'EXISTING_VAR': 'value'
-            }
-        }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        config_data = {"containerEnv": {"EXISTING_VAR": "value"}}
         json.dump(config_data, f)
         f.flush()
-        
+
         missing = check_missing_env_vars(f.name)
-        
+
         os.unlink(f.name)
-        
+
     # Should only detect MISSING_VAR (single line, missing)
-    assert missing == ['MISSING_VAR']
+    assert missing == ["MISSING_VAR"]
 
 
-@patch('questionary.select')
-@patch('sys.exit')
+@patch("questionary.select")
+@patch("sys.exit")
 def test_prompt_upgrade_or_continue_exit(mock_exit, mock_select):
     """Test prompting user to exit and upgrade."""
     from caylent_devcontainer_cli.commands.code import prompt_upgrade_or_continue
-    
+
     mock_select.return_value.ask.return_value = "Exit and upgrade the profile first (recommended)"
-    
-    prompt_upgrade_or_continue(['VAR1', 'VAR2'], 'test-template')
-    
+
+    prompt_upgrade_or_continue(["VAR1", "VAR2"], "test-template")
+
     mock_exit.assert_called_once_with(0)
 
 
-@patch('questionary.select')
+@patch("questionary.select")
 def test_prompt_upgrade_or_continue_continue(mock_select):
     """Test prompting user to continue without upgrade."""
     from caylent_devcontainer_cli.commands.code import prompt_upgrade_or_continue
-    
+
     mock_select.return_value.ask.return_value = "Continue without the upgrade (may cause issues)"
-    
+
     # Should not raise any exception
-    prompt_upgrade_or_continue(['VAR1', 'VAR2'])
-    
+    prompt_upgrade_or_continue(["VAR1", "VAR2"])
+
     # Verify the select was called
     mock_select.assert_called_once()
 
 
-@patch('caylent_devcontainer_cli.commands.code.load_json_config')
-@patch('caylent_devcontainer_cli.commands.code.check_missing_env_vars')
-@patch('caylent_devcontainer_cli.commands.code.prompt_upgrade_or_continue')
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars")
+@patch("caylent_devcontainer_cli.commands.code.prompt_upgrade_or_continue")
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
@@ -313,21 +347,28 @@ def test_prompt_upgrade_or_continue_continue(mock_select):
 @patch("os.path.getmtime", side_effect=[100, 200])
 @patch("subprocess.Popen")
 def test_handle_code_with_missing_vars(
-    mock_popen, mock_getmtime, mock_isfile, mock_find_project_root, 
-    mock_gitignore, mock_which, mock_prompt, mock_check_missing, mock_load_json
+    mock_popen,
+    mock_getmtime,
+    mock_isfile,
+    mock_find_project_root,
+    mock_gitignore,
+    mock_which,
+    mock_prompt,
+    mock_check_missing,
+    mock_load_json,
 ):
     """Test handle_code with missing environment variables."""
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process
-    mock_check_missing.return_value = ['MISSING_VAR']
-    mock_load_json.return_value = {'containerEnv': {'EXISTING_VAR': 'value'}}
-    
+    mock_check_missing.return_value = ["MISSING_VAR"]
+    mock_load_json.return_value = {"containerEnv": {"EXISTING_VAR": "value"}}
+
     args = MagicMock()
     args.project_root = "/test/path"
     args.ide = "vscode"
-    
+
     handle_code(args)
-    
+
     mock_check_missing.assert_called_once()
-    mock_prompt.assert_called_once_with(['MISSING_VAR'], None)
+    mock_prompt.assert_called_once_with(["MISSING_VAR"], None)

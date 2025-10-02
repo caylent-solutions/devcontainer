@@ -35,7 +35,7 @@ This implementation adds three major features to enhance the template management
 #### Code Changes:
 ```python
 # Added --force flag to argument parser
-upgrade_parser.add_argument("-f", "--force", action="store_true", 
+upgrade_parser.add_argument("-f", "--force", action="store_true",
                            help="Force full upgrade with interactive prompts for missing variables")
 
 # Enhanced upgrade logic
@@ -52,7 +52,7 @@ if force:
 
 #### Technical Implementation:
 - **File**: `src/caylent_devcontainer_cli/commands/code.py`
-- **Functions**: 
+- **Functions**:
   - `check_missing_env_vars(env_json_path)`
   - `prompt_upgrade_or_continue(missing_vars, template_name)`
 
@@ -102,7 +102,7 @@ What would you like to do?
 def create_new_template(template_name):
     """Create a new template interactively."""
     from caylent_devcontainer_cli.commands.setup_interactive import create_template_interactive, save_template_to_file
-    
+
     # Use current CLI version
     template_data = create_template_interactive()
     save_template_to_file(template_data, template_name)
@@ -132,12 +132,12 @@ def prompt_for_missing_vars(missing_vars):
     updated_vars = {}
     for var_name, default_value in missing_vars.items():
         log("INFO", f"New environment variable '{var_name}' needs to be added to your template")
-        
+
         use_default = questionary.confirm(
             f"Use default value '{default_value}' for {var_name}?",
             default=True
         ).ask()
-        
+
         if use_default:
             updated_vars[var_name] = default_value
         else:
@@ -146,7 +146,7 @@ def prompt_for_missing_vars(missing_vars):
                 default=str(default_value)
             ).ask()
             updated_vars[var_name] = custom_value
-    
+
     return updated_vars
 ```
 

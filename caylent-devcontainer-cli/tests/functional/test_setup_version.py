@@ -35,6 +35,3 @@ def test_setup_creates_version_file(temp_project_dir):
 
     assert version, "VERSION file should not be empty"
     assert "." in version, "VERSION should be in semver format"
-
-
-

@@ -605,9 +605,6 @@ def test_json_validator_with_json():
     validator.validate(document)  # Tests from test_setup_update.py
 
 
-
-
-
 def test_handle_setup_with_existing_version():
     """Test handling setup when a version file already exists."""
     args = MagicMock()
@@ -1335,16 +1332,16 @@ def test_example_env_values_includes_cicd():
 def test_is_single_line_env_var():
     """Test single line environment variable detection."""
     from caylent_devcontainer_cli.commands.template import is_single_line_env_var
-    
+
     # Single line strings
     assert is_single_line_env_var("simple_string") is True
     assert is_single_line_env_var("value with spaces") is True
     assert is_single_line_env_var("") is True
-    
+
     # Multiline strings
     assert is_single_line_env_var("line1\nline2") is False
     assert is_single_line_env_var("line1\n") is False
-    
+
     # Complex types
     assert is_single_line_env_var({"key": "value"}) is False
     assert is_single_line_env_var(["item1", "item2"]) is False
@@ -1352,60 +1349,58 @@ def test_is_single_line_env_var():
     assert is_single_line_env_var(True) is False
 
 
-@patch('caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES', {
-    'VAR1': 'value1',
-    'VAR2': 'value2',
-    'VAR3': {'complex': 'object'},
-    'VAR4': 'multiline\nvalue'
-})
+@patch(
+    "caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES",
+    {"VAR1": "value1", "VAR2": "value2", "VAR3": {"complex": "object"}, "VAR4": "multiline\nvalue"},
+)
 def test_get_missing_single_line_vars():
     """Test getting missing single line variables."""
     from caylent_devcontainer_cli.commands.template import get_missing_single_line_vars
-    
-    container_env = {'VAR1': 'existing_value'}
+
+    container_env = {"VAR1": "existing_value"}
     missing = get_missing_single_line_vars(container_env)
-    
+
     # Should only include VAR2 (single line, missing)
-    assert missing == {'VAR2': 'value2'}
+    assert missing == {"VAR2": "value2"}
 
 
-@patch('questionary.confirm')
-@patch('questionary.text')
+@patch("questionary.confirm")
+@patch("questionary.text")
 def test_prompt_for_missing_vars_use_defaults(mock_text, mock_confirm):
     """Test using default values for missing variables."""
     from caylent_devcontainer_cli.commands.template import prompt_for_missing_vars
-    
+
     mock_confirm.return_value.ask.return_value = True
-    missing_vars = {'VAR1': 'default1', 'VAR2': 'default2'}
-    
+    missing_vars = {"VAR1": "default1", "VAR2": "default2"}
+
     result = prompt_for_missing_vars(missing_vars)
-    
-    assert result == {'VAR1': 'default1', 'VAR2': 'default2'}
+
+    assert result == {"VAR1": "default1", "VAR2": "default2"}
     assert mock_confirm.call_count == 2
 
 
-@patch('caylent_devcontainer_cli.commands.template.upgrade_template')
-@patch('caylent_devcontainer_cli.commands.template.get_missing_single_line_vars')
-@patch('caylent_devcontainer_cli.commands.template.prompt_for_missing_vars')
+@patch("caylent_devcontainer_cli.commands.template.upgrade_template")
+@patch("caylent_devcontainer_cli.commands.template.get_missing_single_line_vars")
+@patch("caylent_devcontainer_cli.commands.template.prompt_for_missing_vars")
 def test_upgrade_template_with_missing_vars(mock_prompt, mock_get_missing, mock_upgrade):
     """Test upgrading template with missing variables."""
-    from caylent_devcontainer_cli.commands.template import upgrade_template_with_missing_vars
     from caylent_devcontainer_cli import __version__
-    
+    from caylent_devcontainer_cli.commands.template import upgrade_template_with_missing_vars
+
     # Setup mocks
     mock_upgrade.return_value = {
-        'containerEnv': {'existing_var': 'value'},
-        'cli_version': __version__,
-        'aws_profile_map': {}
+        "containerEnv": {"existing_var": "value"},
+        "cli_version": __version__,
+        "aws_profile_map": {},
     }
-    mock_get_missing.return_value = {'NEW_VAR': 'default_value'}
-    mock_prompt.return_value = {'NEW_VAR': 'user_value'}
-    
-    template_data = {'containerEnv': {'existing_var': 'value'}}
+    mock_get_missing.return_value = {"NEW_VAR": "default_value"}
+    mock_prompt.return_value = {"NEW_VAR": "user_value"}
+
+    template_data = {"containerEnv": {"existing_var": "value"}}
     result = upgrade_template_with_missing_vars(template_data)
-    
+
     # Check that NEW_VAR was added
-    assert 'NEW_VAR' in result['containerEnv']
-    assert result['containerEnv']['NEW_VAR'] == 'user_value'
-    assert result['containerEnv']['existing_var'] == 'value'
-    assert result['cli_version'] == __version__
+    assert "NEW_VAR" in result["containerEnv"]
+    assert result["containerEnv"]["NEW_VAR"] == "user_value"
+    assert result["containerEnv"]["existing_var"] == "value"
+    assert result["cli_version"] == __version__

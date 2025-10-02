@@ -153,36 +153,30 @@ def test_handle_template_create():
         mock_create.assert_called_once_with("new-template")
 
 
-@patch('caylent_devcontainer_cli.commands.setup_interactive.save_template_to_file')
-@patch('caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive')
-@patch('caylent_devcontainer_cli.commands.template.ensure_templates_dir')
-@patch('os.path.exists', return_value=False)
+@patch("caylent_devcontainer_cli.commands.setup_interactive.save_template_to_file")
+@patch("caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive")
+@patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
+@patch("os.path.exists", return_value=False)
 def test_create_new_template(mock_exists, mock_ensure_dir, mock_create_interactive, mock_save):
     """Test creating a new template."""
-    mock_create_interactive.return_value = {'containerEnv': {'TEST': 'value'}, 'cli_version': '1.0.0'}
-    
-    create_new_template('test-template')
-    
+    mock_create_interactive.return_value = {"containerEnv": {"TEST": "value"}, "cli_version": "1.0.0"}
+
+    create_new_template("test-template")
+
     mock_ensure_dir.assert_called_once()
     mock_create_interactive.assert_called_once()
-    mock_save.assert_called_once_with({'containerEnv': {'TEST': 'value'}, 'cli_version': '1.0.0'}, 'test-template')
+    mock_save.assert_called_once_with({"containerEnv": {"TEST": "value"}, "cli_version": "1.0.0"}, "test-template")
 
 
-@patch('caylent_devcontainer_cli.commands.template.confirm_action', return_value=False)
-@patch('caylent_devcontainer_cli.commands.template.ensure_templates_dir')
-@patch('os.path.exists', return_value=True)
+@patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=False)
+@patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
+@patch("os.path.exists", return_value=True)
 def test_create_new_template_exists_cancel(mock_exists, mock_ensure_dir, mock_confirm):
     """Test creating template when it exists and user cancels."""
-    create_new_template('existing-template')
-    
+    create_new_template("existing-template")
+
     mock_confirm.assert_called_once_with("Template 'existing-template' already exists. Overwrite?")
     mock_ensure_dir.assert_called_once()
-
-
-
-
-
-
 
 
 def test_handle_template_upgrade():
@@ -194,9 +188,6 @@ def test_handle_template_upgrade():
     with patch("caylent_devcontainer_cli.commands.template.upgrade_template_file") as mock_upgrade:
         handle_template_upgrade(args)
         mock_upgrade.assert_called_once_with("template1", force=False)
-
-
-
 
 
 def test_delete_template():
@@ -260,9 +251,6 @@ def test_upgrade_template_file():
         "caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", "/templates"
     ):
         upgrade_template_file(template_name)
-
-
-
 
 
 def test_upgrade_template_file_not_found():

@@ -4,59 +4,65 @@ import os
 import shutil
 import subprocess
 
-from caylent_devcontainer_cli.utils.fs import find_project_root, generate_shell_env, load_json_config
-from caylent_devcontainer_cli.utils.ui import log, COLORS
 from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
+from caylent_devcontainer_cli.utils.fs import find_project_root, generate_shell_env, load_json_config
+from caylent_devcontainer_cli.utils.ui import COLORS, log
 
 
 def is_single_line_env_var(value):
     """Check if an environment variable value is a single line string."""
-    return isinstance(value, str) and '\n' not in value and not isinstance(value, (dict, list))
+    return isinstance(value, str) and "\n" not in value and not isinstance(value, (dict, list))
 
 
 def check_missing_env_vars(env_json_path):
     """Check for missing single-line environment variables."""
     config_data = load_json_config(env_json_path)
     container_env = config_data.get("containerEnv", {})
-    
+
     missing_vars = []
     for key, value in EXAMPLE_ENV_VALUES.items():
         if key not in container_env and is_single_line_env_var(value):
             missing_vars.append(key)
-    
+
     return missing_vars
 
 
 def prompt_upgrade_or_continue(missing_vars, template_name=None):
     """Prompt user about missing variables and upgrade options."""
     import questionary
-    
+
     # Display colorful warning
     print(f"\n{COLORS['RED']}⚠️  WARNING: Missing Environment Variables{COLORS['RESET']}")
     print(f"{COLORS['YELLOW']}Your profile is missing the following required variables:{COLORS['RESET']}")
     for var in missing_vars:
         print(f"  - {COLORS['CYAN']}{var}{COLORS['RESET']}")
-    
+
     print(f"\n{COLORS['BLUE']}To fix this issue:{COLORS['RESET']}")
     if template_name:
-        print(f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force {template_name}{COLORS['RESET']} # To upgrade the template")
-        print(f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root . {template_name}{COLORS['RESET']} # To load the upgraded template into the project")
+        print(
+            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force {template_name}{COLORS['RESET']} # To upgrade the template"
+        )
+        print(
+            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root . {template_name}{COLORS['RESET']} # To load the upgraded template into the project"
+        )
     else:
-        print(f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force <template-name>{COLORS['RESET']} # To upgrade the template")
-        print(f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root <project-root> <template-name>{COLORS['RESET']} # To load the upgraded template into the project")
-    
+        print(
+            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force <template-name>{COLORS['RESET']} # To upgrade the template"
+        )
+        print(
+            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root <project-root> <template-name>{COLORS['RESET']} # To load the upgraded template into the project"
+        )
+
     choice = questionary.select(
         "What would you like to do?",
-        choices=[
-            "Exit and upgrade the profile first (recommended)",
-            "Continue without the upgrade (may cause issues)"
-        ],
-        default="Exit and upgrade the profile first (recommended)"
+        choices=["Exit and upgrade the profile first (recommended)", "Continue without the upgrade (may cause issues)"],
+        default="Exit and upgrade the profile first (recommended)",
     ).ask()
-    
+
     if choice and "Exit" in choice:
         log("INFO", "Please upgrade your profile and try again")
         import sys
+
         sys.exit(0)
     else:
         log("WARN", "Continuing without upgrade - some features may not work correctly")
@@ -126,7 +132,7 @@ def handle_code(args):
                 # This might be from a template, but we can't determine the name
                 # So we'll just show the generic upgrade command
                 pass
-            
+
             prompt_upgrade_or_continue(missing_vars, template_name)
     except SystemExit:
         # If config loading fails, the error was already logged, just re-raise
