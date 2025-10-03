@@ -131,6 +131,76 @@ echo "alias git_sync=\"git pull origin ${DEFAULT_GIT_BRANCH}\"" >> ${ZSH_RC}
 echo 'alias git_boop="git reset --soft HEAD~1"' >> ${BASH_RC}
 echo 'alias git_boop="git reset --soft HEAD~1"' >> ${ZSH_RC}
 
+##############################
+# Install asdf & Tool Versions
+##############################
+log_info "Installing asdf..."
+mkdir -p /home/${CONTAINER_USER}/.asdf
+git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.15.0
+
+# Add asdf to bash
+echo '. "$HOME/.asdf/asdf.sh"' >> ${BASH_RC}
+echo '. "$HOME/.asdf/completions/asdf.bash"' >> ${BASH_RC}
+
+# Source asdf for the current script
+export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
+export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
+. "/home/${CONTAINER_USER}/.asdf/asdf.sh"
+
+# Make asdf available system-wide for Amazon Q agents
+log_info "Configuring system-wide asdf access for Amazon Q agents..."
+
+# Add asdf shims AND bin directory to system-wide PATH via /etc/environment
+echo 'PATH="/home/vscode/.asdf/shims:/home/vscode/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' >> /etc/environment
+
+# Create system-wide profile for asdf that sets PATH and loads asdf
+cat > /etc/profile.d/asdf.sh << 'ASDF_PROFILE'
+#!/bin/bash
+# System-wide asdf configuration for Amazon Q agents
+export PATH="/home/vscode/.asdf/shims:/home/vscode/.asdf/bin:$PATH"
+if [ -f "/home/vscode/.asdf/asdf.sh" ]; then
+    . "/home/vscode/.asdf/asdf.sh"
+fi
+ASDF_PROFILE
+chmod +x /etc/profile.d/asdf.sh
+
+# Also add to /etc/bash.bashrc for non-login shells
+echo '# Load asdf for Amazon Q agents' >> /etc/bash.bashrc
+echo 'export PATH="/home/vscode/.asdf/shims:/home/vscode/.asdf/bin:$PATH"' >> /etc/bash.bashrc
+echo 'if [ -f "/home/vscode/.asdf/asdf.sh" ]; then . "/home/vscode/.asdf/asdf.sh"; fi' >> /etc/bash.bashrc
+
+# Create plugins directory if it doesn't exist
+mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
+
+# Create wrapper scripts for asdf tools in /usr/local/bin for direct access
+log_info "Creating asdf wrapper scripts for direct access..."
+
+# Create asdf wrapper script
+cat > /usr/local/bin/asdf << 'ASDF_WRAPPER'
+#!/bin/bash
+# Wrapper script for asdf that ensures proper environment
+export ASDF_DIR="/home/vscode/.asdf"
+export ASDF_DATA_DIR="/home/vscode/.asdf"
+if [ -f "/home/vscode/.asdf/asdf.sh" ]; then
+    . "/home/vscode/.asdf/asdf.sh"
+fi
+exec /home/vscode/.asdf/bin/asdf "$@"
+ASDF_WRAPPER
+chmod +x /usr/local/bin/asdf
+
+# Create pip wrapper script that sources asdf environment
+cat > /usr/local/bin/pip-asdf << 'PIP_WRAPPER'
+#!/bin/bash
+# Wrapper script for pip that ensures asdf environment is loaded
+export ASDF_DIR="/home/vscode/.asdf"
+export ASDF_DATA_DIR="/home/vscode/.asdf"
+if [ -f "/home/vscode/.asdf/asdf.sh" ]; then
+    . "/home/vscode/.asdf/asdf.sh"
+fi
+exec /home/vscode/.asdf/shims/pip "$@"
+PIP_WRAPPER
+chmod +x /usr/local/bin/pip-asdf
+
 #################
 # Oh My Zsh     #
 #################
@@ -218,25 +288,6 @@ if [ -n "${EXTRA_APT_PACKAGES:-}" ]; then
   sudo apt-get install -y ${EXTRA_APT_PACKAGES}
 fi
 
-##############################
-# Install asdf & Tool Versions
-##############################
-log_info "Installing asdf..."
-mkdir -p /home/${CONTAINER_USER}/.asdf
-git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.15.0
-
-# Add asdf to bash
-echo '. "$HOME/.asdf/asdf.sh"' >> ${BASH_RC}
-echo '. "$HOME/.asdf/completions/asdf.bash"' >> ${BASH_RC}
-
-# Source asdf for the current script
-export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
-export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
-. "/home/${CONTAINER_USER}/.asdf/asdf.sh"
-
-# Create plugins directory if it doesn't exist
-mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
-
 if [ -f "${WORK_DIR}/.tool-versions" ]; then
   log_info "Installing asdf plugins from .tool-versions..."
   cut -d' ' -f1 "${WORK_DIR}/.tool-versions" | while read -r plugin; do
@@ -272,6 +323,20 @@ fi
 log_info "Running asdf reshim..."
 if ! asdf reshim; then
   exit_with_error "❌ asdf reshim failed"
+fi
+
+# Create symlinks in /usr/local/bin for direct access by Amazon Q agents
+log_info "Creating symlinks for Amazon Q agent direct access..."
+if [ -d "/home/${CONTAINER_USER}/.asdf/shims" ]; then
+  for shim in /home/${CONTAINER_USER}/.asdf/shims/*; do
+    if [ -f "$shim" ] && [ -x "$shim" ]; then
+      shim_name=$(basename "$shim")
+      if [ ! -e "/usr/local/bin/$shim_name" ]; then
+        ln -s "$shim" "/usr/local/bin/$shim_name"
+        log_info "Created symlink: /usr/local/bin/$shim_name -> $shim"
+      fi
+    fi
+  done
 fi
 
 # Install pipx right after Python is available
