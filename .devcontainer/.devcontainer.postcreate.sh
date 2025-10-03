@@ -151,23 +151,23 @@ export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
 log_info "Configuring system-wide asdf access for Amazon Q agents..."
 
 # Add asdf shims AND bin directory to system-wide PATH via /etc/environment
-echo 'PATH="/home/vscode/.asdf/shims:/home/vscode/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' >> /etc/environment
+echo "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" >> /etc/environment
 
 # Create system-wide profile for asdf that sets PATH and loads asdf
-cat > /etc/profile.d/asdf.sh << 'ASDF_PROFILE'
+cat > /etc/profile.d/asdf.sh << ASDF_PROFILE
 #!/bin/bash
 # System-wide asdf configuration for Amazon Q agents
-export PATH="/home/vscode/.asdf/shims:/home/vscode/.asdf/bin:$PATH"
-if [ -f "/home/vscode/.asdf/asdf.sh" ]; then
-    . "/home/vscode/.asdf/asdf.sh"
+export PATH="/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH"
+if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
+    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
 fi
 ASDF_PROFILE
 chmod +x /etc/profile.d/asdf.sh
 
 # Also add to /etc/bash.bashrc for non-login shells
 echo '# Load asdf for Amazon Q agents' >> /etc/bash.bashrc
-echo 'export PATH="/home/vscode/.asdf/shims:/home/vscode/.asdf/bin:$PATH"' >> /etc/bash.bashrc
-echo 'if [ -f "/home/vscode/.asdf/asdf.sh" ]; then . "/home/vscode/.asdf/asdf.sh"; fi' >> /etc/bash.bashrc
+echo "export PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH\"" >> /etc/bash.bashrc
+echo "if [ -f \"/home/${CONTAINER_USER}/.asdf/asdf.sh\" ]; then . \"/home/${CONTAINER_USER}/.asdf/asdf.sh\"; fi" >> /etc/bash.bashrc
 
 # Create plugins directory if it doesn't exist
 mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
@@ -176,28 +176,28 @@ mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
 log_info "Creating asdf wrapper scripts for direct access..."
 
 # Create asdf wrapper script
-cat > /usr/local/bin/asdf << 'ASDF_WRAPPER'
+cat > /usr/local/bin/asdf << ASDF_WRAPPER
 #!/bin/bash
 # Wrapper script for asdf that ensures proper environment
-export ASDF_DIR="/home/vscode/.asdf"
-export ASDF_DATA_DIR="/home/vscode/.asdf"
-if [ -f "/home/vscode/.asdf/asdf.sh" ]; then
-    . "/home/vscode/.asdf/asdf.sh"
+export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
+export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
+if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
+    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
 fi
-exec /home/vscode/.asdf/bin/asdf "$@"
+exec /home/${CONTAINER_USER}/.asdf/bin/asdf "\$@"
 ASDF_WRAPPER
 chmod +x /usr/local/bin/asdf
 
 # Create pip wrapper script that sources asdf environment
-cat > /usr/local/bin/pip-asdf << 'PIP_WRAPPER'
+cat > /usr/local/bin/pip-asdf << PIP_WRAPPER
 #!/bin/bash
 # Wrapper script for pip that ensures asdf environment is loaded
-export ASDF_DIR="/home/vscode/.asdf"
-export ASDF_DATA_DIR="/home/vscode/.asdf"
-if [ -f "/home/vscode/.asdf/asdf.sh" ]; then
-    . "/home/vscode/.asdf/asdf.sh"
+export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
+export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
+if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
+    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
 fi
-exec /home/vscode/.asdf/shims/pip "$@"
+exec /home/${CONTAINER_USER}/.asdf/shims/pip "\$@"
 PIP_WRAPPER
 chmod +x /usr/local/bin/pip-asdf
 
