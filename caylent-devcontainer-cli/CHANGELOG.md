@@ -2,13 +2,53 @@
 
 
 
+## v1.11.0 (2025-10-03)
+
+### Feature
+
+* feat: add system-wide asdf access for Amazon Q agents (#97)
+
+* feat: add system-wide asdf access for Amazon Q agents
+
+- Configure system-wide PATH via /etc/environment with asdf shims and bin
+- Create /etc/profile.d/asdf.sh for system-wide asdf loading
+- Add asdf configuration to /etc/bash.bashrc for non-login shells
+- Create wrapper scripts in /usr/local/bin for direct tool access
+- Generate symlinks from asdf shims to /usr/local/bin for immediate access
+- Move asdf installation earlier in setup process before other tools
+- Ensure Amazon Q agents can access Python and asdf tools without manual sourcing
+
+Fixes Amazon Q agent access issues by providing multiple access methods:
+1. System-wide PATH configuration
+2. Direct symlinks for immediate access
+3. Wrapper scripts with proper environment loading
+4. Cross-shell compatibility (bash/zsh, interactive/non-interactive)
+
+* fix: Replace hardcoded vscode paths with dynamic CONTAINER_USER variable
+
+- Replace hardcoded /home/vscode/ paths with /home/${CONTAINER_USER}/
+- Update asdf configuration to work with any container user
+- Fix system-wide PATH configuration for Amazon Q agents
+- Update wrapper scripts to use dynamic user paths ([`7b32c2e`](https://github.com/caylent-solutions/devcontainer/commit/7b32c2e3f2a33e1dbb2fbb3989b232613d9ad6ca))
+
+
 ## v1.10.1 (2025-10-02)
+
+### Chore
+
+* chore(release): 1.10.1 ([`3d53993`](https://github.com/caylent-solutions/devcontainer/commit/3d539932c44c2b38a5787ed177aec38b7e880b4e))
 
 ### Fix
 
 * fix: run project-setup.sh with proper user context and asdf environment (#93)
 
 * fix: run project-setup.sh with proper user context and asdf environment ([`15907be`](https://github.com/caylent-solutions/devcontainer/commit/15907be703b236fd163886e79f5dace9b466e284))
+
+### Unknown
+
+* Merge pull request #94 from caylent-solutions/release-1.10.1
+
+Release 1.10.1 ([`3198c6c`](https://github.com/caylent-solutions/devcontainer/commit/3198c6c15dbc2e009b4b8dbd87fb65c6bb8202dd))
 
 
 ## v1.10.0 (2025-10-02)
