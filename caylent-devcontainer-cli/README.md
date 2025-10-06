@@ -67,6 +67,56 @@ cdevcontainer --help
 - `install`: Install the CLI tool to your PATH
 - `uninstall`: Uninstall the CLI tool
 
+### Global Options
+
+- `-y, --yes`: Automatically answer yes to all prompts
+- `-v, --version`: Show version information
+- `--skip-update-check`: Skip automatic update check
+
+### Update Notifications
+
+The CLI automatically checks for updates when run in interactive environments and provides manual upgrade instructions:
+
+```bash
+🔄 Update Available
+Current version: 1.10.0
+Latest version:  1.11.0
+
+Select an option:
+  1 - Exit and upgrade manually
+  2 - Continue without upgrading
+
+Enter your choice [1]:
+```
+
+**Manual Upgrade Instructions by Installation Type:**
+- **pipx installations**: `pipx upgrade caylent-devcontainer-cli`
+- **pip installations**: Switch to pipx (recommended) or upgrade with pip
+- **Editable installations**: Pull latest changes and reinstall, or switch to pipx
+
+**Update Check Behavior:**
+- **Interactive environments**: Shows update notifications with manual upgrade instructions
+- **Non-interactive environments**: Skips update checks silently (CI/CD, scripts, etc.)
+- **Skip mechanisms**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
+
+**Environment Variables:**
+- `CDEVCONTAINER_SKIP_UPDATE=1`: Globally disable all automatic update checks
+- `CDEVCONTAINER_DEBUG_UPDATE=1`: Enable debug logging for update check process
+
+**Debug Mode:**
+To troubleshoot update issues, enable debug logging:
+```bash
+export CDEVCONTAINER_DEBUG_UPDATE=1
+cdevcontainer --version
+```
+
+This will show detailed information about:
+- Update check process and network requests
+- Installation type detection
+- Lock file operations
+
+
+
 ### Setting Up a Devcontainer
 
 ```bash
@@ -75,9 +125,6 @@ cdevcontainer setup-devcontainer /path/to/your/project
 
 # Manual setup (skip interactive prompts)
 cdevcontainer setup-devcontainer --manual /path/to/your/project
-
-# Update existing devcontainer files to the current CLI version
-cdevcontainer setup-devcontainer --update /path/to/your/project
 
 # Use specific git reference (branch, tag, or commit) instead of CLI version
 cdevcontainer setup-devcontainer --ref main /path/to/your/project
