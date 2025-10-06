@@ -2,11 +2,55 @@
 
 
 
+## v1.12.0 (2025-10-06)
+
+### Feature
+
+* feat: add manual update notification system (#103)
+
+* feat: add manual update notification system
+
+Features added:
+- Automatic update checking with manual upgrade instructions
+- Installation type detection (pipx, pip, editable) with appropriate guidance
+- Interactive prompts to continue or exit for manual upgrade
+- CLI flag --skip-update-check and environment variable controls
+- Debug logging for troubleshooting update issues
+- Automatic skip of update checks in CI/non-interactive environments
+- Python module entry point for python -m execution
+
+Documentation added:
+- Comprehensive update notification behavior documentation
+- Manual upgrade instructions by installation type
+- Debug mode and environment variable reference
+
+Bugs fixed:
+- Remove incorrect --update flag references from README documentation
+
+* test: fix test
+
+* fix: mock os.getenv in interactive shell test to prevent CI detection
+
+- Add os.getenv mock to test_is_interactive_shell_both_tty test
+- Prevents GitHub Actions CI=true environment variable from interfering with test
+- Test now properly validates interactive shell detection logic ([`22500ee`](https://github.com/caylent-solutions/devcontainer/commit/22500eefdb6bcdaac81f67eca90b016baeace981))
+
+
 ## v1.11.1 (2025-10-06)
+
+### Chore
+
+* chore(release): 1.11.1 ([`585f7c2`](https://github.com/caylent-solutions/devcontainer/commit/585f7c224f9f02a3e3fc64b460ea26d9a2804749))
 
 ### Fix
 
 * fix: add WSL compatibility for system file operations in postcreate script (#101) ([`b3e09bd`](https://github.com/caylent-solutions/devcontainer/commit/b3e09bd3e731d37ed45c6fa1a993d56824d87e71))
+
+### Unknown
+
+* Merge pull request #102 from caylent-solutions/release-1.11.1
+
+Release 1.11.1 ([`8adda5a`](https://github.com/caylent-solutions/devcontainer/commit/8adda5ab4e7c437f9b436ea664f1c0bf9e6f2360))
 
 
 ## v1.11.0 (2025-10-03)
