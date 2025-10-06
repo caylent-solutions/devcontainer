@@ -147,9 +147,10 @@ class TestVersionUtils(TestCase):
         """Test interactive shell detection without stdin TTY."""
         self.assertFalse(_is_interactive_shell())
 
+    @mock.patch("os.getenv", return_value=None)
     @mock.patch("sys.stdin.isatty", return_value=True)
     @mock.patch("sys.stdout.isatty", return_value=True)
-    def test_is_interactive_shell_both_tty(self, mock_stdout, mock_stdin):
+    def test_is_interactive_shell_both_tty(self, mock_stdout, mock_stdin, mock_getenv):
         """Test interactive shell detection with both TTY."""
         self.assertTrue(_is_interactive_shell())
 
