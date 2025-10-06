@@ -18,7 +18,7 @@ class TestInstallationDisplayIntegration(TestCase):
         """Test pipx regular installation display."""
         mock_pipx.return_value = True
         mock_editable.return_value = False
-        mock_input.return_value = "3"  # Continue without upgrading
+        mock_input.return_value = "2"  # Continue without upgrading
 
         _show_update_prompt("1.10.0", "1.11.0")
 
@@ -35,7 +35,7 @@ class TestInstallationDisplayIntegration(TestCase):
         """Test pipx editable installation display."""
         mock_pipx.return_value = True
         mock_editable.return_value = True
-        mock_input.return_value = "3"  # Continue without upgrading
+        mock_input.return_value = "2"  # Continue without upgrading
 
         _show_update_prompt("1.10.0", "1.11.0")
 
@@ -52,7 +52,7 @@ class TestInstallationDisplayIntegration(TestCase):
         """Test pip regular installation display."""
         mock_pipx.return_value = False
         mock_editable.return_value = False
-        mock_input.return_value = "3"  # Continue without upgrading
+        mock_input.return_value = "2"  # Continue without upgrading
 
         _show_update_prompt("1.10.0", "1.11.0")
 
@@ -69,7 +69,7 @@ class TestInstallationDisplayIntegration(TestCase):
         """Test pip editable installation display."""
         mock_pipx.return_value = False
         mock_editable.return_value = True
-        mock_input.return_value = "3"  # Continue without upgrading
+        mock_input.return_value = "2"  # Continue without upgrading
 
         _show_update_prompt("1.10.0", "1.11.0")
 
