@@ -137,6 +137,35 @@ After installation, you can run the CLI from anywhere:
 cdevcontainer --help
 ```
 
+#### Automatic Updates
+
+The CLI automatically checks for updates when run in interactive environments and offers upgrade options based on your installation type:
+
+```bash
+🔄 Update Available
+Current version: 1.10.0 (pipx)
+Latest version:  1.11.0
+
+Select an option:
+  1 - Upgrade with pipx and continue (recommended)
+  2 - Exit and upgrade manually
+  3 - Continue without upgrading
+
+Enter your choice [1]:
+```
+
+**Update Options by Installation Type:**
+- **pipx installations**: Automatic upgrade via `pipx upgrade` or switch to PyPI version for local installs
+- **pip installations**: Automatic upgrade to pipx from PyPI or manual instructions
+- **Editable installations**: Reinstall from PyPI or manual development instructions
+
+**Update Check Behavior:**
+- **Interactive use**: Shows update prompts with upgrade options
+- **CI/CD environments**: Skips update checks silently
+- **Skip updates**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
+
+For debug information about update checks, set `CDEVCONTAINER_DEBUG_UPDATE=1`.
+
 ### 2. Set Up Your Project
 
 You can set up a devcontainer in your project using the CLI:
@@ -709,6 +738,9 @@ The Caylent Devcontainer CLI provides several commands to manage your devcontain
 ```bash
 # Show help
 cdevcontainer --help
+
+# Skip automatic update check
+cdevcontainer --skip-update-check --help
 
 # Set up a devcontainer in a project directory
 cdevcontainer setup-devcontainer /path/to/your/project

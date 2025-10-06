@@ -67,6 +67,48 @@ cdevcontainer --help
 - `install`: Install the CLI tool to your PATH
 - `uninstall`: Uninstall the CLI tool
 
+### Global Options
+
+- `-y, --yes`: Automatically answer yes to all prompts
+- `-v, --version`: Show version information
+- `--skip-update-check`: Skip automatic update check
+
+### Automatic Updates
+
+The CLI automatically checks for updates when run in interactive environments and offers upgrade options:
+
+```bash
+🔄 Update Available
+Current version: 1.10.0
+Latest version:  1.11.0
+
+Select an option:
+  1 - Upgrade with pipx and continue (recommended)
+  2 - Exit and upgrade manually
+  3 - Continue without upgrading
+
+Enter your choice [1]:
+```
+
+**Update Options by Installation Type:**
+- **pipx installations**: Automatic upgrade via `pipx upgrade` or switch to PyPI version for local installs
+- **pip installations**: Automatic upgrade to pipx from PyPI or manual instructions  
+- **Editable installations**: Reinstall from PyPI or manual development instructions
+
+**Local Installation Handling:**
+- Local pipx installations (installed from source) are automatically detected
+- Option 1 will uninstall the local version and install the latest from PyPI
+- This ensures you get official releases instead of development versions
+
+**Update Check Behavior:**
+- **Interactive environments**: Shows update prompts and offers upgrade options
+- **Non-interactive environments**: Skips update checks silently (CI/CD, scripts, etc.)
+- **Skip mechanisms**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
+
+**Environment Variables:**
+- `CDEVCONTAINER_SKIP_UPDATE=1`: Globally disable all automatic update checks
+- `CDEVCONTAINER_DEBUG_UPDATE=1`: Enable debug logging for update check process
+
 ### Setting Up a Devcontainer
 
 ```bash
