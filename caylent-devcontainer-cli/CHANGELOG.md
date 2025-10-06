@@ -2,7 +2,18 @@
 
 
 
+## v1.11.1 (2025-10-06)
+
+### Fix
+
+* fix: add WSL compatibility for system file operations in postcreate script (#101) ([`b3e09bd`](https://github.com/caylent-solutions/devcontainer/commit/b3e09bd3e731d37ed45c6fa1a993d56824d87e71))
+
+
 ## v1.11.0 (2025-10-03)
+
+### Chore
+
+* chore(release): 1.11.0 ([`536d25a`](https://github.com/caylent-solutions/devcontainer/commit/536d25aa0704b058ebb07d9f8e2a51c9c960e9ba))
 
 ### Feature
 
@@ -30,6 +41,12 @@ Fixes Amazon Q agent access issues by providing multiple access methods:
 - Update asdf configuration to work with any container user
 - Fix system-wide PATH configuration for Amazon Q agents
 - Update wrapper scripts to use dynamic user paths ([`7b32c2e`](https://github.com/caylent-solutions/devcontainer/commit/7b32c2e3f2a33e1dbb2fbb3989b232613d9ad6ca))
+
+### Unknown
+
+* Merge pull request #98 from caylent-solutions/release-1.11.0
+
+Release 1.11.0 ([`35553a0`](https://github.com/caylent-solutions/devcontainer/commit/35553a0afd363352abdc5ad08d05fd3653bdc6c4))
 
 
 ## v1.10.1 (2025-10-02)
