@@ -92,7 +92,7 @@ Enter your choice [1]:
 
 **Update Options by Installation Type:**
 - **pipx installations**: Automatic upgrade via `pipx upgrade` or switch to PyPI version for local installs
-- **pip installations**: Automatic upgrade to pipx from PyPI or manual instructions  
+- **pip installations**: Automatic upgrade to pipx from PyPI or manual instructions
 - **Editable installations**: Reinstall from PyPI or manual development instructions
 
 **Local Installation Handling:**
@@ -108,6 +108,31 @@ Enter your choice [1]:
 **Environment Variables:**
 - `CDEVCONTAINER_SKIP_UPDATE=1`: Globally disable all automatic update checks
 - `CDEVCONTAINER_DEBUG_UPDATE=1`: Enable debug logging for update check process
+
+**Debug Mode:**
+To troubleshoot update issues, enable debug logging:
+```bash
+export CDEVCONTAINER_DEBUG_UPDATE=1
+cdevcontainer --version
+```
+
+This will show detailed information about:
+- Update check process and network requests
+- Installation type detection
+- Lock file operations
+- Upgrade attempt details and error messages
+
+**Lock File Troubleshooting:**
+The CLI uses a lock file (`~/.cache/cdevcontainer/update.lock`) to prevent concurrent upgrades. If you see "Update check skipped due to active lock" messages:
+
+1. **Normal case**: Another CLI process is running an upgrade - wait for it to complete
+2. **Stuck lock**: If the message persists after 2 minutes, the lock is stale and will be automatically cleaned up
+3. **Manual cleanup**: If needed, you can manually delete the lock file:
+   ```bash
+   rm ~/.cache/cdevcontainer/update.lock
+   ```
+
+The lock file contains the process ID and timestamp for debugging purposes when debug mode is enabled.
 
 ### Setting Up a Devcontainer
 
