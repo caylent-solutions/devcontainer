@@ -693,12 +693,7 @@ If the validation succeeds, you'll see:
 > shell.env
 > ```
 >
-> This approach lets you version control the devcontainer configuration while excluding sensitive information. When you need to update the devcontainer, run:
-> ```bash
-> cdevcontainer setup-devcontainer --update .
-> git add .devcontainer
-> git commit -m "chore: Update devcontainer to version X.Y.Z"
-> ```
+> This approach lets you version control the devcontainer configuration while excluding sensitive information.
 
 ---
 

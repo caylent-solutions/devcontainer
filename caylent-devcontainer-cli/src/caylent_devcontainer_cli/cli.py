@@ -1,6 +1,7 @@
 """Main CLI entry point for Caylent Devcontainer CLI."""
 
 import argparse
+import sys
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands import code, env, install, setup, template
@@ -11,6 +12,16 @@ CLI_NAME = "Caylent Devcontainer CLI"
 
 def main():
     """Main entry point for the CLI."""
+    # Lightweight pre-parse for skip-update-check flag
+    skip_update_check = "--skip-update-check" in sys.argv
+
+    # Check for updates before main parsing (unless skipped)
+    if not skip_update_check:
+        from caylent_devcontainer_cli.utils.version import check_for_updates
+
+        if not check_for_updates():
+            sys.exit(1)
+
     # Create the main parser
     parser = argparse.ArgumentParser(
         description=f"{CLI_NAME} - Manage devcontainer environments",
@@ -20,6 +31,7 @@ def main():
     # Add global options
     parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     parser.add_argument("-v", "--version", action="version", version=f"{CLI_NAME} {__version__}")
+    parser.add_argument("--skip-update-check", action="store_true", help="Skip automatic update check")
 
     # Create subparsers
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
