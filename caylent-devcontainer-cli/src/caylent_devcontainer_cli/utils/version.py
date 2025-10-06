@@ -171,7 +171,7 @@ def _is_installed_with_pipx():
                 return True
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
         pass
-    
+
     # Try python -m pipx
     try:
         result = subprocess.run(["python", "-m", "pipx", "list", "--json"], capture_output=True, text=True, timeout=10)
@@ -181,7 +181,7 @@ def _is_installed_with_pipx():
                 return True
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
         pass
-    
+
     return False
 
 
@@ -226,7 +226,7 @@ def _get_pipx_command():
                 return ["pipx"]
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
         pass
-    
+
     # Try python -m pipx
     try:
         result = subprocess.run(["python", "-m", "pipx", "list", "--json"], capture_output=True, text=True, timeout=10)
@@ -236,7 +236,7 @@ def _get_pipx_command():
                 return ["python", "-m", "pipx"]
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
         pass
-    
+
     # Fallback: check if pipx is available at all
     try:
         subprocess.run(["pipx", "--version"], capture_output=True, timeout=2)
@@ -299,7 +299,7 @@ def _upgrade_with_pipx():
     """Perform automatic upgrade with pipx."""
     try:
         print("\nUpgrading with pipx...")
-        
+
         # Get the correct pipx command
         pipx_cmd = _get_pipx_command()
 
@@ -332,7 +332,7 @@ def _upgrade_with_pipx():
                 cwd="/",  # Change to root directory to avoid local source
             )
             _debug_log(f"Reinstall result: returncode={install_result.returncode}, stderr={install_result.stderr}")
-            
+
             # Use install result for success/failure determination
             result = install_result
 
@@ -401,7 +401,7 @@ def _upgrade_to_pipx_from_pypi(install_type):
         if not _install_pipx():
             print("Cannot proceed without pipx. Please install pipx manually.")
             return EXIT_UPGRADE_FAILED
-    
+
     # Get the correct pipx command
     pipx_cmd = _get_pipx_command()
 
