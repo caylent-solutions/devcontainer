@@ -472,9 +472,7 @@ class TestEdgeCase(TestCase):
     @mock.patch("builtins.print")
     @mock.patch("caylent_devcontainer_cli.utils.version._get_installation_type_display", return_value="pip editable")
     @mock.patch("caylent_devcontainer_cli.utils.version._show_manual_upgrade_instructions")
-    def test_show_update_prompt_editable_exit(
-        self, mock_instructions, mock_display, mock_print, mock_input
-    ):
+    def test_show_update_prompt_editable_exit(self, mock_instructions, mock_display, mock_print, mock_input):
         """Test update prompt for editable installation with exit option."""
         from caylent_devcontainer_cli.utils.version import EXIT_UPGRADE_REQUESTED_ABORT
 

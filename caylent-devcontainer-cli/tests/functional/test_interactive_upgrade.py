@@ -6,7 +6,6 @@ from unittest import TestCase
 
 from caylent_devcontainer_cli.utils.version import (
     EXIT_OK,
-    EXIT_UPGRADE_PERFORMED,
     EXIT_UPGRADE_REQUESTED_ABORT,
     _show_update_prompt,
 )
