@@ -485,11 +485,7 @@ def check_for_updates():
         if exit_code == EXIT_OK:
             return True
         elif exit_code in (EXIT_UPGRADE_PERFORMED, EXIT_UPGRADE_REQUESTED_ABORT, EXIT_UPGRADE_FAILED):
-            # Non-interactive contexts MUST NOT return special codes (normalize to 0)
-            if not _is_interactive_shell():
-                sys.exit(0)
-            else:
-                sys.exit(exit_code)
+            sys.exit(exit_code)
         else:
             return True
 

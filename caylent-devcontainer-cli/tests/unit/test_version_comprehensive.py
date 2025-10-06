@@ -11,6 +11,7 @@ from caylent_devcontainer_cli.utils.version import (
     EXIT_UPGRADE_FAILED,
     EXIT_UPGRADE_PERFORMED,
     EXIT_UPGRADE_REQUESTED_ABORT,
+    _acquire_lock,
     _show_manual_upgrade_instructions,
     _show_update_prompt,
     _upgrade_with_pipx,
@@ -196,8 +197,6 @@ class TestVersionComprehensive(TestCase):
                 mock_fdopen.return_value.__enter__ = mock.MagicMock()
                 mock_fdopen.return_value.__exit__ = mock.MagicMock()
 
-                from caylent_devcontainer_cli.utils.version import _acquire_lock
-
                 result = _acquire_lock()
                 self.assertTrue(result)
 
@@ -214,8 +213,6 @@ class TestVersionComprehensive(TestCase):
                 mock_os_open.return_value = 3
                 mock_fdopen.return_value.__enter__ = mock.MagicMock()
                 mock_fdopen.return_value.__exit__ = mock.MagicMock()
-
-                from caylent_devcontainer_cli.utils.version import _acquire_lock
 
                 result = _acquire_lock()
                 self.assertTrue(result)
