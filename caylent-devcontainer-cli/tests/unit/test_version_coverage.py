@@ -43,12 +43,12 @@ class TestVersionCoverage(TestCase):
         result = _is_interactive_shell()
         self.assertFalse(result)
 
-    @mock.patch.dict(os.environ, {"-": "hmBH"})  # No 'i' flag
+    @mock.patch.dict(os.environ, {"-": "hmBH", "TERM": ""})  # No 'i' flag, no TERM
     @mock.patch("sys.stdin.isatty")
     @mock.patch("sys.stdout.isatty")
     def test_is_interactive_shell_no_i_flag(self, mock_stdout_tty, mock_stdin_tty):
         """Test interactive shell detection without 'i' flag."""
-        mock_stdin_tty.return_value = True
+        mock_stdin_tty.return_value = False
         mock_stdout_tty.return_value = True
         result = _is_interactive_shell()
         self.assertFalse(result)
@@ -154,10 +154,12 @@ class TestVersionCoverage(TestCase):
         self.assertEqual(result, EXIT_UPGRADE_FAILED)
 
     @mock.patch("caylent_devcontainer_cli.utils.version._is_pipx_available")
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command")
     @mock.patch("subprocess.run")
-    def test_upgrade_to_pipx_exception(self, mock_run, mock_pipx_available):
+    def test_upgrade_to_pipx_exception(self, mock_run, mock_get_pipx, mock_pipx_available):
         """Test upgrade with exception."""
         mock_pipx_available.return_value = True
+        mock_get_pipx.return_value = ["pipx"]
         mock_run.side_effect = Exception("Upgrade error")
 
         result = _upgrade_to_pipx_from_pypi("pipx")
@@ -233,10 +235,12 @@ class TestVersionCoverage(TestCase):
         self.assertFalse(result)
 
     @mock.patch("caylent_devcontainer_cli.utils.version._is_pipx_available")
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command")
     @mock.patch("subprocess.run")
-    def test_upgrade_to_pipx_pip_editable_success(self, mock_run, mock_pipx_available):
+    def test_upgrade_to_pipx_pip_editable_success(self, mock_run, mock_get_pipx, mock_pipx_available):
         """Test upgrade for pip editable installation."""
         mock_pipx_available.return_value = True
+        mock_get_pipx.return_value = ["pipx"]
         mock_run.return_value = mock.MagicMock(returncode=0)
 
         result = _upgrade_to_pipx_from_pypi("pip editable")
@@ -248,10 +252,12 @@ class TestVersionCoverage(TestCase):
         self.assertTrue(any("pipx" in str(call) and "install" in str(call) for call in calls))
 
     @mock.patch("caylent_devcontainer_cli.utils.version._is_pipx_available")
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command")
     @mock.patch("subprocess.run")
-    def test_upgrade_to_pipx_upgrade_failure(self, mock_run, mock_pipx_available):
+    def test_upgrade_to_pipx_upgrade_failure(self, mock_run, mock_get_pipx, mock_pipx_available):
         """Test upgrade failure scenario."""
         mock_pipx_available.return_value = True
+        mock_get_pipx.return_value = ["pipx"]
         mock_run.return_value = mock.MagicMock(returncode=1, stderr="upgrade failed")
 
         result = _upgrade_to_pipx_from_pypi("pipx")

@@ -73,9 +73,9 @@ cdevcontainer --help
 - `-v, --version`: Show version information
 - `--skip-update-check`: Skip automatic update check
 
-### Automatic Updates
+### Update Notifications
 
-The CLI automatically checks for updates when run in interactive environments and offers upgrade options:
+The CLI automatically checks for updates when run in interactive environments and provides manual upgrade instructions:
 
 ```bash
 🔄 Update Available
@@ -83,25 +83,19 @@ Current version: 1.10.0
 Latest version:  1.11.0
 
 Select an option:
-  1 - Upgrade with pipx and continue (recommended)
-  2 - Exit and upgrade manually
-  3 - Continue without upgrading
+  1 - Exit and upgrade manually
+  2 - Continue without upgrading
 
 Enter your choice [1]:
 ```
 
-**Update Options by Installation Type:**
-- **pipx installations**: Automatic upgrade via `pipx upgrade` or switch to PyPI version for local installs
-- **pip installations**: Automatic upgrade to pipx from PyPI or manual instructions
-- **Editable installations**: Reinstall from PyPI or manual development instructions
-
-**Local Installation Handling:**
-- Local pipx installations (installed from source) are automatically detected
-- Option 1 will uninstall the local version and install the latest from PyPI
-- This ensures you get official releases instead of development versions
+**Manual Upgrade Instructions by Installation Type:**
+- **pipx installations**: `pipx upgrade caylent-devcontainer-cli`
+- **pip installations**: Switch to pipx (recommended) or upgrade with pip
+- **Editable installations**: Pull latest changes and reinstall, or switch to pipx
 
 **Update Check Behavior:**
-- **Interactive environments**: Shows update prompts and offers upgrade options
+- **Interactive environments**: Shows update notifications with manual upgrade instructions
 - **Non-interactive environments**: Skips update checks silently (CI/CD, scripts, etc.)
 - **Skip mechanisms**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
 
@@ -120,19 +114,16 @@ This will show detailed information about:
 - Update check process and network requests
 - Installation type detection
 - Lock file operations
-- Upgrade attempt details and error messages
 
-**Lock File Troubleshooting:**
-The CLI uses a lock file (`~/.cache/cdevcontainer/update.lock`) to prevent concurrent upgrades. If you see "Update check skipped due to active lock" messages:
+**Lock File Information:**
+The CLI uses a lock file (`~/.cache/cdevcontainer/update.lock`) to prevent concurrent update checks. If you see "Update check skipped due to active lock" messages:
 
-1. **Normal case**: Another CLI process is running an upgrade - wait for it to complete
+1. **Normal case**: Another CLI process is running an update check - wait for it to complete
 2. **Stuck lock**: If the message persists after 2 minutes, the lock is stale and will be automatically cleaned up
 3. **Manual cleanup**: If needed, you can manually delete the lock file:
    ```bash
    rm ~/.cache/cdevcontainer/update.lock
    ```
-
-The lock file contains the process ID and timestamp for debugging purposes when debug mode is enabled.
 
 ### Setting Up a Devcontainer
 

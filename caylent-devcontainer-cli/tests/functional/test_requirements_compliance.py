@@ -182,10 +182,10 @@ class TestRequirementsCompliance(TestCase):
                     result = _is_interactive_shell()
                     self.assertTrue(result)
 
-    @mock.patch.dict(os.environ, {"-": "hmBH"})  # Non-interactive bash (no 'i')
+    @mock.patch.dict(os.environ, {"-": "hmBH", "TERM": ""})  # Non-interactive bash (no 'i', no TERM)
     def test_shell_non_interactive_flag_detection(self):
         """Test shell non-interactive flag detection."""
-        with mock.patch("sys.stdin.isatty", return_value=True):
+        with mock.patch("sys.stdin.isatty", return_value=False):
             with mock.patch("sys.stdout.isatty", return_value=True):
                 with mock.patch.dict(os.environ, {"CI": ""}, clear=False):
                     result = _is_interactive_shell()

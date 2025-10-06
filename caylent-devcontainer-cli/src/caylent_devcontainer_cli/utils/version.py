@@ -41,23 +41,27 @@ def _is_interactive_shell():
         _debug_log("Update check skipped (reason: ci-environment)")
         return False
 
-    # Check if TTY is available
-    if not sys.stdin.isatty() or not sys.stdout.isatty():
-        _debug_log("Update check skipped (reason: no-tty)")
-        return False
-
-    # Check shell interactive flag using $- variable
-    shell_opts = os.getenv("-", "")
-    if shell_opts and "i" not in shell_opts:
-        _debug_log("Update check skipped (reason: non-interactive-shell)")
-        return False
-
     # Check for pytest without TTY
     if "pytest" in sys.argv[0] and not sys.stdin.isatty():
         _debug_log("Update check skipped (reason: pytest-no-tty)")
         return False
 
-    return True
+    # If we have both stdin and stdout TTY, we're interactive
+    if sys.stdin.isatty() and sys.stdout.isatty():
+        return True
+
+    # If we have at least stdout TTY and shell interactive flag, we're interactive
+    if sys.stdout.isatty():
+        shell_opts = os.getenv("-", "")
+        if shell_opts and "i" in shell_opts:
+            return True
+
+    # If TERM is set and we're not in a pipe, assume interactive
+    if os.getenv("TERM") and sys.stdout.isatty():
+        return True
+
+    _debug_log("Update check skipped (reason: non-interactive)")
+    return False
 
 
 def _acquire_lock():
@@ -157,14 +161,27 @@ def _version_is_newer(latest, current):
 
 
 def _is_installed_with_pipx():
-    """Check if CLI is installed with pipx."""
+    """Check if CLI is installed with pipx and return the command to use."""
+    # Try direct pipx first
     try:
         result = subprocess.run(["pipx", "list", "--json"], capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
             data = json.loads(result.stdout)
-            return "caylent-devcontainer-cli" in data.get("venvs", {})
+            if "caylent-devcontainer-cli" in data.get("venvs", {}):
+                return True
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
         pass
+    
+    # Try python -m pipx
+    try:
+        result = subprocess.run(["python", "-m", "pipx", "list", "--json"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if "caylent-devcontainer-cli" in data.get("venvs", {}):
+                return True
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
+        pass
+    
     return False
 
 
@@ -198,13 +215,47 @@ def _is_editable_installation():
         return False
 
 
+def _get_pipx_command():
+    """Get the correct pipx command to use based on where the package is installed."""
+    # Try direct pipx first
+    try:
+        result = subprocess.run(["pipx", "list", "--json"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if "caylent-devcontainer-cli" in data.get("venvs", {}):
+                return ["pipx"]
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
+        pass
+    
+    # Try python -m pipx
+    try:
+        result = subprocess.run(["python", "-m", "pipx", "list", "--json"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if "caylent-devcontainer-cli" in data.get("venvs", {}):
+                return ["python", "-m", "pipx"]
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
+        pass
+    
+    # Fallback: check if pipx is available at all
+    try:
+        subprocess.run(["pipx", "--version"], capture_output=True, timeout=2)
+        return ["pipx"]
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return ["python", "-m", "pipx"]
+
+
 def _is_pipx_available():
     """Check if pipx command is available."""
     try:
         subprocess.run(["pipx", "--version"], capture_output=True, timeout=5)
         return True
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
+        try:
+            subprocess.run(["python", "-m", "pipx", "--version"], capture_output=True, timeout=5)
+            return True
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
 
 
 def _get_installation_type_display():
@@ -230,64 +281,31 @@ def _show_update_prompt(current, latest):
     print(f"Current version: {COLORS['RED']}{current}{COLORS['RESET']} ({install_type_display})")
     print(f"Latest version:  {latest}")
     print()
+    print("Select an option:")
+    print("  1 - Exit and upgrade manually")
+    print("  2 - Continue without upgrading")
+    print()
+    choice = input("Enter your choice [1]: ").strip() or "1"
 
-    is_pipx = _is_installed_with_pipx()
-    is_editable = _is_editable_installation()
-
-    if is_editable:
-        print("Select an option:")
-        print("  1 - Reinstall from PyPI (recommended)")
-        print("  2 - Exit and upgrade manually")
-        print("  3 - Continue without upgrading")
-        print()
-        choice = input("Enter your choice [1]: ").strip() or "1"
-
-        if choice == "1":
-            return _upgrade_to_pipx_from_pypi(install_type_display)
-        elif choice == "2":
-            print("\nExiting so you can upgrade manually.")
-            _show_manual_upgrade_instructions(install_type_display)
-            return EXIT_UPGRADE_REQUESTED_ABORT
-        else:
-            return EXIT_OK
-
-    elif is_pipx:
-        print("Select an option:")
-        print("  1 - Upgrade with pipx and continue (recommended)")
-        print("  2 - Exit and upgrade manually")
-        print("  3 - Continue without upgrading")
-        print()
-        choice = input("Enter your choice [1]: ").strip() or "1"
-
-        if choice == "1":
-            return _upgrade_with_pipx()
-        elif choice == "2":
-            print("\nExiting so you can upgrade manually.")
-            _show_pipx_instructions()
-            return EXIT_UPGRADE_REQUESTED_ABORT
-        else:
-            return EXIT_OK
+    if choice == "1":
+        print("\nExiting so you can upgrade manually.")
+        _show_manual_upgrade_instructions(install_type_display)
+        return EXIT_UPGRADE_REQUESTED_ABORT
     else:
-        print("Select an option:")
-        print("  1 - Exit and upgrade manually")
-        print("  2 - Continue without upgrading")
-        print()
-        choice = input("Enter your choice [1]: ").strip() or "1"
-
-        if choice == "1":
-            return _upgrade_to_pipx_from_pypi(install_type_display)
-        else:
-            return EXIT_OK
+        return EXIT_OK
 
 
 def _upgrade_with_pipx():
     """Perform automatic upgrade with pipx."""
     try:
         print("\nUpgrading with pipx...")
+        
+        # Get the correct pipx command
+        pipx_cmd = _get_pipx_command()
 
         # Try upgrade first
         result = subprocess.run(
-            ["pipx", "upgrade", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
+            pipx_cmd + ["upgrade", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
         )
 
         _debug_log(
@@ -299,21 +317,24 @@ def _upgrade_with_pipx():
             print("Standard upgrade failed, reinstalling from PyPI...")
             _debug_log("Attempting uninstall and reinstall from PyPI")
 
-            # Uninstall current installation
+            # Uninstall current installation (ignore errors)
             uninstall_result = subprocess.run(
-                ["pipx", "uninstall", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=30
+                pipx_cmd + ["uninstall", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=30
             )
             _debug_log(f"Uninstall result: {uninstall_result.returncode}")
 
-            # Install from PyPI explicitly
-            result = subprocess.run(
-                ["pipx", "install", "--force", "caylent-devcontainer-cli"],
+            # Install from PyPI explicitly (this is the important step)
+            install_result = subprocess.run(
+                pipx_cmd + ["install", "--force", "caylent-devcontainer-cli"],
                 capture_output=True,
                 text=True,
                 timeout=60,
                 cwd="/",  # Change to root directory to avoid local source
             )
-            _debug_log(f"Reinstall result: returncode={result.returncode}, stderr={result.stderr}")
+            _debug_log(f"Reinstall result: returncode={install_result.returncode}, stderr={install_result.stderr}")
+            
+            # Use install result for success/failure determination
+            result = install_result
 
         if result.returncode == 0:
             print("Upgrade successful. Please re-run your command.")
@@ -380,27 +401,30 @@ def _upgrade_to_pipx_from_pypi(install_type):
         if not _install_pipx():
             print("Cannot proceed without pipx. Please install pipx manually.")
             return EXIT_UPGRADE_FAILED
+    
+    # Get the correct pipx command
+    pipx_cmd = _get_pipx_command()
 
     try:
         # Clean up existing installation
         if install_type == "pipx":
             print("Upgrading pipx installation...")
             result = subprocess.run(
-                ["pipx", "upgrade", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
+                pipx_cmd + ["upgrade", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
             )
         elif install_type == "pipx editable":
             print("Removing pipx editable installation...")
-            subprocess.run(["pipx", "uninstall", "caylent-devcontainer-cli"], capture_output=True, timeout=30)
+            subprocess.run(pipx_cmd + ["uninstall", "caylent-devcontainer-cli"], capture_output=True, timeout=30)
             print("Installing from PyPI with pipx...")
             result = subprocess.run(
-                ["pipx", "install", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
+                pipx_cmd + ["install", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
             )
         elif "pip" in install_type:
             print("Removing pip installation...")
             subprocess.run(["pip", "uninstall", "-y", "caylent-devcontainer-cli"], capture_output=True, timeout=30)
             print("Installing from PyPI with pipx...")
             result = subprocess.run(
-                ["pipx", "install", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
+                pipx_cmd + ["install", "caylent-devcontainer-cli"], capture_output=True, text=True, timeout=60
             )
 
         if result.returncode == 0:

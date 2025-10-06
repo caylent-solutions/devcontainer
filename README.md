@@ -137,9 +137,9 @@ After installation, you can run the CLI from anywhere:
 cdevcontainer --help
 ```
 
-#### Automatic Updates
+#### Update Notifications
 
-The CLI automatically checks for updates when run in interactive environments and offers upgrade options based on your installation type:
+The CLI automatically checks for updates when run in interactive environments and provides manual upgrade instructions:
 
 ```bash
 🔄 Update Available
@@ -147,20 +147,19 @@ Current version: 1.10.0 (pipx)
 Latest version:  1.11.0
 
 Select an option:
-  1 - Upgrade with pipx and continue (recommended)
-  2 - Exit and upgrade manually
-  3 - Continue without upgrading
+  1 - Exit and upgrade manually
+  2 - Continue without upgrading
 
 Enter your choice [1]:
 ```
 
-**Update Options by Installation Type:**
-- **pipx installations**: Automatic upgrade via `pipx upgrade` or switch to PyPI version for local installs
-- **pip installations**: Automatic upgrade to pipx from PyPI or manual instructions
-- **Editable installations**: Reinstall from PyPI or manual development instructions
+**Manual Upgrade Instructions by Installation Type:**
+- **pipx installations**: `pipx upgrade caylent-devcontainer-cli`
+- **pip installations**: Switch to pipx (recommended) or upgrade with pip
+- **Editable installations**: Pull latest changes and reinstall, or switch to pipx
 
 **Update Check Behavior:**
-- **Interactive use**: Shows update prompts with upgrade options
+- **Interactive use**: Shows update notifications with manual upgrade instructions
 - **CI/CD environments**: Skips update checks silently
 - **Skip updates**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
 

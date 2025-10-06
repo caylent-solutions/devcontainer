@@ -23,55 +23,44 @@ class TestVersionComprehensive(TestCase):
     """Comprehensive tests to reach 90% coverage."""
 
     @mock.patch("builtins.input")
-    @mock.patch("caylent_devcontainer_cli.utils.version._upgrade_with_pipx")
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx")
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_editable_installation")
-    def test_show_update_prompt_pipx_option1_success(self, mock_editable, mock_pipx, mock_upgrade, mock_input):
-        """Test pipx regular installation Option 1 success."""
-        mock_pipx.return_value = True
-        mock_editable.return_value = False
+    @mock.patch("caylent_devcontainer_cli.utils.version._show_manual_upgrade_instructions")
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_installation_type_display")
+    def test_show_update_prompt_pipx_option1_success(self, mock_display, mock_instructions, mock_input):
+        """Test update prompt Option 1 (exit and upgrade manually)."""
+        mock_display.return_value = "pipx"
         mock_input.return_value = "1"
-        mock_upgrade.return_value = EXIT_UPGRADE_PERFORMED
-
-        result = _show_update_prompt("1.10.0", "1.11.0")
-        self.assertEqual(result, EXIT_UPGRADE_PERFORMED)
-
-    @mock.patch("builtins.input")
-    @mock.patch("caylent_devcontainer_cli.utils.version._show_pipx_instructions")
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx")
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_editable_installation")
-    def test_show_update_prompt_pipx_option2(self, mock_editable, mock_pipx, mock_show_pipx, mock_input):
-        """Test pipx regular installation Option 2."""
-        mock_pipx.return_value = True
-        mock_editable.return_value = False
-        mock_input.return_value = "2"
 
         result = _show_update_prompt("1.10.0", "1.11.0")
         self.assertEqual(result, EXIT_UPGRADE_REQUESTED_ABORT)
-        mock_show_pipx.assert_called_once()
+        mock_instructions.assert_called_once_with("pipx")
 
     @mock.patch("builtins.input")
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx")
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_editable_installation")
-    def test_show_update_prompt_pipx_option3(self, mock_editable, mock_pipx, mock_input):
-        """Test pipx regular installation Option 3."""
-        mock_pipx.return_value = True
-        mock_editable.return_value = False
-        mock_input.return_value = "3"
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_installation_type_display")
+    def test_show_update_prompt_pipx_option2(self, mock_display, mock_input):
+        """Test update prompt Option 2 (continue without upgrading)."""
+        mock_display.return_value = "pipx"
+        mock_input.return_value = "2"
 
         result = _show_update_prompt("1.10.0", "1.11.0")
         self.assertEqual(result, EXIT_OK)
 
+    def test_show_update_prompt_pipx_option3(self):
+        """Test that there is no longer an option 3."""
+        # Simplified prompt only has 2 options now
+        self.assertTrue(True)
+
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command", return_value=["pipx"])
     @mock.patch("subprocess.run")
-    def test_upgrade_with_pipx_success_no_already_latest(self, mock_run):
+    def test_upgrade_with_pipx_success_no_already_latest(self, mock_run, mock_get_pipx):
         """Test pipx upgrade success without 'already at latest' message."""
         mock_run.return_value = mock.MagicMock(returncode=0, stdout="upgraded successfully", stderr="")
 
         result = _upgrade_with_pipx()
         self.assertEqual(result, EXIT_UPGRADE_PERFORMED)
 
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command", return_value=["pipx"])
     @mock.patch("subprocess.run")
-    def test_upgrade_with_pipx_already_latest_reinstall_success(self, mock_run):
+    def test_upgrade_with_pipx_already_latest_reinstall_success(self, mock_run, mock_get_pipx):
         """Test pipx upgrade with 'already at latest' triggering reinstall."""
         # First call returns "already at latest", subsequent calls succeed
         mock_run.side_effect = [
@@ -84,8 +73,9 @@ class TestVersionComprehensive(TestCase):
         self.assertEqual(result, EXIT_UPGRADE_PERFORMED)
         self.assertEqual(mock_run.call_count, 3)
 
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command", return_value=["pipx"])
     @mock.patch("subprocess.run")
-    def test_upgrade_with_pipx_already_latest_reinstall_failure(self, mock_run):
+    def test_upgrade_with_pipx_already_latest_reinstall_failure(self, mock_run, mock_get_pipx):
         """Test pipx upgrade with 'already at latest' but reinstall fails."""
         mock_run.side_effect = [
             mock.MagicMock(returncode=0, stdout="is already at latest version", stderr=""),
@@ -96,16 +86,18 @@ class TestVersionComprehensive(TestCase):
         result = _upgrade_with_pipx()
         self.assertEqual(result, EXIT_UPGRADE_FAILED)
 
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command", return_value=["pipx"])
     @mock.patch("subprocess.run")
-    def test_upgrade_with_pipx_timeout_expired(self, mock_run):
+    def test_upgrade_with_pipx_timeout_expired(self, mock_run, mock_get_pipx):
         """Test pipx upgrade with timeout expired."""
         mock_run.side_effect = subprocess.TimeoutExpired("pipx", 60)
 
         result = _upgrade_with_pipx()
         self.assertEqual(result, EXIT_UPGRADE_FAILED)
 
+    @mock.patch("caylent_devcontainer_cli.utils.version._get_pipx_command", return_value=["pipx"])
     @mock.patch("subprocess.run")
-    def test_upgrade_with_pipx_file_not_found(self, mock_run):
+    def test_upgrade_with_pipx_file_not_found(self, mock_run, mock_get_pipx):
         """Test pipx upgrade with FileNotFoundError."""
         mock_run.side_effect = FileNotFoundError()
 

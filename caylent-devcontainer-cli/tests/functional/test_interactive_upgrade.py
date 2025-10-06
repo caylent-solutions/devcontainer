@@ -23,7 +23,7 @@ class TestInteractiveUpgradeFlow(TestCase):
         """Test pipx installation with continue choice."""
         mock_pipx.return_value = True
         mock_editable.return_value = False
-        mock_input.return_value = "3"  # Continue without upgrading
+        mock_input.return_value = "2"  # Continue without upgrading (now option 2)
 
         result = _show_update_prompt("1.10.0", "1.11.0")
 
@@ -43,7 +43,7 @@ class TestInteractiveUpgradeFlow(TestCase):
         """Test pipx installation with manual upgrade choice."""
         mock_pipx.return_value = True
         mock_editable.return_value = False
-        mock_input.return_value = "2"  # Exit and upgrade manually
+        mock_input.return_value = "1"  # Exit and upgrade manually (now option 1)
 
         result = _show_update_prompt("1.10.0", "1.11.0")
 
@@ -61,11 +61,9 @@ class TestInteractiveUpgradeFlow(TestCase):
         mock_editable.return_value = False
         mock_input.return_value = "1"  # Exit and upgrade manually
 
-        with mock.patch("caylent_devcontainer_cli.utils.version._upgrade_to_pipx_from_pypi") as mock_upgrade:
-            mock_upgrade.return_value = EXIT_UPGRADE_PERFORMED
-            result = _show_update_prompt("1.10.0", "1.11.0")
+        result = _show_update_prompt("1.10.0", "1.11.0")
 
-        self.assertEqual(result, EXIT_UPGRADE_PERFORMED)
+        self.assertEqual(result, EXIT_UPGRADE_REQUESTED_ABORT)  # Now exits for manual upgrade
         output = mock_stdout.getvalue()
         self.assertIn("Select an option:", output)
         self.assertIn("Exit and upgrade manually", output)
@@ -78,16 +76,14 @@ class TestInteractiveUpgradeFlow(TestCase):
         """Test editable installation upgrade flow."""
         mock_pipx.return_value = False
         mock_editable.return_value = True
-        mock_input.return_value = "1"  # Reinstall from PyPI
+        mock_input.return_value = "1"  # Exit and upgrade manually
 
-        with mock.patch("caylent_devcontainer_cli.utils.version._upgrade_to_pipx_from_pypi") as mock_upgrade:
-            mock_upgrade.return_value = EXIT_UPGRADE_PERFORMED
-            result = _show_update_prompt("1.10.0", "1.11.0")
+        result = _show_update_prompt("1.10.0", "1.11.0")
 
-        self.assertEqual(result, EXIT_UPGRADE_PERFORMED)
+        self.assertEqual(result, EXIT_UPGRADE_REQUESTED_ABORT)  # Now exits for manual upgrade
         output = mock_stdout.getvalue()
         self.assertIn("Select an option:", output)
-        self.assertIn("Reinstall from PyPI", output)
+        self.assertIn("Exit and upgrade manually", output)
 
     @mock.patch("builtins.input")
     @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx")
@@ -98,10 +94,8 @@ class TestInteractiveUpgradeFlow(TestCase):
         mock_editable.return_value = False
         mock_input.return_value = ""  # Empty input should use default [1]
 
-        with mock.patch("caylent_devcontainer_cli.utils.version._upgrade_with_pipx") as mock_upgrade:
-            mock_upgrade.return_value = EXIT_OK
-            _show_update_prompt("1.10.0", "1.11.0")
-            mock_upgrade.assert_called_once()
+        result = _show_update_prompt("1.10.0", "1.11.0")
+        self.assertEqual(result, EXIT_UPGRADE_REQUESTED_ABORT)  # Default is now manual upgrade
 
     @mock.patch("builtins.input")
     @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx")
