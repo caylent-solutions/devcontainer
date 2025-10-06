@@ -151,10 +151,18 @@ export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
 log_info "Configuring system-wide asdf access for Amazon Q agents..."
 
 # Add asdf shims AND bin directory to system-wide PATH via /etc/environment
-echo "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" >> /etc/environment
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Use sudo for /etc/environment access
+  echo "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" | sudo tee -a /etc/environment > /dev/null
+else
+  # Non-WSL: Direct write to /etc/environment
+  echo "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" >> /etc/environment
+fi
 
 # Create system-wide profile for asdf that sets PATH and loads asdf
-cat > /etc/profile.d/asdf.sh << ASDF_PROFILE
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Use sudo for /etc/profile.d access
+  sudo tee /etc/profile.d/asdf.sh > /dev/null << ASDF_PROFILE
 #!/bin/bash
 # System-wide asdf configuration for Amazon Q agents
 export PATH="/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH"
@@ -162,12 +170,32 @@ if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
     . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
 fi
 ASDF_PROFILE
-chmod +x /etc/profile.d/asdf.sh
+  sudo chmod +x /etc/profile.d/asdf.sh
+else
+  # Non-WSL: Direct write to /etc/profile.d
+  cat > /etc/profile.d/asdf.sh << ASDF_PROFILE
+#!/bin/bash
+# System-wide asdf configuration for Amazon Q agents
+export PATH="/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH"
+if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
+    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
+fi
+ASDF_PROFILE
+  chmod +x /etc/profile.d/asdf.sh
+fi
 
 # Also add to /etc/bash.bashrc for non-login shells
-echo '# Load asdf for Amazon Q agents' >> /etc/bash.bashrc
-echo "export PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH\"" >> /etc/bash.bashrc
-echo "if [ -f \"/home/${CONTAINER_USER}/.asdf/asdf.sh\" ]; then . \"/home/${CONTAINER_USER}/.asdf/asdf.sh\"; fi" >> /etc/bash.bashrc
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Use sudo for /etc/bash.bashrc access
+  echo '# Load asdf for Amazon Q agents' | sudo tee -a /etc/bash.bashrc > /dev/null
+  echo "export PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH\"" | sudo tee -a /etc/bash.bashrc > /dev/null
+  echo "if [ -f \"/home/${CONTAINER_USER}/.asdf/asdf.sh\" ]; then . \"/home/${CONTAINER_USER}/.asdf/asdf.sh\"; fi" | sudo tee -a /etc/bash.bashrc > /dev/null
+else
+  # Non-WSL: Direct write to /etc/bash.bashrc
+  echo '# Load asdf for Amazon Q agents' >> /etc/bash.bashrc
+  echo "export PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH\"" >> /etc/bash.bashrc
+  echo "if [ -f \"/home/${CONTAINER_USER}/.asdf/asdf.sh\" ]; then . \"/home/${CONTAINER_USER}/.asdf/asdf.sh\"; fi" >> /etc/bash.bashrc
+fi
 
 # Create plugins directory if it doesn't exist
 mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
@@ -176,7 +204,9 @@ mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
 log_info "Creating asdf wrapper scripts for direct access..."
 
 # Create asdf wrapper script
-cat > /usr/local/bin/asdf << ASDF_WRAPPER
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Use sudo for /usr/local/bin access
+  sudo tee /usr/local/bin/asdf > /dev/null << ASDF_WRAPPER
 #!/bin/bash
 # Wrapper script for asdf that ensures proper environment
 export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
@@ -186,10 +216,26 @@ if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
 fi
 exec /home/${CONTAINER_USER}/.asdf/bin/asdf "\$@"
 ASDF_WRAPPER
-chmod +x /usr/local/bin/asdf
+  sudo chmod +x /usr/local/bin/asdf
+else
+  # Non-WSL: Direct write to /usr/local/bin
+  cat > /usr/local/bin/asdf << ASDF_WRAPPER
+#!/bin/bash
+# Wrapper script for asdf that ensures proper environment
+export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
+export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
+if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
+    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
+fi
+exec /home/${CONTAINER_USER}/.asdf/bin/asdf "\$@"
+ASDF_WRAPPER
+  chmod +x /usr/local/bin/asdf
+fi
 
 # Create pip wrapper script that sources asdf environment
-cat > /usr/local/bin/pip-asdf << PIP_WRAPPER
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Use sudo for /usr/local/bin access
+  sudo tee /usr/local/bin/pip-asdf > /dev/null << PIP_WRAPPER
 #!/bin/bash
 # Wrapper script for pip that ensures asdf environment is loaded
 export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
@@ -199,7 +245,21 @@ if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
 fi
 exec /home/${CONTAINER_USER}/.asdf/shims/pip "\$@"
 PIP_WRAPPER
-chmod +x /usr/local/bin/pip-asdf
+  sudo chmod +x /usr/local/bin/pip-asdf
+else
+  # Non-WSL: Direct write to /usr/local/bin
+  cat > /usr/local/bin/pip-asdf << PIP_WRAPPER
+#!/bin/bash
+# Wrapper script for pip that ensures asdf environment is loaded
+export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
+export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
+if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
+    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
+fi
+exec /home/${CONTAINER_USER}/.asdf/shims/pip "\$@"
+PIP_WRAPPER
+  chmod +x /usr/local/bin/pip-asdf
+fi
 
 #################
 # Oh My Zsh     #
@@ -332,7 +392,13 @@ if [ -d "/home/${CONTAINER_USER}/.asdf/shims" ]; then
     if [ -f "$shim" ] && [ -x "$shim" ]; then
       shim_name=$(basename "$shim")
       if [ ! -e "/usr/local/bin/$shim_name" ]; then
-        ln -s "$shim" "/usr/local/bin/$shim_name"
+        if uname -r | grep -i microsoft > /dev/null; then
+          # WSL compatibility: Use sudo for /usr/local/bin access
+          sudo ln -s "$shim" "/usr/local/bin/$shim_name"
+        else
+          # Non-WSL: Direct symlink creation
+          ln -s "$shim" "/usr/local/bin/$shim_name"
+        fi
         log_info "Created symlink: /usr/local/bin/$shim_name -> $shim"
       fi
     fi
@@ -441,7 +507,13 @@ fi
 #########################
 log_info "Running project-specific setup script..."
 if [ -f "${WORK_DIR}/.devcontainer/project-setup.sh" ]; then
-  sudo -u "${CONTAINER_USER}" bash -c "source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
+  if uname -r | grep -i microsoft > /dev/null; then
+    # WSL compatibility: Run directly without sudo -u
+    bash -c "source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
+  else
+    # Non-WSL: Use sudo -u to run as container user
+    sudo -u "${CONTAINER_USER}" bash -c "source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
+  fi
 else
   log_warn "No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh"
   WARNINGS+=("No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh")
