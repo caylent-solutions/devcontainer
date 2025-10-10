@@ -108,16 +108,16 @@ def test_generate_shell_env_includes_cli_version():
         "containerEnv": {"TEST_VAR": "test_value"},
         "cli_version": "1.5.0"
     }
-    
+
     with patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value=test_data):
         with patch("os.path.exists", return_value=False):
             with patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True):
                 with patch("builtins.open", mock_open()) as mock_file:
                     generate_shell_env("/test/input.json", "/test/output.env")
-                    
+
                     # Get the written content
                     written_content = mock_file().write.call_args[0][0]
-                    
+
                     # Verify both TEST_VAR and CLI_VERSION are included
                     assert "export TEST_VAR='test_value'" in written_content
                     assert "export CLI_VERSION='1.5.0'" in written_content
@@ -128,16 +128,16 @@ def test_generate_shell_env_without_cli_version():
     test_data = {
         "containerEnv": {"TEST_VAR": "test_value"}
     }
-    
+
     with patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value=test_data):
         with patch("os.path.exists", return_value=False):
             with patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True):
                 with patch("builtins.open", mock_open()) as mock_file:
                     generate_shell_env("/test/input.json", "/test/output.env")
-                    
+
                     # Get the written content
                     written_content = mock_file().write.call_args[0][0]
-                    
+
                     # Verify TEST_VAR is included but CLI_VERSION is not
                     assert "export TEST_VAR='test_value'" in written_content
                     assert "CLI_VERSION" not in written_content
