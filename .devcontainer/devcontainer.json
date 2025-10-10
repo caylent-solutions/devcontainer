@@ -68,12 +68,13 @@
     }
   },
   "forwardPorts": [
-    5678,
-    9229,
-    5005,
-    8080,
-    5050
+    5678
   ],
+  "portsAttributes": {
+    "5678": {
+      "label": "Python Debug (debugpy)"
+    }
+  },
   "userEnvProbe": "loginInteractiveShell",
   "containerEnv": {
     "AWS_CONFIG_ENABLED": "${localEnv:AWS_CONFIG_ENABLED}",
