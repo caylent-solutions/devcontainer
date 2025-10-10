@@ -4,9 +4,6 @@
   "image": "mcr.microsoft.com/devcontainers/base:noble",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "features": {
-    "ghcr.io/devcontainers/features/aws-cli:1": {
-      "version": "latest"
-    },
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
       "version": "latest"
     },
@@ -70,6 +67,10 @@
       }
     }
   },
+  "initializeCommand": "mkdir -p ${localEnv:HOME}/.devcontainer-templates",
+  "mounts": [
+    "source=${localEnv:HOME}/.devcontainer-templates,target=/home/vscode/.devcontainer-templates,type=bind,consistency=cached"
+  ],
   "forwardPorts": [
     5678,
     9229,

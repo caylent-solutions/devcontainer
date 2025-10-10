@@ -41,7 +41,7 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
 
     # Only support containerEnv format
     if "containerEnv" in data and isinstance(data["containerEnv"], dict):
-        env_data = data["containerEnv"]
+        env_data = data["containerEnv"].copy()
     else:
         log(
             "ERR",
@@ -50,6 +50,10 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
         import sys
 
         sys.exit(1)
+
+    # Include cli_version if it exists at the top level
+    if "cli_version" in data:
+        env_data["CLI_VERSION"] = data["cli_version"]
 
     lines = generate_exports(env_data, export_prefix=not no_export)
 
