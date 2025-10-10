@@ -413,6 +413,24 @@ if ! asdf reshim python; then
   exit_with_error "❌ asdf reshim python failed after pipx install"
 fi
 
+# Install Caylent Devcontainer CLI
+log_info "Installing Caylent Devcontainer CLI..."
+if [ -n "${CLI_VERSION:-}" ] && [[ "${CLI_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  log_info "Installing specific CLI version: ${CLI_VERSION}"
+  CLI_INSTALL_CMD="caylent-devcontainer-cli==${CLI_VERSION}"
+else
+  log_info "Installing latest CLI version"
+  CLI_INSTALL_CMD="caylent-devcontainer-cli"
+fi
+
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Do not use sudo -u in WSL as it fails
+  python -m pipx install "${CLI_INSTALL_CMD}"
+else
+  # Non-WSL: Use sudo -u to ensure correct user environment
+  sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install '${CLI_INSTALL_CMD}'"
+fi
+
 # Verify asdf is working properly
 log_info "Verifying asdf installation..."
 if ! asdf current; then
@@ -434,6 +452,21 @@ echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${BASH_RC}
 echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${ZSH_RC}
 
 log_info "Installing Python packages..."
+python -m pip install ruamel_yaml --root-user-action=ignore
+
+#############
+# AWS Tools #
+#############
+log_info "Installing AWS CLI..."
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Do not use sudo -u in WSL as it fails
+  python -m pipx install awscli
+else
+  # Non-WSL: Use sudo -u to ensure correct user environment
+  sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install awscli"
+fi
+
+log_info "Installing AWS SSO utilities..."
 if uname -r | grep -i microsoft > /dev/null; then
   # WSL compatibility: Do not use sudo -u in WSL as it fails
   python -m pipx install aws-sso-util
@@ -441,7 +474,6 @@ else
   # Non-WSL: Use sudo -u to ensure correct user environment
   sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install aws-sso-util"
 fi
-python -m pip install ruamel_yaml --root-user-action=ignore
 
 #################
 # Configure Git #
@@ -465,8 +497,6 @@ EOF
     email = ${GIT_USER_EMAIL}
 [core]
     editor = vim
-[credential]
-    credentialStore = cache
 [push]
     autoSetupRemote = true
 [safe]
@@ -479,6 +509,8 @@ EOF
     show = false
     status = false
     tag = false
+[credential]
+    helper = store
 EOF
 else
   log_info "CICD mode enabled - skipping Git configuration"
