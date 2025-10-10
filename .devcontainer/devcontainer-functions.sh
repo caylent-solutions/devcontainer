@@ -71,7 +71,7 @@ write_file_with_wsl_compat() {
   local file_path="$1"
   local content="$2"
   local permissions="${3:-}"
-  
+
   if is_wsl; then
     echo "$content" | sudo tee "$file_path" > /dev/null
     if [ -n "$permissions" ]; then
@@ -88,7 +88,7 @@ write_file_with_wsl_compat() {
 append_to_file_with_wsl_compat() {
   local file_path="$1"
   local content="$2"
-  
+
   if is_wsl; then
     echo "$content" | sudo tee -a "$file_path" > /dev/null
   else
