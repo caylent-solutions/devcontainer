@@ -4,9 +4,6 @@
   "image": "mcr.microsoft.com/devcontainers/base:noble",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "features": {
-    "ghcr.io/devcontainers/features/aws-cli:1": {
-      "version": "latest"
-    },
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
       "version": "latest"
     },
@@ -71,12 +68,13 @@
     }
   },
   "forwardPorts": [
-    5678,
-    9229,
-    5005,
-    8080,
-    5050
+    5678
   ],
+  "portsAttributes": {
+    "5678": {
+      "label": "Python Debug (debugpy)"
+    }
+  },
   "userEnvProbe": "loginInteractiveShell",
   "containerEnv": {
     "AWS_CONFIG_ENABLED": "${localEnv:AWS_CONFIG_ENABLED}",

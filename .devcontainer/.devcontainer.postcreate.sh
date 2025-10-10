@@ -29,8 +29,7 @@ else
   log_info "CICD environment variable: ${CICD:-not set}"
   log_info "Devcontainer configured to run as a local developer environment"
 fi
-echo "export CICD=${CICD_VALUE}" >> ${BASH_RC}
-echo "export CICD=${CICD_VALUE}" >> ${ZSH_RC}
+add_to_shell_profiles "export CICD=${CICD_VALUE}"
 
 log_info "Starting post-create setup..."
 
@@ -71,21 +70,17 @@ fi
 # Configure ENV #
 #################
 log_info "Configuring ENV vars..."
-echo "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\"" >> ${BASH_RC}
-echo "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\"" >> ${ZSH_RC}
+add_to_shell_profiles "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\""
 
 # Configure shell.env sourcing for all shells (interactive and non-interactive)
 log_info "Configuring shell.env sourcing for all shells"
 
 # For interactive shells (bash and zsh)
-echo "# Source project shell.env" >> ${BASH_RC}
-echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${BASH_RC}
-echo "# Source project shell.env" >> ${ZSH_RC}
-echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" >> ${ZSH_RC}
+add_to_shell_profiles "# Source project shell.env"
+add_to_shell_profiles "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi"
 
 # For non-interactive bash shells via BASH_ENV
-echo "export BASH_ENV=\"${WORK_DIR}/shell.env\"" >> ${BASH_RC}
-echo "export BASH_ENV=\"${WORK_DIR}/shell.env\"" >> ${ZSH_RC}
+add_to_shell_profiles "export BASH_ENV=\"${WORK_DIR}/shell.env\""
 
 # For non-interactive zsh shells via .zshenv
 echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" > /home/${CONTAINER_USER}/.zshenv
@@ -111,25 +106,19 @@ export PAGER="${PAGER_VALUE}"
 log_info "PAGER configured as: ${PAGER_VALUE}"
 
 # Add to shell profiles with explicit unset first
-echo "# PAGER configuration from devcontainer" >> ${BASH_RC}
-echo "unset PAGER 2>/dev/null || true" >> ${BASH_RC}
-echo "export PAGER=${PAGER_VALUE}" >> ${BASH_RC}
-echo "# PAGER configuration from devcontainer" >> ${ZSH_RC}
-echo "unset PAGER 2>/dev/null || true" >> ${ZSH_RC}
-echo "export PAGER=${PAGER_VALUE}" >> ${ZSH_RC}
+add_to_shell_profiles "# PAGER configuration from devcontainer"
+add_to_shell_profiles "unset PAGER 2>/dev/null || true"
+add_to_shell_profiles "export PAGER=${PAGER_VALUE}"
 if [ "$CICD_VALUE" != "true" ]; then
-  echo "export DEVELOPER_NAME=${DEVELOPER_NAME}" >> ${BASH_RC}
-  echo "export DEVELOPER_NAME=${DEVELOPER_NAME}" >> ${ZSH_RC}
+  add_to_shell_profiles "export DEVELOPER_NAME=${DEVELOPER_NAME}"
 fi
 
 #################
 # Shell Aliases #
 #################
 log_info "Setting up shell aliases with branch: ${DEFAULT_GIT_BRANCH}"
-echo "alias git_sync=\"git pull origin ${DEFAULT_GIT_BRANCH}\"" >> ${BASH_RC}
-echo "alias git_sync=\"git pull origin ${DEFAULT_GIT_BRANCH}\"" >> ${ZSH_RC}
-echo 'alias git_boop="git reset --soft HEAD~1"' >> ${BASH_RC}
-echo 'alias git_boop="git reset --soft HEAD~1"' >> ${ZSH_RC}
+add_to_shell_profiles "alias git_sync=\"git pull origin ${DEFAULT_GIT_BRANCH}\""
+add_to_shell_profiles 'alias git_boop="git reset --soft HEAD~1"'
 
 ##############################
 # Install asdf & Tool Versions
@@ -151,13 +140,7 @@ export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
 log_info "Configuring system-wide asdf access for Amazon Q agents..."
 
 # Add asdf shims AND bin directory to system-wide PATH via /etc/environment
-if uname -r | grep -i microsoft > /dev/null; then
-  # WSL compatibility: Use sudo for /etc/environment access
-  echo "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" | sudo tee -a /etc/environment > /dev/null
-else
-  # Non-WSL: Direct write to /etc/environment
-  echo "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" >> /etc/environment
-fi
+append_to_file_with_wsl_compat "/etc/environment" "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\""
 
 # Create system-wide profile for asdf that sets PATH and loads asdf
 if uname -r | grep -i microsoft > /dev/null; then
@@ -297,8 +280,7 @@ if [ "$CICD_VALUE" != "true" ]; then
     chown -R ${CONTAINER_USER}:${CONTAINER_USER} /home/${CONTAINER_USER}/.aws/amazonq
 
     AWS_OUTPUT_FORMAT="${AWS_DEFAULT_OUTPUT:-json}"
-    echo "export AWS_DEFAULT_OUTPUT=${AWS_OUTPUT_FORMAT}" >> ${BASH_RC}
-    echo "export AWS_DEFAULT_OUTPUT=${AWS_OUTPUT_FORMAT}" >> ${ZSH_RC}
+    add_to_shell_profiles "export AWS_DEFAULT_OUTPUT=${AWS_OUTPUT_FORMAT}"
     jq -r 'to_entries[] |
       "[profile \(.key)]\n" +
       "sso_start_url = \(.value.sso_start_url)\n" +
@@ -413,6 +395,18 @@ if ! asdf reshim python; then
   exit_with_error "❌ asdf reshim python failed after pipx install"
 fi
 
+# Install Caylent Devcontainer CLI
+log_info "Installing Caylent Devcontainer CLI..."
+if [ -n "${CLI_VERSION:-}" ] && [[ "${CLI_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  log_info "Installing specific CLI version: ${CLI_VERSION}"
+  CLI_INSTALL_CMD="caylent-devcontainer-cli==${CLI_VERSION}"
+else
+  log_info "Installing latest CLI version"
+  CLI_INSTALL_CMD="caylent-devcontainer-cli"
+fi
+
+install_with_pipx "${CLI_INSTALL_CMD}"
+
 # Verify asdf is working properly
 log_info "Verifying asdf installation..."
 if ! asdf current; then
@@ -430,18 +424,19 @@ fi
 
 # Ensure pipx binaries are available in PATH
 log_info "Configuring pipx PATH..."
-echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${BASH_RC}
-echo "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\"" >> ${ZSH_RC}
+add_to_shell_profiles "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\""
 
 log_info "Installing Python packages..."
-if uname -r | grep -i microsoft > /dev/null; then
-  # WSL compatibility: Do not use sudo -u in WSL as it fails
-  python -m pipx install aws-sso-util
-else
-  # Non-WSL: Use sudo -u to ensure correct user environment
-  sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install aws-sso-util"
-fi
 python -m pip install ruamel_yaml --root-user-action=ignore
+
+#############
+# AWS Tools #
+#############
+log_info "Installing AWS CLI..."
+install_with_pipx "awscli"
+
+log_info "Installing AWS SSO utilities..."
+install_with_pipx "aws-sso-util"
 
 #################
 # Configure Git #
@@ -456,8 +451,7 @@ EOF
   chmod 600 /home/${CONTAINER_USER}/.netrc
 
   # Unset GIT_EDITOR to ensure vim is used
-  echo "unset GIT_EDITOR" >> ${BASH_RC}
-  echo "unset GIT_EDITOR" >> ${ZSH_RC}
+  add_to_shell_profiles "unset GIT_EDITOR"
 
   cat <<EOF >> /home/${CONTAINER_USER}/.gitconfig
 [user]
@@ -465,8 +459,6 @@ EOF
     email = ${GIT_USER_EMAIL}
 [core]
     editor = vim
-[credential]
-    credentialStore = cache
 [push]
     autoSetupRemote = true
 [safe]
@@ -479,6 +471,8 @@ EOF
     show = false
     status = false
     tag = false
+[credential]
+    helper = store
 EOF
 else
   log_info "CICD mode enabled - skipping Git configuration"
