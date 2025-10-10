@@ -2,7 +2,50 @@
 
 
 
+## v1.13.0 (2025-10-10)
+
+### Feature
+
+* feat: improve CLI installation and AWS configuration (#105)
+
+* feat: improve CLI installation and AWS configuration
+
+- Install Caylent Devcontainer CLI during container setup with version support
+- Add CLI_VERSION environment variable to shell.env from cli_version field in profile
+- Move AWS CLI installation to pipx for better isolation
+- Update Git credential helper to use store instead of cache
+- Remove AWS CLI feature from devcontainer.json (now installed via pipx)
+- Add comprehensive tests for CLI_VERSION handling in shell env generation
+
+* fix: format
+
+* feat: add port label example to devcontainer.json
+
+* refactor: extract common functions for shell profile and file operations
+
+- Add helper functions to devcontainer-functions.sh:
+  - install_with_pipx(): Handle pipx installations with WSL compatibility
+  - is_wsl(): Detect WSL environment
+  - add_to_shell_profiles(): Write to both bash and zsh profiles
+  - write_file_with_wsl_compat(): Write files with WSL sudo handling
+  - append_to_file_with_wsl_compat(): Append to files with WSL sudo handling
+
+- Refactor .devcontainer.postcreate.sh to use helper functions:
+  - Replace duplicate echo statements with add_to_shell_profiles()
+  - Replace duplicate pipx install blocks with install_with_pipx()
+  - Replace WSL-specific file operations with helper functions
+  - Improve code maintainability and reduce duplication
+
+* fix: format
+
+* fix: format ([`a9c024d`](https://github.com/caylent-solutions/devcontainer/commit/a9c024d00b4852f815fb6c1e5e9650ee8d8ff99f))
+
+
 ## v1.12.0 (2025-10-06)
+
+### Chore
+
+* chore(release): 1.12.0 ([`8547401`](https://github.com/caylent-solutions/devcontainer/commit/85474010796278b5f2692c9c59c13fa7e079d4e2))
 
 ### Feature
 
@@ -34,6 +77,12 @@ Bugs fixed:
 - Add os.getenv mock to test_is_interactive_shell_both_tty test
 - Prevents GitHub Actions CI=true environment variable from interfering with test
 - Test now properly validates interactive shell detection logic ([`22500ee`](https://github.com/caylent-solutions/devcontainer/commit/22500eefdb6bcdaac81f67eca90b016baeace981))
+
+### Unknown
+
+* Merge pull request #104 from caylent-solutions/release-1.12.0
+
+Release 1.12.0 ([`6ee6798`](https://github.com/caylent-solutions/devcontainer/commit/6ee67988a3ae0be467479d688ecccda35b7dc127))
 
 
 ## v1.11.1 (2025-10-06)
