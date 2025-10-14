@@ -432,9 +432,6 @@ python -m pip install ruamel_yaml --root-user-action=ignore
 #############
 # AWS Tools #
 #############
-log_info "Installing AWS CLI..."
-install_with_pipx "awscli"
-
 log_info "Installing AWS SSO utilities..."
 install_with_pipx "aws-sso-util"
 
