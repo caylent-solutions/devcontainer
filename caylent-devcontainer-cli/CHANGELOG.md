@@ -2,7 +2,18 @@
 
 
 
+## v1.13.1 (2025-10-14)
+
+### Fix
+
+* fix: upgrade to latest of awscli which is currently v2 (#107) ([`532b529`](https://github.com/caylent-solutions/devcontainer/commit/532b529213de6aa440cf4a34e54c26059cfbe05b))
+
+
 ## v1.13.0 (2025-10-10)
+
+### Chore
+
+* chore(release): 1.13.0 ([`be77bd9`](https://github.com/caylent-solutions/devcontainer/commit/be77bd955ee85dbcca716e10503cf474b2817e27))
 
 ### Feature
 
@@ -39,6 +50,12 @@
 * fix: format
 
 * fix: format ([`a9c024d`](https://github.com/caylent-solutions/devcontainer/commit/a9c024d00b4852f815fb6c1e5e9650ee8d8ff99f))
+
+### Unknown
+
+* Merge pull request #106 from caylent-solutions/release-1.13.0
+
+Release 1.13.0 ([`69c29d4`](https://github.com/caylent-solutions/devcontainer/commit/69c29d489ee0238785deeab67dc6bba10c57d203))
 
 
 ## v1.12.0 (2025-10-06)
