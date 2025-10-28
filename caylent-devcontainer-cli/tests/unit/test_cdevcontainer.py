@@ -94,7 +94,8 @@ def test_load_json_config_invalid():
 @patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value={"containerEnv": {"TEST_VAR": "test_value"}})
 @patch("os.path.exists", return_value=False)
 @patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True)
-def test_generate_shell_env(mock_confirm, mock_exists, mock_load_json, capsys):
+@patch("caylent_devcontainer_cli.utils.fs.find_project_root", return_value="/test/project")
+def test_generate_shell_env(mock_find_root, mock_confirm, mock_exists, mock_load_json, capsys):
     with patch("builtins.open", mock_open()) as mock_file:
         generate_shell_env("test_file.json", "output_file.sh")
         mock_file().write.assert_called()

@@ -58,7 +58,8 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
     lines = generate_exports(env_data, export_prefix=not no_export)
 
     # Add dynamic PATH and unset GIT_EDITOR
-    project_folder = os.path.basename(os.path.dirname(os.path.abspath(json_file)))
+    project_root = find_project_root(json_file)
+    project_folder = os.path.basename(os.path.abspath(project_root))
     lines.append(f'export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:/workspaces/{project_folder}/.localscripts:$PATH"')
     lines.append("")
     lines.append("unset GIT_EDITOR")
