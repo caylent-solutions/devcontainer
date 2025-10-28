@@ -2,11 +2,106 @@
 
 
 
+## v1.14.0 (2025-10-28)
+
+### Feature
+
+* feat: ensure Amazon Q has complete PATH on initial load and after rebuilds (#109)
+
+* feat: ensure Amazon Q has complete PATH on initial load and after rebuilds
+
+Problem:
+- On devcontainer rebuild, environment loses shell env vars from parent shell that launched VS Code
+- Amazon Q shells lack necessary PATH entries (asdf shims, .localscripts) after rebuild
+- Duplicate PATH entries were being added by postcreate script
+
+Solution:
+1. Dynamically set BASH_ENV in devcontainer.json based on project folder name
+   - Ensures shell.env is sourced on rebuild, restoring all environment variables
+   - Path: /workspaces/{project_folder}/shell.env (project-specific)
+   - Critical for Amazon Q shells to have complete PATH after rebuild
+
+2. Add dynamic PATH export to shell.env
+   - Format: $HOME/.asdf/shims:$HOME/.asdf/bin:/workspaces/{project_folder}/.localscripts:$PATH
+   - Sourced by parent shell that launches VS Code
+   - Ensures Amazon Q has everything in PATH on FIRST load
+   - Uses $HOME instead of hardcoded /home/vscode for portability
+
+3. Add unset GIT_EDITOR to shell.env
+   - Ensures consistent git behavior across environments
+
+4. Remove duplicate PATH configuration from postcreate script
+   - Eliminates redundant PATH additions now handled by shell.env
+   - Cleaner, more maintainable configuration
+
+Technical changes:
+- Update setup.py and setup_interactive.py to modify devcontainer.json after copying
+- Update fs.py to append PATH and GIT_EDITOR to generated shell.env
+- Fix unit tests to mock json.load/dump and os.path operations
+- Simplify .devcontainer.postcreate.sh by removing shell profile duplication
+
+Result: Amazon Q shells have complete PATH both on initial load AND after rebuilds
+
+* feat: ensure Amazon Q has complete PATH on initial load and after rebuilds
+
+Problem:
+- On devcontainer rebuild, environment loses shell env vars from parent shell that launched VS Code
+- Amazon Q shells lack necessary PATH entries (asdf shims, .localscripts) after rebuild
+- Duplicate PATH entries were being added by postcreate script
+
+Solution:
+1. Dynamically set BASH_ENV in devcontainer.json based on project folder name
+   - Ensures shell.env is sourced on rebuild, restoring all environment variables
+   - Path: /workspaces/{project_folder}/shell.env (project-specific)
+   - Critical for Amazon Q shells to have complete PATH after rebuild
+
+2. Add dynamic PATH export to shell.env
+   - Format: $HOME/.asdf/shims:$HOME/.asdf/bin:/workspaces/{project_folder}/.localscripts:$PATH
+   - Sourced by parent shell that launches VS Code
+   - Ensures Amazon Q has everything in PATH on FIRST load
+   - Uses $HOME instead of hardcoded /home/vscode for portability
+
+3. Add unset GIT_EDITOR to shell.env
+   - Ensures consistent git behavior across environments
+
+4. Remove duplicate PATH configuration from postcreate script
+   - Eliminates redundant PATH additions now handled by shell.env
+   - Cleaner, more maintainable configuration
+
+Technical changes:
+- Update setup.py and setup_interactive.py to modify devcontainer.json after copying
+- Update fs.py to append PATH and GIT_EDITOR to generated shell.env
+- Fix unit tests to mock json.load/dump and os.path operations
+- Simplify .devcontainer.postcreate.sh by removing shell profile duplication
+
+Result: Amazon Q shells have complete PATH both on initial load AND after rebuilds
+
+* fix: remove duplicate log line for log_info &#34;Installing asdf plugin: $plugin&#34;
+
+* refactor: move json import to top-level imports
+
+* refactor: standardize project folder logic and fix unit tests
+
+* fix: add .devcontainer directory to functional tests for project root validation
+
+* fix: format ([`1aef782`](https://github.com/caylent-solutions/devcontainer/commit/1aef782f3fb6a7a073ec8fdd438a775eacb66c8b))
+
+
 ## v1.13.1 (2025-10-14)
+
+### Chore
+
+* chore(release): 1.13.1 ([`72012f8`](https://github.com/caylent-solutions/devcontainer/commit/72012f8492a721a9109d27b7f806e3774e308493))
 
 ### Fix
 
 * fix: upgrade to latest of awscli which is currently v2 (#107) ([`532b529`](https://github.com/caylent-solutions/devcontainer/commit/532b529213de6aa440cf4a34e54c26059cfbe05b))
+
+### Unknown
+
+* Merge pull request #108 from caylent-solutions/release-1.13.1
+
+Release 1.13.1 ([`d3c2ee9`](https://github.com/caylent-solutions/devcontainer/commit/d3c2ee96a5e200454a242e83cfd2d34cb4e41d82))
 
 
 ## v1.13.0 (2025-10-10)
