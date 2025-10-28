@@ -24,7 +24,7 @@ def test_env_export_includes_pager_and_aws_output():
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create .devcontainer directory for project root validation
         os.makedirs(os.path.join(temp_dir, ".devcontainer"))
-        
+
         # Create a test environment file with the new variables
         env_file = os.path.join(temp_dir, "test-env.json")
         env_data = {
@@ -68,7 +68,7 @@ def test_env_export_pager_options():
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create .devcontainer directory for project root validation
             os.makedirs(os.path.join(temp_dir, ".devcontainer"))
-            
+
             env_file = os.path.join(temp_dir, "test-env.json")
             env_data = {
                 "containerEnv": {
