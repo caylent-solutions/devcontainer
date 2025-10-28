@@ -25,7 +25,11 @@ def test_apply_template_with_container_env():
         "builtins.open"
     ), patch("json.dump"), patch("json.load", return_value=devcontainer_json), patch("os.remove"), patch(
         "caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"
-    ), patch("os.path.basename", return_value="path"), patch("os.path.abspath", return_value="/target/path"):
+    ), patch(
+        "os.path.basename", return_value="path"
+    ), patch(
+        "os.path.abspath", return_value="/target/path"
+    ):
         apply_template(template_data, "/target/path", "/source/path")
 
 
@@ -45,7 +49,11 @@ def test_apply_template_with_env_values():
         "builtins.open"
     ), patch("json.dump"), patch("json.load", return_value=devcontainer_json), patch("os.remove"), patch(
         "caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"
-    ), patch("os.path.basename", return_value="path"), patch("os.path.abspath", return_value="/target/path"):
+    ), patch(
+        "os.path.basename", return_value="path"
+    ), patch(
+        "os.path.abspath", return_value="/target/path"
+    ):
         apply_template(template_data, "/target/path", "/source/path")
 
 
@@ -60,8 +68,15 @@ def test_apply_template_with_existing_target():
     devcontainer_json = {"containerEnv": {}}
     with patch("os.path.exists", return_value=True), patch("shutil.copytree"), patch(
         "shutil.rmtree"
-    ) as mock_rmtree, patch("builtins.open"), patch("json.dump"), patch("json.load", return_value=devcontainer_json), patch("os.remove"), patch(
-        "os.path.basename", return_value="path"), patch("os.path.abspath", return_value="/target/path"):
+    ) as mock_rmtree, patch("builtins.open"), patch("json.dump"), patch(
+        "json.load", return_value=devcontainer_json
+    ), patch(
+        "os.remove"
+    ), patch(
+        "os.path.basename", return_value="path"
+    ), patch(
+        "os.path.abspath", return_value="/target/path"
+    ):
         apply_template(template_data, "/target/path", "/source/path")
         mock_rmtree.assert_called_once()
 
@@ -77,7 +92,12 @@ def test_apply_template_with_example_files():
     devcontainer_json = {"containerEnv": {}}
     with patch("os.path.exists", side_effect=[False, True, True]), patch("shutil.copytree"), patch(
         "shutil.rmtree"
-    ), patch("builtins.open"), patch("json.dump"), patch("json.load", return_value=devcontainer_json), patch("os.remove") as mock_remove, patch(
-        "os.path.basename", return_value="path"), patch("os.path.abspath", return_value="/target/path"):
+    ), patch("builtins.open"), patch("json.dump"), patch("json.load", return_value=devcontainer_json), patch(
+        "os.remove"
+    ) as mock_remove, patch(
+        "os.path.basename", return_value="path"
+    ), patch(
+        "os.path.abspath", return_value="/target/path"
+    ):
         apply_template(template_data, "/target/path", "/source/path")
         assert mock_remove.call_count == 2
