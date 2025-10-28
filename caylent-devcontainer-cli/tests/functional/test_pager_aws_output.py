@@ -22,6 +22,9 @@ def run_command(cmd, cwd=None, input_text=None):
 def test_env_export_includes_pager_and_aws_output():
     """Test that env export includes PAGER and AWS_DEFAULT_OUTPUT variables."""
     with tempfile.TemporaryDirectory() as temp_dir:
+        # Create .devcontainer directory for project root validation
+        os.makedirs(os.path.join(temp_dir, ".devcontainer"))
+        
         # Create a test environment file with the new variables
         env_file = os.path.join(temp_dir, "test-env.json")
         env_data = {
@@ -60,6 +63,9 @@ def test_env_export_includes_pager_and_aws_output():
 def test_env_export_with_default_values():
     """Test that env export works with default values for new variables."""
     with tempfile.TemporaryDirectory() as temp_dir:
+        # Create .devcontainer directory for project root validation
+        os.makedirs(os.path.join(temp_dir, ".devcontainer"))
+        
         # Create a test environment file without the new variables
         env_file = os.path.join(temp_dir, "test-env.json")
         env_data = {
@@ -95,6 +101,9 @@ def test_env_export_pager_options():
 
     for pager in pager_options:
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Create .devcontainer directory for project root validation
+            os.makedirs(os.path.join(temp_dir, ".devcontainer"))
+            
             env_file = os.path.join(temp_dir, "test-env.json")
             env_data = {
                 "containerEnv": {
@@ -131,6 +140,9 @@ def test_env_export_aws_output_options():
 
     for output_format in aws_output_options:
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Create .devcontainer directory for project root validation
+            os.makedirs(os.path.join(temp_dir, ".devcontainer"))
+            
             env_file = os.path.join(temp_dir, "test-env.json")
             env_data = {
                 "containerEnv": {
