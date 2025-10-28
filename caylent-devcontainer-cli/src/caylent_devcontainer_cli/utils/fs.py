@@ -57,6 +57,12 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
 
     lines = generate_exports(env_data, export_prefix=not no_export)
 
+    # Add dynamic PATH and unset GIT_EDITOR
+    project_folder = os.path.basename(os.path.dirname(os.path.abspath(json_file)))
+    lines.append(f'export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:/workspaces/{project_folder}/.localscripts:$PATH"')
+    lines.append("")
+    lines.append("unset GIT_EDITOR")
+
     # Ask for confirmation before writing to file
     if os.path.exists(output_file):
         if not confirm_action(f"This will overwrite the existing file at:\n{output_file}"):

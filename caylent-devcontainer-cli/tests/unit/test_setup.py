@@ -191,7 +191,12 @@ def test_clone_repo_invalid_ref_failure(mock_run, capsys):
 
 @patch("shutil.copytree")
 @patch("os.path.exists", return_value=False)
-def test_copy_devcontainer_files(mock_exists, mock_copytree):
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.load", return_value={"containerEnv": {}})
+@patch("json.dump")
+@patch("os.path.basename", return_value="target")
+@patch("os.path.abspath", return_value="/target")
+def test_copy_devcontainer_files(mock_abspath, mock_basename, mock_json_dump, mock_json_load, mock_file, mock_exists, mock_copytree):
     copy_devcontainer_files("/source", "/target")
     mock_copytree.assert_called_once_with("/source/.devcontainer", "/target/.devcontainer")
 
@@ -200,7 +205,12 @@ def test_copy_devcontainer_files(mock_exists, mock_copytree):
 @patch("os.path.exists", side_effect=[True, False, False])
 @patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True)
 @patch("shutil.rmtree")
-def test_copy_devcontainer_files_overwrite(mock_rmtree, mock_confirm, mock_exists, mock_copytree):
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.load", return_value={"containerEnv": {}})
+@patch("json.dump")
+@patch("os.path.basename", return_value="target")
+@patch("os.path.abspath", return_value="/target")
+def test_copy_devcontainer_files_overwrite(mock_abspath, mock_basename, mock_json_dump, mock_json_load, mock_file, mock_rmtree, mock_confirm, mock_exists, mock_copytree):
     copy_devcontainer_files("/source", "/target")
     mock_rmtree.assert_called_once()
     mock_copytree.assert_called_once()
@@ -229,7 +239,11 @@ def test_copy_devcontainer_files_with_examples():
     """Test that copy_devcontainer_files keeps example files when keep_examples is True."""
     with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
         "os.remove"
-    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True):
+    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True), patch(
+        "builtins.open", new_callable=mock_open
+    ), patch("json.load", return_value={"containerEnv": {}}), patch("json.dump"), patch(
+        "os.path.basename", return_value="target"
+    ), patch("os.path.abspath", return_value="/target"):
 
         copy_devcontainer_files("/source", "/target", keep_examples=True)
 
@@ -244,7 +258,11 @@ def test_copy_devcontainer_files_without_examples():
     """Test that copy_devcontainer_files removes example files when keep_examples is False."""
     with patch("os.path.exists", side_effect=[True, True, True]), patch("shutil.copytree") as mock_copytree, patch(
         "os.remove"
-    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True):
+    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True), patch(
+        "builtins.open", new_callable=mock_open
+    ), patch("json.load", return_value={"containerEnv": {}}), patch("json.dump"), patch(
+        "os.path.basename", return_value="target"
+    ), patch("os.path.abspath", return_value="/target"):
 
         copy_devcontainer_files("/source", "/target", keep_examples=False)
 
@@ -263,7 +281,11 @@ def test_copy_devcontainer_files_confirm_overwrite():
     """Test that copy_devcontainer_files asks for confirmation when target exists."""
     with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
         "os.remove"
-    ), patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True) as mock_confirm:
+    ), patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True) as mock_confirm, patch(
+        "builtins.open", new_callable=mock_open
+    ), patch("json.load", return_value={"containerEnv": {}}), patch("json.dump"), patch(
+        "os.path.basename", return_value="target"
+    ), patch("os.path.abspath", return_value="/target"):
 
         copy_devcontainer_files("/source", "/target", keep_examples=False)
 
@@ -483,7 +505,11 @@ def test_load_template_from_file_not_found(mock_exists):
 @patch("os.path.exists", return_value=False)
 @patch("shutil.copytree")
 @patch("builtins.open", new_callable=mock_open)
-def test_apply_template_without_aws(mock_file, mock_copytree, mock_exists):
+@patch("json.load", return_value={"containerEnv": {}})
+@patch("json.dump")
+@patch("os.path.basename", return_value="target")
+@patch("os.path.abspath", return_value="/target")
+def test_apply_template_without_aws(mock_abspath, mock_basename, mock_json_dump, mock_json_load, mock_file, mock_copytree, mock_exists):
     template_data = {
         "env_values": {"AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {},
@@ -493,13 +519,17 @@ def test_apply_template_without_aws(mock_file, mock_copytree, mock_exists):
         apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
-    assert mock_file.call_count == 1  # Only env file, no AWS file
+    assert mock_file.call_count == 3  # devcontainer.json read + devcontainer.json write + env file write
 
 
 @patch("os.path.exists", return_value=False)
 @patch("shutil.copytree")
 @patch("builtins.open", new_callable=mock_open)
-def test_apply_template_with_aws(mock_file, mock_copytree, mock_exists):
+@patch("json.load", return_value={"containerEnv": {}})
+@patch("json.dump")
+@patch("os.path.basename", return_value="target")
+@patch("os.path.abspath", return_value="/target")
+def test_apply_template_with_aws(mock_abspath, mock_basename, mock_json_dump, mock_json_load, mock_file, mock_copytree, mock_exists):
     template_data = {
         "env_values": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
@@ -509,7 +539,7 @@ def test_apply_template_with_aws(mock_file, mock_copytree, mock_exists):
         apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
-    assert mock_file.call_count == 2  # Both env file and AWS file
+    assert mock_file.call_count == 4  # devcontainer.json read + devcontainer.json write + env file write + AWS file write
 
 
 # Tests from test_setup_interactive_more.py

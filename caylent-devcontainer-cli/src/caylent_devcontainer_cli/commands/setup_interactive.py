@@ -564,6 +564,20 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
     log("INFO", f"Copying .devcontainer folder to {target_path}...")
     shutil.copytree(source_devcontainer, target_devcontainer)
 
+    # Update devcontainer.json with dynamic BASH_ENV
+    project_folder_name = os.path.basename(os.path.abspath(target_path))
+    devcontainer_json_path = os.path.join(target_devcontainer, "devcontainer.json")
+    with open(devcontainer_json_path, "r") as f:
+        devcontainer_config = json.load(f)
+    
+    devcontainer_config["containerEnv"]["BASH_ENV"] = f"/workspaces/{project_folder_name}/shell.env"
+    
+    with open(devcontainer_json_path, "w") as f:
+        json.dump(devcontainer_config, f, indent=2)
+        f.write("\n")
+    
+    log("OK", f"Updated BASH_ENV to /workspaces/{project_folder_name}/shell.env")
+
     # Remove example files if not in manual mode
     example_files = [
         os.path.join(target_devcontainer, "example-container-env-values.json"),

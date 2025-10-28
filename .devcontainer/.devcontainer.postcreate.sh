@@ -29,7 +29,6 @@ else
   log_info "CICD environment variable: ${CICD:-not set}"
   log_info "Devcontainer configured to run as a local developer environment"
 fi
-add_to_shell_profiles "export CICD=${CICD_VALUE}"
 
 log_info "Starting post-create setup..."
 
@@ -70,55 +69,22 @@ fi
 # Configure ENV #
 #################
 log_info "Configuring ENV vars..."
-add_to_shell_profiles "export PATH=\"${WORK_DIR}/.localscripts:\${PATH}\""
 
 # Configure shell.env sourcing for all shells (interactive and non-interactive)
 log_info "Configuring shell.env sourcing for all shells"
 
-# For interactive shells (bash and zsh)
-add_to_shell_profiles "# Source project shell.env"
-add_to_shell_profiles "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi"
-
-# For non-interactive bash shells via BASH_ENV
-add_to_shell_profiles "export BASH_ENV=\"${WORK_DIR}/shell.env\""
-
-# For non-interactive zsh shells via .zshenv
-echo "if [ -f \"${WORK_DIR}/shell.env\" ]; then source \"${WORK_DIR}/shell.env\"; fi" > /home/${CONTAINER_USER}/.zshenv
-
-# Handle PAGER configuration by checking shell.env first
-SHELL_ENV_PAGER=""
-if [ -f "${WORK_DIR}/shell.env" ] && grep -q "^export PAGER=" "${WORK_DIR}/shell.env"; then
-  SHELL_ENV_PAGER=$(grep "^export PAGER=" "${WORK_DIR}/shell.env" | cut -d'=' -f2 | tr -d "'\"")
-  log_info "PAGER found in shell.env: ${SHELL_ENV_PAGER}"
+# Verify shell.env exists before configuring shells
+if [ ! -f "${WORK_DIR}/shell.env" ]; then
+  exit_with_error "❌ shell.env not found at ${WORK_DIR}/shell.env"
 fi
 
-if [ -n "${SHELL_ENV_PAGER}" ]; then
-  PAGER_VALUE="${SHELL_ENV_PAGER}"
-  log_info "Using PAGER from shell.env: ${PAGER_VALUE}"
-else
-  PAGER_VALUE="cat"
-  log_info "PAGER not in shell.env, defaulting to: cat"
-fi
+# For bash: source in .bashrc (interactive) and via BASH_ENV (non-interactive)
+echo "# Source project shell.env" >> "${BASH_RC}"
+echo "source \"${WORK_DIR}/shell.env\"" >> "${BASH_RC}"
+echo "export BASH_ENV=\"${WORK_DIR}/shell.env\"" >> "${BASH_RC}"
 
-# Force unset any existing PAGER and set our value
-unset PAGER 2>/dev/null || true
-export PAGER="${PAGER_VALUE}"
-log_info "PAGER configured as: ${PAGER_VALUE}"
-
-# Add to shell profiles with explicit unset first
-add_to_shell_profiles "# PAGER configuration from devcontainer"
-add_to_shell_profiles "unset PAGER 2>/dev/null || true"
-add_to_shell_profiles "export PAGER=${PAGER_VALUE}"
-if [ "$CICD_VALUE" != "true" ]; then
-  add_to_shell_profiles "export DEVELOPER_NAME=${DEVELOPER_NAME}"
-fi
-
-#################
-# Shell Aliases #
-#################
-log_info "Setting up shell aliases with branch: ${DEFAULT_GIT_BRANCH}"
-add_to_shell_profiles "alias git_sync=\"git pull origin ${DEFAULT_GIT_BRANCH}\""
-add_to_shell_profiles 'alias git_boop="git reset --soft HEAD~1"'
+# For zsh: source only in .zshenv (covers all zsh shells - interactive and non-interactive)
+echo "source \"${WORK_DIR}/shell.env\"" > /home/${CONTAINER_USER}/.zshenv
 
 ##############################
 # Install asdf & Tool Versions
@@ -126,10 +92,6 @@ add_to_shell_profiles 'alias git_boop="git reset --soft HEAD~1"'
 log_info "Installing asdf..."
 mkdir -p /home/${CONTAINER_USER}/.asdf
 git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.15.0
-
-# Add asdf to bash
-echo '. "$HOME/.asdf/asdf.sh"' >> ${BASH_RC}
-echo '. "$HOME/.asdf/completions/asdf.bash"' >> ${BASH_RC}
 
 # Source asdf for the current script
 export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
@@ -139,46 +101,9 @@ export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
 # Make asdf available system-wide for Amazon Q agents
 log_info "Configuring system-wide asdf access for Amazon Q agents..."
 
-# Add asdf shims AND bin directory to system-wide PATH via /etc/environment
-append_to_file_with_wsl_compat "/etc/environment" "PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\""
 
-# Create system-wide profile for asdf that sets PATH and loads asdf
-if uname -r | grep -i microsoft > /dev/null; then
-  # WSL compatibility: Use sudo for /etc/profile.d access
-  sudo tee /etc/profile.d/asdf.sh > /dev/null << ASDF_PROFILE
-#!/bin/bash
-# System-wide asdf configuration for Amazon Q agents
-export PATH="/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH"
-if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
-    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
-fi
-ASDF_PROFILE
-  sudo chmod +x /etc/profile.d/asdf.sh
-else
-  # Non-WSL: Direct write to /etc/profile.d
-  cat > /etc/profile.d/asdf.sh << ASDF_PROFILE
-#!/bin/bash
-# System-wide asdf configuration for Amazon Q agents
-export PATH="/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH"
-if [ -f "/home/${CONTAINER_USER}/.asdf/asdf.sh" ]; then
-    . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
-fi
-ASDF_PROFILE
-  chmod +x /etc/profile.d/asdf.sh
-fi
 
-# Also add to /etc/bash.bashrc for non-login shells
-if uname -r | grep -i microsoft > /dev/null; then
-  # WSL compatibility: Use sudo for /etc/bash.bashrc access
-  echo '# Load asdf for Amazon Q agents' | sudo tee -a /etc/bash.bashrc > /dev/null
-  echo "export PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH\"" | sudo tee -a /etc/bash.bashrc > /dev/null
-  echo "if [ -f \"/home/${CONTAINER_USER}/.asdf/asdf.sh\" ]; then . \"/home/${CONTAINER_USER}/.asdf/asdf.sh\"; fi" | sudo tee -a /etc/bash.bashrc > /dev/null
-else
-  # Non-WSL: Direct write to /etc/bash.bashrc
-  echo '# Load asdf for Amazon Q agents' >> /etc/bash.bashrc
-  echo "export PATH=\"/home/${CONTAINER_USER}/.asdf/shims:/home/${CONTAINER_USER}/.asdf/bin:\$PATH\"" >> /etc/bash.bashrc
-  echo "if [ -f \"/home/${CONTAINER_USER}/.asdf/asdf.sh\" ]; then . \"/home/${CONTAINER_USER}/.asdf/asdf.sh\"; fi" >> /etc/bash.bashrc
-fi
+
 
 # Create plugins directory if it doesn't exist
 mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
@@ -260,13 +185,6 @@ ZSH_THEME="obraun"
 ENABLE_CORRECTION="false"
 HIST_STAMPS="%m/%d/%Y - %H:%M:%S"
 source $ZSH/oh-my-zsh.sh
-
-# asdf version manager (must be after oh-my-zsh)
-. "$HOME/.asdf/asdf.sh"
-# append completions to fpath
-fpath=(${ASDF_DIR}/completions $fpath)
-# initialise completions with ZSH's compinit
-autoload -Uz compinit && compinit
 EOF
 
 #################
@@ -280,7 +198,6 @@ if [ "$CICD_VALUE" != "true" ]; then
     chown -R ${CONTAINER_USER}:${CONTAINER_USER} /home/${CONTAINER_USER}/.aws/amazonq
 
     AWS_OUTPUT_FORMAT="${AWS_DEFAULT_OUTPUT:-json}"
-    add_to_shell_profiles "export AWS_DEFAULT_OUTPUT=${AWS_OUTPUT_FORMAT}"
     jq -r 'to_entries[] |
       "[profile \(.key)]\n" +
       "sso_start_url = \(.value.sso_start_url)\n" +
@@ -422,10 +339,6 @@ if [[ -z "$ASDF_PYTHON_PATH" || "$ASDF_PYTHON_PATH" != *".asdf"* ]]; then
   exit_with_error "❌ 'python' is not provided by asdf. Found: $ASDF_PYTHON_PATH"
 fi
 
-# Ensure pipx binaries are available in PATH
-log_info "Configuring pipx PATH..."
-add_to_shell_profiles "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\""
-
 log_info "Installing Python packages..."
 python -m pip install ruamel_yaml --root-user-action=ignore
 
@@ -446,9 +359,6 @@ login ${GIT_USER}
 password ${GIT_TOKEN}
 EOF
   chmod 600 /home/${CONTAINER_USER}/.netrc
-
-  # Unset GIT_EDITOR to ensure vim is used
-  add_to_shell_profiles "unset GIT_EDITOR"
 
   cat <<EOF >> /home/${CONTAINER_USER}/.gitconfig
 [user]
