@@ -250,7 +250,6 @@ fi
 if [ -f "${WORK_DIR}/.tool-versions" ]; then
   log_info "Installing asdf plugins from .tool-versions..."
   cut -d' ' -f1 "${WORK_DIR}/.tool-versions" | while read -r plugin; do
-    log_info "Installing asdf plugin: $plugin"
     install_asdf_plugin "$plugin"
   done
 
