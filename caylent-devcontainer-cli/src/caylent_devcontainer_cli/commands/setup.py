@@ -1,5 +1,6 @@
 """Setup command for the Caylent Devcontainer CLI."""
 
+import json
 import os
 import shutil
 import subprocess
@@ -251,8 +252,6 @@ def copy_devcontainer_files(source_dir: str, target_path: str, keep_examples: bo
     shutil.copytree(source_devcontainer, target_devcontainer)
 
     # Update devcontainer.json with dynamic BASH_ENV
-    import json
-
     project_folder_name = os.path.basename(os.path.abspath(target_path))
     devcontainer_json_path = os.path.join(target_devcontainer, "devcontainer.json")
     with open(devcontainer_json_path, "r") as f:
