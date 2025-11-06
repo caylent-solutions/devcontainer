@@ -1,6 +1,5 @@
 """Setup command for the Caylent Devcontainer CLI."""
 
-import json
 import os
 import shutil
 import subprocess
