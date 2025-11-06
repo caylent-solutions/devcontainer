@@ -573,9 +573,7 @@ def test_apply_template_with_aws(
         apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
-    assert (
-        mock_file.call_count == 2
-    )  # env file write + AWS file write
+    assert mock_file.call_count == 2  # env file write + AWS file write
 
 
 # Tests from test_setup_interactive_more.py
