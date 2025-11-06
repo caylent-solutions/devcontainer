@@ -210,6 +210,7 @@ def ensure_gitignore_entries(target_path: str) -> None:
 
 def clone_repo(temp_dir: str, git_ref: str) -> None:
     """Clone the repository at the specified git reference (branch, tag, or commit)."""
+    log("INFO", f"Cloning repository with git_ref: {git_ref}")
     try:
         subprocess.run(
             ["git", "clone", "--depth", "1", "--branch", git_ref, REPO_URL, temp_dir],
