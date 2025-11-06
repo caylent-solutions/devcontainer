@@ -551,7 +551,7 @@ def test_apply_template_without_aws(
         apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
-    assert mock_file.call_count == 3  # devcontainer.json read + devcontainer.json write + env file write
+    assert mock_file.call_count == 1  # env file write
 
 
 @patch("os.path.exists", return_value=False)
@@ -574,8 +574,8 @@ def test_apply_template_with_aws(
 
     mock_copytree.assert_called_once()
     assert (
-        mock_file.call_count == 4
-    )  # devcontainer.json read + devcontainer.json write + env file write + AWS file write
+        mock_file.call_count == 2
+    )  # env file write + AWS file write
 
 
 # Tests from test_setup_interactive_more.py
