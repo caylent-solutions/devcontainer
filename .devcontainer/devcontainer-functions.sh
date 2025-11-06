@@ -48,23 +48,22 @@ install_asdf_plugin() {
 
 install_with_pipx() {
   local package="$1"
-  if uname -r | grep -i microsoft > /dev/null; then
+  local container_user="${CONTAINER_USER:?CONTAINER_USER must be set}"
+  if is_wsl; then
     # WSL compatibility: Do not use sudo -u in WSL as it fails
-    python -m pipx install "${package}"
+    if ! python -m pipx install "${package}"; then
+      exit_with_error "Failed to install ${package} with pipx in WSL environment"
+    fi
   else
     # Non-WSL: Use sudo -u to ensure correct user environment
-    sudo -u ${CONTAINER_USER} bash -c "export PATH=\"\$PATH:/home/${CONTAINER_USER}/.local/bin\" && source /home/${CONTAINER_USER}/.asdf/asdf.sh && python -m pipx install '${package}'"
+    if ! sudo -u "${container_user}" bash -c "export PATH=\"\$PATH:/home/${container_user}/.local/bin\" && source /home/${container_user}/.asdf/asdf.sh && python -m pipx install '${package}'"; then
+      exit_with_error "Failed to install ${package} with pipx in non-WSL environment"
+    fi
   fi
 }
 
 is_wsl() {
   uname -r | grep -i microsoft > /dev/null
-}
-
-add_to_shell_profiles() {
-  local content="$1"
-  echo "$content" >> ${BASH_RC}
-  echo "$content" >> ${ZSH_RC}
 }
 
 write_file_with_wsl_compat() {
