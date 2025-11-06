@@ -2,7 +2,43 @@
 
 
 
+## v1.14.1 (2025-11-06)
+
+### Fix
+
+* fix: improve devcontainer robustness and maintainability
+
+fix: improve devcontainer robustness and maintainability
+
+Enhanced error handling, removed code duplication, and improved dynamic path configuration across devcontainer setup scripts and CLI.
+
+Error Handling Improvements:
+- CLI version validation: Added strict validation for CLI_VERSION format with fail-fast behavior instead of silent fallback to latest version
+- pipx installation: Added explicit error handling in install_with_pipx() function to fail immediately with clear error messages on installation failures
+- CONTAINER_USER validation: Added explicit check for CONTAINER_USER variable to prevent silent failures with malformed paths
+
+Code Quality:
+- Removed dead code: Deleted unused add_to_shell_profiles() function from devcontainer-functions.sh
+- Eliminated duplication: Refactored install_with_pipx() to use existing is_wsl() helper function instead of duplicating WSL detection logic
+- Improved variable safety: Added quotes around variable references and used local variables for better encapsulation
+
+Dynamic Path Configuration:
+- BASH_ENV: Changed from hardcoded /workspaces/${localWorkspaceFolderBasename}/shell.env to fully dynamic ${containerWorkspaceFolder}/shell.env in devcontainer.json
+- Simplified CLI: Removed dynamic BASH_ENV injection code from CLI setup since it&#39;s now permanently committed to the template
+- Added debug logging: Added logging to clone_repo() to show which git reference is being cloned
+
+Benefits:
+- No silent failures - all errors are caught and reported immediately
+- Better maintainability - reduced code duplication and dead code
+- More robust - explicit validation and error handling throughout
+- Fully dynamic paths - works with any workspace mount configuration ([`33feb55`](https://github.com/caylent-solutions/devcontainer/commit/33feb558b2f4d41a43351a77cd3ecac95e10d716))
+
+
 ## v1.14.0 (2025-10-28)
+
+### Chore
+
+* chore(release): 1.14.0 ([`a5a7a17`](https://github.com/caylent-solutions/devcontainer/commit/a5a7a176179ce32e4b6ed28ce9d7c7d3b299c53f))
 
 ### Feature
 
@@ -85,6 +121,12 @@ Result: Amazon Q shells have complete PATH both on initial load AND after rebuil
 * fix: add .devcontainer directory to functional tests for project root validation
 
 * fix: format ([`1aef782`](https://github.com/caylent-solutions/devcontainer/commit/1aef782f3fb6a7a073ec8fdd438a775eacb66c8b))
+
+### Unknown
+
+* Merge pull request #110 from caylent-solutions/release-1.14.0
+
+Release 1.14.0 ([`d294369`](https://github.com/caylent-solutions/devcontainer/commit/d294369792311a0a308f7bb666c683c33f31f6f5))
 
 
 ## v1.13.1 (2025-10-14)
