@@ -42,9 +42,11 @@ def test_load_json_config_invalid():
 
 def test_load_json_config_file_not_found():
     """Test loading JSON config when file doesn't exist."""
-    with patch("builtins.open", side_effect=FileNotFoundError()), patch("caylent_devcontainer_cli.utils.fs.log"), patch(
-        "sys.exit", side_effect=SystemExit(1)
-    ) as mock_exit:
+    with (
+        patch("builtins.open", side_effect=FileNotFoundError()),
+        patch("caylent_devcontainer_cli.utils.fs.log"),
+        patch("sys.exit", side_effect=SystemExit(1)) as mock_exit,
+    ):
         with pytest.raises(SystemExit):
             load_json_config("/test/path/nonexistent.json")
         mock_exit.assert_called_once_with(1)
@@ -428,19 +430,22 @@ class TestResolveProjectRoot:
 
     def test_handles_file_path_by_using_dirname(self):
         """Test that resolve_project_root handles file paths correctly."""
-        with patch("os.path.isfile", return_value=True), patch("os.path.dirname", return_value="/my/project"), patch(
-            "os.path.isdir", return_value=True
+        with (
+            patch("os.path.isfile", return_value=True),
+            patch("os.path.dirname", return_value="/my/project"),
+            patch("os.path.isdir", return_value=True),
         ):
             result = resolve_project_root("/my/project/file.json")
             assert result == "/my/project"
 
     def test_exits_with_clear_error_on_invalid_path(self):
         """Test that resolve_project_root exits with a clear error message."""
-        with patch("os.path.isdir", return_value=False), patch("os.path.isfile", return_value=False), patch(
-            "caylent_devcontainer_cli.utils.fs.log"
-        ) as mock_log, patch(
-            "caylent_devcontainer_cli.utils.fs.exit_with_error", side_effect=SystemExit(1)
-        ) as mock_exit_error:
+        with (
+            patch("os.path.isdir", return_value=False),
+            patch("os.path.isfile", return_value=False),
+            patch("caylent_devcontainer_cli.utils.fs.log") as mock_log,
+            patch("caylent_devcontainer_cli.utils.fs.exit_with_error", side_effect=SystemExit(1)) as mock_exit_error,
+        ):
             with pytest.raises(SystemExit):
                 resolve_project_root("/bad/path")
             mock_log.assert_any_call("INFO", "A valid project root must contain a .devcontainer directory")

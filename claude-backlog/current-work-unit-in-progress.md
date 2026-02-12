@@ -3,15 +3,14 @@
 ## In Progress
 
 - **Status:** in-review
-- **Work Unit:** S1.1.3 — UI & Prompt Utilities
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.1-core-dry-refactoring/S1.1.3-ui-prompt-utilities/story.md`
+- **Work Unit:** S1.1.4 — Remove Deprecated Commands
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.1-core-dry-refactoring/S1.1.4-remove-deprecated-commands/story.md`
 - **Feature:** F1.1 — Core DRY Refactoring & Removals
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
 
-1. S1.1.4 — Remove Deprecated Commands → `claude-backlog/E1-devcontainer-cli-v2/F1.1-core-dry-refactoring/S1.1.4-remove-deprecated-commands/story.md`
-2. S1.1.5 — Project File Generation → `claude-backlog/E1-devcontainer-cli-v2/F1.1-core-dry-refactoring/S1.1.5-project-file-generation/story.md`
+1. S1.1.5 — Project File Generation → `claude-backlog/E1-devcontainer-cli-v2/F1.1-core-dry-refactoring/S1.1.5-project-file-generation/story.md`
 3. S1.1.6 — Template Application Consolidation → `claude-backlog/E1-devcontainer-cli-v2/F1.1-core-dry-refactoring/S1.1.6-template-application-consolidation/story.md`
 4. S1.2.1 — Template Validation System → `claude-backlog/E1-devcontainer-cli-v2/F1.2-template-system/S1.2.1-template-validation-system/story.md`
 5. S1.2.2 — Template Create Command → `claude-backlog/E1-devcontainer-cli-v2/F1.2-template-system/S1.2.2-template-create-command/story.md`
@@ -43,3 +42,4 @@
 
 1. S1.1.1 — JSON & File System Utilities (2026-02-12)
 2. S1.1.2 — Template Utility Functions (2026-02-12)
+3. S1.1.3 — UI & Prompt Utilities (2026-02-12)

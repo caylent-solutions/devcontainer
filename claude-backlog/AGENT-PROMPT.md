@@ -63,7 +63,7 @@ All development follows test-driven development:
 3. **Write the code** — implement the minimum code to make the test pass
 4. **Verify the test passes** — run the test and confirm it passes (green)
 5. **Full unit test coverage** — achieve 90% or greater unit test coverage for the code you wrote
-6. **Full functional test coverage** — write functional tests that validate end-to-end behavior
+6. **Full functional test coverage** — write functional tests in `tests/functional/` that validate end-to-end behavior. Every story that adds or modifies code MUST have a corresponding functional test file. Do NOT skip this step or claim existing functional tests are sufficient without verifying they exercise the new/modified code paths. If no functional test file exists for the code you changed, create one.
 7. **Fix linting and formatting** — run `make lint` and `make format` from `caylent-devcontainer-cli/` (or nested `make` targets) and fix all issues
 
 ### Verify Your Work
@@ -83,13 +83,41 @@ After each work iteration, update the **Log** section of the work unit file:
 
 ---
 
-## Step 5: Completion — Request Human Review
+## Step 5: Validate Acceptance Criteria — One by One
 
-When you believe the work unit meets all acceptance criteria:
+**Before requesting human review, you MUST validate every acceptance criterion individually.**
+
+This is a strict requirement. Do not skip it. Do not batch them. For each criterion:
+
+1. **Read the criterion** from the story's Acceptance Criteria section
+2. **Perform a concrete verification** — run a command, read a file, run a test, check coverage, etc.
+3. **Record the evidence** — what you checked and what the result was
+4. **Check off the criterion** in the story file by changing `- [ ]` to `- [x]`
+5. **Move to the next criterion**
+
+### Documentation — Continuously Keep Docs Up to Date
+
+**Documentation must be kept in sync with code changes at all times.** Do not defer documentation updates to later stories or sessions. Every story that changes user-facing behavior, commands, flags, configuration, or version must update documentation in the same commit as the code changes.
+
+Every story has this acceptance criterion:
+> Docs updated if project documentation is affected by these changes
+
+This means:
+- **Check if any user-facing behavior changed** — commands added/removed/modified, flags changed, configuration changed, version changed
+- **Check README.md** (both root and `caylent-devcontainer-cli/README.md`) — does it reference anything that changed? If yes, update it.
+- **Check any other docs** (CHANGELOG.md, help text, docstrings, CLI `--help` output) — do they reference anything that changed? If yes, update them.
+- **If no documentation exists that references the changes**, note "No documentation references affected" and check it off.
+- **If documentation exists and needs updating**, update it BEFORE checking the criterion off.
+- **Outdated documentation is worse than no documentation.** Never leave docs that describe removed features, old flags, or old behavior.
+
+### After All Criteria Are Validated
+
+Only after every criterion has been individually verified and checked off:
 
 1. Update the work unit status to `in-review`
 2. Update the pointer file to reflect the status change
 3. **Request human approval.** Present to the human:
+   - The checked-off acceptance criteria (showing each was verified)
    - Summary of what was completed
    - List of files that were modified/created (only files related to this work unit)
    - A proposed git commit message for these changes (no stats, no co-authored-by)

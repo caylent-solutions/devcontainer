@@ -62,14 +62,10 @@ cdevcontainer --help
 
 - `setup-devcontainer`: Set up a devcontainer in a project directory
 - `code`: Launch IDE (VS Code, Cursor) with the devcontainer environment
-- `env`: Manage environment variables
 - `template`: Manage devcontainer templates
-- `install`: Install the CLI tool to your PATH
-- `uninstall`: Uninstall the CLI tool
 
 ### Global Options
 
-- `-y, --yes`: Automatically answer yes to all prompts
 - `-v, --version`: Show version information
 - `--skip-update-check`: Skip automatic update check
 
@@ -195,15 +191,6 @@ cdevcontainer code /path/to/another-project --ide cursor
 ### Setup
 
 For development, we recommend using the devcontainer itself. See the [Contributing Guide](docs/CONTRIBUTING.md) for detailed setup instructions.
-
-### Testing
-
-```bash
-# Run unit tests
-make unit-test
-
-# Run functional tests
-make functional-test
 
 ### Testing
 

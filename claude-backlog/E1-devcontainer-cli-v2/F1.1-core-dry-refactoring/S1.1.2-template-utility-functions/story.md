@@ -86,22 +86,37 @@ Implement shared template utilities, missing variable detection, version compati
 
 ## Acceptance Criteria
 
-- [ ] `get_template_path()` replaces all 7 inline template path constructions
-- [ ] `get_template_names()` replaces all template name scanning logic
-- [ ] `ensure_templates_dir()` replaces all 3 implementations
-- [ ] `get_missing_env_vars()` replaces `check_missing_env_vars()` and `get_missing_single_line_vars()`
-- [ ] `check_template_version()` replaces 3 separate semver comparison implementations
-- [ ] CLI_NAME imported from `utils/constants.py` everywhere (removed from `cli.py`)
-- [ ] `resolve_project_root()` replaces `find_project_root()` and 3 inline patterns
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] `get_template_path()` replaces all 7 inline template path constructions
+- [x] `get_template_names()` replaces all template name scanning logic
+- [x] `ensure_templates_dir()` replaces all 3 implementations
+- [x] `get_missing_env_vars()` replaces `check_missing_env_vars()` and `get_missing_single_line_vars()`
+- [x] `check_template_version()` replaces 3 separate semver comparison implementations
+- [x] CLI_NAME imported from `utils/constants.py` everywhere (removed from `cli.py`)
+- [x] `resolve_project_root()` replaces `find_project_root()` and 3 inline patterns
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
 Completed and pushed on 2026-02-12. All acceptance criteria met. 502 tests pass, lint clean, 91% coverage.
+
+### Retroactive AC Validation — 2026-02-12
+
+All 12 acceptance criteria validated one by one with concrete evidence:
+- `get_template_path` at template.py:13, 8 callers, no inline path constructions remain
+- `get_template_names` at template.py:25, used by template.py and setup_interactive.py
+- `ensure_templates_dir` at template.py:43, 4 callers, no inline makedirs for templates
+- `get_missing_env_vars` at env.py:13, replaces old check_missing_env_vars/get_missing_single_line_vars (grep: 0 matches for old names)
+- `check_template_version` at template.py:62, 6 tests covering version validation
+- CLI_NAME defined in constants.py:9, imported in cli.py:8, no local definition in cli.py
+- `resolve_project_root` at fs.py:114, no inline `args.project_root or os.getcwd()` patterns remain
+- Coverage: template.py 95%, env.py 100%, fs.py 93%
+- 393 unit tests pass, 98 functional tests pass
+- Lint clean
+- No documentation affected (internal utility functions only, no user-facing changes)
 
 ---
 

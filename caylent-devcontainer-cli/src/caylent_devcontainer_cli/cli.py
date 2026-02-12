@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.commands import code, env, install, setup, template
+from caylent_devcontainer_cli.commands import code, setup, template
 from caylent_devcontainer_cli.utils.constants import CLI_NAME
 
 
@@ -27,7 +27,6 @@ def main():
     )
 
     # Add global options
-    parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     parser.add_argument("-v", "--version", action="version", version=f"{CLI_NAME} {__version__}")
     parser.add_argument("--skip-update-check", action="store_true", help="Skip automatic update check")
 
@@ -36,9 +35,7 @@ def main():
 
     # Register commands
     code.register_command(subparsers)
-    env.register_command(subparsers)
     template.register_command(subparsers)
-    install.register_command(subparsers)
     setup.register_command(subparsers)
 
     # Parse arguments

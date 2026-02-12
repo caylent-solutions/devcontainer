@@ -14,7 +14,7 @@ from caylent_devcontainer_cli.utils.template import (
     get_template_names,
     get_template_path,
 )
-from caylent_devcontainer_cli.utils.ui import confirm_action, exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.ui import COLORS, confirm_action, exit_cancelled, exit_with_error, log
 
 
 def prompt_for_missing_vars(missing_vars):
@@ -39,14 +39,12 @@ def prompt_for_missing_vars(missing_vars):
 def register_command(subparsers):
     """Register the template command."""
     template_parser = subparsers.add_parser("template", help="Template management")
-    template_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     template_subparsers = template_parser.add_subparsers(dest="template_command")
 
     # 'template save' command
     save_parser = template_subparsers.add_parser("save", help="Save current environment as a template")
     save_parser.add_argument("name", help="Template name")
     save_parser.add_argument("-p", "--project-root", help="Project root directory (default: current directory)")
-    save_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     save_parser.set_defaults(func=handle_template_save)
 
     # 'template load' command
@@ -54,9 +52,6 @@ def register_command(subparsers):
     load_template_parser.add_argument("name", help="Template name")
     load_template_parser.add_argument(
         "-p", "--project-root", help="Project root directory (default: current directory)"
-    )
-    load_template_parser.add_argument(
-        "-y", "--yes", action="store_true", help="Automatically answer yes to all prompts"
     )
     load_template_parser.set_defaults(func=handle_template_load)
 
@@ -67,19 +62,16 @@ def register_command(subparsers):
     # 'template delete' command
     delete_parser = template_subparsers.add_parser("delete", help="Delete one or more templates")
     delete_parser.add_argument("names", nargs="+", help="Template names to delete")
-    delete_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     delete_parser.set_defaults(func=handle_template_delete)
 
     # 'template create' command
     create_parser = template_subparsers.add_parser("create", help="Create a new template interactively")
     create_parser.add_argument("name", help="Template name")
-    create_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     create_parser.set_defaults(func=handle_template_create)
 
     # 'template upgrade' command
     upgrade_parser = template_subparsers.add_parser("upgrade", help="Upgrade a template to the current CLI version")
     upgrade_parser.add_argument("name", help="Template name to upgrade")
-    upgrade_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     upgrade_parser.add_argument(
         "-f", "--force", action="store_true", help="Force full upgrade with interactive prompts for missing variables"
     )
@@ -256,8 +248,6 @@ def list_templates():
     template_names = get_template_names()
 
     if not template_names:
-        from caylent_devcontainer_cli.utils.ui import COLORS
-
         print(f"{COLORS['YELLOW']}No templates found. Create one with 'template save <n>'{COLORS['RESET']}")
         return
 
@@ -275,8 +265,6 @@ def list_templates():
             pass
 
         templates.append((name, version))
-
-    from caylent_devcontainer_cli.utils.ui import COLORS
 
     print(f"{COLORS['CYAN']}Available templates:{COLORS['RESET']}")
     for template_name, version in templates:

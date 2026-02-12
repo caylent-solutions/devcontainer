@@ -10,7 +10,6 @@ import pytest
 
 from caylent_devcontainer_cli import cli
 from caylent_devcontainer_cli.commands.code import handle_code
-from caylent_devcontainer_cli.commands.install import install_cli, uninstall_cli
 from caylent_devcontainer_cli.utils.fs import find_project_root, generate_exports, generate_shell_env, load_json_config
 from caylent_devcontainer_cli.utils.ui import confirm_action, log
 
@@ -107,31 +106,6 @@ def test_find_project_root_invalid(mock_isdir, capsys):
 
     captured = capsys.readouterr()
     assert "Could not find a valid project root" in captured.err
-
-
-# Test the install_cli function
-@patch("os.path.exists", return_value=False)
-@patch("os.makedirs")
-@patch("shutil.copy2")
-@patch("os.chmod")
-@patch("os.environ.get", return_value="/usr/local/bin:/usr/bin")
-@patch("caylent_devcontainer_cli.commands.install.confirm_action", return_value=True)
-def test_install_cli(mock_confirm, mock_env, mock_chmod, mock_copy, mock_makedirs, mock_exists, capsys):
-    with patch("caylent_devcontainer_cli.commands.install.os.path.exists", return_value=True):
-        install_cli()
-
-    mock_makedirs.assert_called_once()
-    mock_copy.assert_called_once()
-    mock_chmod.assert_called_once()
-
-
-# Test the uninstall_cli function
-@patch("os.path.exists", return_value=True)
-@patch("os.remove")
-@patch("caylent_devcontainer_cli.commands.install.confirm_action", return_value=True)
-def test_uninstall_cli(mock_confirm, mock_remove, mock_exists, capsys):
-    uninstall_cli()
-    mock_remove.assert_called_once()
 
 
 # Test the main function with no arguments

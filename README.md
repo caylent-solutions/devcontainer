@@ -358,12 +358,6 @@ This will:
 - Launch VS Code
 - Display a confirmation message
 
-To skip all confirmation prompts, use the `-y` or `--yes` flag:
-
-```bash
-cdevcontainer code -y
-```
-
 > ⚠️ **Note**: After VS Code launches, you'll need to accept the prompt to reopen in container.
 
 > 💡 **Pro tip for multiple projects**: Use a dedicated terminal for each project:
@@ -659,22 +653,13 @@ JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](http
 
 ## 🧪 Validate Your Config
 
+To validate your configuration, verify the `devcontainer-environment-variables.json` file is valid JSON and contains the expected keys:
+
 ```bash
-cdevcontainer env export devcontainer-environment-variables.json -o /tmp/test-env.sh
+python3 -c "import json; json.load(open('devcontainer-environment-variables.json'))" && echo "Valid JSON"
 ```
 
-This will validate your configuration file and show any errors. For example:
-
-```
-[ERR] Error loading devcontainer-environment-variables.json: Expecting property name enclosed in double quotes
-[ERR] JSON must contain a 'containerEnv' object.
-```
-
-If the validation succeeds, you'll see:
-
-```
-[OK] Wrote 12 exports to /tmp/test-env.sh
-```
+If the JSON is malformed, Python will report a parse error with the line and column number.
 
 ---
 
@@ -730,14 +715,6 @@ cdevcontainer template save my-template
 cdevcontainer template load my-template
 cdevcontainer template delete template1 template2
 cdevcontainer template upgrade my-template
-
-# Manage environment variables
-cdevcontainer env export input.json -o output.sh
-cdevcontainer env load
-
-# Install/uninstall the CLI
-cdevcontainer install
-cdevcontainer uninstall
 ```
 
 For detailed information about the Caylent Devcontainer CLI, see the [CLI documentation](caylent-devcontainer-cli/README.md).

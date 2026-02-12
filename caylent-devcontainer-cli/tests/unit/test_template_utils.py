@@ -51,9 +51,12 @@ class TestGetTemplateNames:
         """Test returns template names stripped of .json extension."""
         from caylent_devcontainer_cli.utils.template import get_template_names
 
-        with patch("os.path.exists", return_value=True), patch(
-            "os.listdir",
-            return_value=["template1.json", "template2.json", "readme.txt"],
+        with (
+            patch("os.path.exists", return_value=True),
+            patch(
+                "os.listdir",
+                return_value=["template1.json", "template2.json", "readme.txt"],
+            ),
         ):
             result = get_template_names()
             assert "template1" in result
@@ -65,8 +68,9 @@ class TestGetTemplateNames:
         """Test returns empty list when no .json files in dir."""
         from caylent_devcontainer_cli.utils.template import get_template_names
 
-        with patch("os.path.exists", return_value=True), patch(
-            "os.listdir", return_value=["readme.txt", "config.yaml"]
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.listdir", return_value=["readme.txt", "config.yaml"]),
         ):
             result = get_template_names()
             assert result == []
@@ -75,9 +79,12 @@ class TestGetTemplateNames:
         """Test that returned names are sorted alphabetically."""
         from caylent_devcontainer_cli.utils.template import get_template_names
 
-        with patch("os.path.exists", return_value=True), patch(
-            "os.listdir",
-            return_value=["zebra.json", "alpha.json", "mid.json"],
+        with (
+            patch("os.path.exists", return_value=True),
+            patch(
+                "os.listdir",
+                return_value=["zebra.json", "alpha.json", "mid.json"],
+            ),
         ):
             result = get_template_names()
             assert result == sorted(result)

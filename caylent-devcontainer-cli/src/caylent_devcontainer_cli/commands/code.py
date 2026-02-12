@@ -82,7 +82,6 @@ def register_command(subparsers):
         default=None,
         help="Project root directory (default: current directory)",
     )
-    code_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     code_parser.add_argument(
         "--ide", choices=["vscode", "cursor"], default="vscode", help="IDE to launch (default: vscode)"
     )

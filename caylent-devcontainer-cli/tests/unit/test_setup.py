@@ -250,18 +250,16 @@ def test_show_manual_instructions(capsys):
 # Tests from test_setup_examples.py
 def test_copy_devcontainer_files_with_examples():
     """Test that copy_devcontainer_files keeps example files when keep_examples is True."""
-    with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
-        "os.remove"
-    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True), patch(
-        "builtins.open", new_callable=mock_open
-    ), patch(
-        "json.load", return_value={"containerEnv": {}}
-    ), patch(
-        "json.dump"
-    ), patch(
-        "os.path.basename", return_value="target"
-    ), patch(
-        "os.path.abspath", return_value="/target"
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("shutil.copytree") as mock_copytree,
+        patch("os.remove") as mock_remove,
+        patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True),
+        patch("builtins.open", new_callable=mock_open),
+        patch("json.load", return_value={"containerEnv": {}}),
+        patch("json.dump"),
+        patch("os.path.basename", return_value="target"),
+        patch("os.path.abspath", return_value="/target"),
     ):
 
         copy_devcontainer_files("/source", "/target", keep_examples=True)
@@ -275,18 +273,16 @@ def test_copy_devcontainer_files_with_examples():
 
 def test_copy_devcontainer_files_without_examples():
     """Test that copy_devcontainer_files removes example files when keep_examples is False."""
-    with patch("os.path.exists", side_effect=[True, True, True]), patch("shutil.copytree") as mock_copytree, patch(
-        "os.remove"
-    ) as mock_remove, patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True), patch(
-        "builtins.open", new_callable=mock_open
-    ), patch(
-        "json.load", return_value={"containerEnv": {}}
-    ), patch(
-        "json.dump"
-    ), patch(
-        "os.path.basename", return_value="target"
-    ), patch(
-        "os.path.abspath", return_value="/target"
+    with (
+        patch("os.path.exists", side_effect=[True, True, True]),
+        patch("shutil.copytree") as mock_copytree,
+        patch("os.remove") as mock_remove,
+        patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True),
+        patch("builtins.open", new_callable=mock_open),
+        patch("json.load", return_value={"containerEnv": {}}),
+        patch("json.dump"),
+        patch("os.path.basename", return_value="target"),
+        patch("os.path.abspath", return_value="/target"),
     ):
 
         copy_devcontainer_files("/source", "/target", keep_examples=False)
@@ -304,18 +300,16 @@ def test_copy_devcontainer_files_without_examples():
 
 def test_copy_devcontainer_files_confirm_overwrite():
     """Test that copy_devcontainer_files asks for confirmation when target exists."""
-    with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
-        "os.remove"
-    ), patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True) as mock_confirm, patch(
-        "builtins.open", new_callable=mock_open
-    ), patch(
-        "json.load", return_value={"containerEnv": {}}
-    ), patch(
-        "json.dump"
-    ), patch(
-        "os.path.basename", return_value="target"
-    ), patch(
-        "os.path.abspath", return_value="/target"
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("shutil.copytree") as mock_copytree,
+        patch("os.remove"),
+        patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=True) as mock_confirm,
+        patch("builtins.open", new_callable=mock_open),
+        patch("json.load", return_value={"containerEnv": {}}),
+        patch("json.dump"),
+        patch("os.path.basename", return_value="target"),
+        patch("os.path.abspath", return_value="/target"),
     ):
 
         copy_devcontainer_files("/source", "/target", keep_examples=False)
@@ -327,9 +321,12 @@ def test_copy_devcontainer_files_confirm_overwrite():
 
 def test_copy_devcontainer_files_cancel_overwrite():
     """Test that copy_devcontainer_files exits when overwrite is cancelled."""
-    with patch("os.path.exists", return_value=True), patch("shutil.copytree") as mock_copytree, patch(
-        "os.remove"
-    ), patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=False):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("shutil.copytree") as mock_copytree,
+        patch("os.remove"),
+        patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=False),
+    ):
 
         with pytest.raises(SystemExit):
             copy_devcontainer_files("/source", "/target", keep_examples=False)
@@ -616,9 +613,12 @@ def test_upgrade_template_without_env_values_real():
     }
 
     # Need to patch __version__ at the module level where upgrade_template is defined
-    with patch("caylent_devcontainer_cli.commands.setup_interactive.__version__", "2.0.0"), patch(
-        "caylent_devcontainer_cli.commands.setup_interactive.prompt_env_values",
-        return_value={"AWS_CONFIG_ENABLED": "false"},
+    with (
+        patch("caylent_devcontainer_cli.commands.setup_interactive.__version__", "2.0.0"),
+        patch(
+            "caylent_devcontainer_cli.commands.setup_interactive.prompt_env_values",
+            return_value={"AWS_CONFIG_ENABLED": "false"},
+        ),
     ):
         result = upgrade_template(mock_template_data)
 
@@ -635,9 +635,12 @@ def test_upgrade_template_with_aws_enabled_no_profile_real():
     }
 
     # Need to patch __version__ at the module level where upgrade_template is defined
-    with patch("caylent_devcontainer_cli.commands.setup_interactive.__version__", "2.0.0"), patch(
-        "caylent_devcontainer_cli.commands.setup_interactive.prompt_aws_profile_map",
-        return_value={"default": {"region": "us-west-2"}},
+    with (
+        patch("caylent_devcontainer_cli.commands.setup_interactive.__version__", "2.0.0"),
+        patch(
+            "caylent_devcontainer_cli.commands.setup_interactive.prompt_aws_profile_map",
+            return_value={"default": {"region": "us-west-2"}},
+        ),
     ):
         result = upgrade_template(mock_template_data)
 
@@ -673,16 +676,15 @@ def test_handle_setup_with_existing_version():
     args.path = "/test/path"
     args.manual = False
 
-    with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
-        "builtins.open", mock_open(read_data="1.0.0")
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True), patch(
-        "caylent_devcontainer_cli.commands.setup.clone_repo"
-    ), patch(
-        "caylent_devcontainer_cli.commands.setup.interactive_setup"
-    ), patch(
-        "caylent_devcontainer_cli.commands.setup.create_version_file"
-    ), patch(
-        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
+    with (
+        patch("os.path.isdir", return_value=True),
+        patch("os.path.exists", side_effect=[True, True]),
+        patch("builtins.open", mock_open(read_data="1.0.0")),
+        patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True),
+        patch("caylent_devcontainer_cli.commands.setup.clone_repo"),
+        patch("caylent_devcontainer_cli.commands.setup.interactive_setup"),
+        patch("caylent_devcontainer_cli.commands.setup.create_version_file"),
+        patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"),
     ):
         handle_setup(args)
 
@@ -693,12 +695,13 @@ def test_handle_setup_with_existing_version_cancel():
     args.path = "/test/path"
     args.manual = False
 
-    with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
-        "builtins.open", mock_open(read_data="1.0.0")
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False), patch(
-        "caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone"
-    ) as mock_interactive_no_clone, patch(
-        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
+    with (
+        patch("os.path.isdir", return_value=True),
+        patch("os.path.exists", side_effect=[True, True]),
+        patch("builtins.open", mock_open(read_data="1.0.0")),
+        patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False),
+        patch("caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone") as mock_interactive_no_clone,
+        patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"),
     ):
         handle_setup(args)
         mock_interactive_no_clone.assert_called_once_with("/test/path")
@@ -710,14 +713,14 @@ def test_handle_setup_with_existing_no_version():
     args.path = "/test/path"
     args.manual = False
 
-    with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
-        "caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True
-    ), patch("caylent_devcontainer_cli.commands.setup.clone_repo"), patch(
-        "caylent_devcontainer_cli.commands.setup.interactive_setup"
-    ), patch(
-        "caylent_devcontainer_cli.commands.setup.create_version_file"
-    ), patch(
-        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
+    with (
+        patch("os.path.isdir", return_value=True),
+        patch("os.path.exists", side_effect=[True, False]),
+        patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True),
+        patch("caylent_devcontainer_cli.commands.setup.clone_repo"),
+        patch("caylent_devcontainer_cli.commands.setup.interactive_setup"),
+        patch("caylent_devcontainer_cli.commands.setup.create_version_file"),
+        patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"),
     ):
         handle_setup(args)
 
@@ -728,12 +731,12 @@ def test_handle_setup_with_existing_no_version_cancel():
     args.path = "/test/path"
     args.manual = False
 
-    with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
-        "caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False
-    ), patch(
-        "caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone"
-    ) as mock_interactive_no_clone, patch(
-        "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
+    with (
+        patch("os.path.isdir", return_value=True),
+        patch("os.path.exists", side_effect=[True, False]),
+        patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False),
+        patch("caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone") as mock_interactive_no_clone,
+        patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"),
     ):
         handle_setup(args)
         mock_interactive_no_clone.assert_called_once_with("/test/path")
@@ -812,8 +815,10 @@ def test_handle_setup_with_existing_version_2(
     args.path = "/test/path"
     args.manual = False
 
-    with patch("os.path.isdir", return_value=True), patch("os.path.exists", return_value=True), patch(
-        "builtins.open", mock_open(read_data="0.1.0")
+    with (
+        patch("os.path.isdir", return_value=True),
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open", mock_open(read_data="0.1.0")),
     ):
         handle_setup(args)
 
@@ -952,9 +957,11 @@ def test_load_template_from_file_with_version_parsing_error():
         "cli_version": "invalid-version",
     }
 
-    with patch("os.path.exists", return_value=True), patch(
-        "builtins.open", mock_open(read_data=json.dumps(mock_template_data))
-    ), patch("json.load", return_value=mock_template_data):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
+        patch("json.load", return_value=mock_template_data),
+    ):
         result = load_template_from_file("test-template")
 
     assert result == mock_template_data

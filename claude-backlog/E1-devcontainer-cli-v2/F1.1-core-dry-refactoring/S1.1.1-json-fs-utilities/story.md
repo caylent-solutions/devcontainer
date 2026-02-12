@@ -73,22 +73,37 @@ SSH_KEY_FILENAME = "ssh-private-key"
 
 ## Acceptance Criteria
 
-- [ ] `write_json_file(path, data)` implemented in `utils/fs.py` with indent=2 and trailing newline
-- [ ] All 9 inline `json.dump` + `f.write("\n")` patterns replaced with `write_json_file()`
-- [ ] All inline `open() + json.load()` patterns replaced with `load_json_config()`
-- [ ] All 6 file path constants added to `utils/constants.py`
-- [ ] All hardcoded filename strings replaced with constants throughout the codebase
-- [ ] `remove_example_files()` implemented in `utils/fs.py`
-- [ ] Both duplicated example file removal implementations replaced with single function
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] `write_json_file(path, data)` implemented in `utils/fs.py` with indent=2 and trailing newline
+- [x] All 9 inline `json.dump` + `f.write("\n")` patterns replaced with `write_json_file()`
+- [x] All inline `open() + json.load()` patterns replaced with `load_json_config()`
+- [x] All 6 file path constants added to `utils/constants.py`
+- [x] All hardcoded filename strings replaced with constants throughout the codebase
+- [x] `remove_example_files()` implemented in `utils/fs.py`
+- [x] Both duplicated example file removal implementations replaced with single function
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
 Completed and merged on 2026-02-12. All acceptance criteria met.
+
+### Retroactive AC Validation — 2026-02-12
+
+All 12 acceptance criteria validated one by one with concrete evidence:
+- `write_json_file` verified in fs.py:11-23 (indent=2, trailing newline)
+- `json.dump` grep: only in fs.py (inside write_json_file)
+- `json.load` grep: only in fs.py (inside load_json_config)
+- All 6 constants verified in constants.py:12-17
+- Hardcoded filename grep: only in constants.py definitions
+- `remove_example_files` verified in fs.py:26-39
+- 2 callers (setup.py, setup_interactive.py), no inline removal patterns remain
+- fs.py coverage: 93% (41 tests pass)
+- 98 functional tests pass; 393 unit tests pass
+- Lint clean
+- No documentation affected (internal utility functions only, no user-facing changes)
 
 ---
 
