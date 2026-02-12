@@ -20,7 +20,7 @@ from caylent_devcontainer_cli.utils.template import (
     get_template_path,
     validate_template,
 )
-from caylent_devcontainer_cli.utils.ui import COLORS, confirm_action, exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, confirm_action, exit_cancelled, exit_with_error, log
 
 
 def prompt_for_missing_vars(missing_vars):
@@ -31,12 +31,16 @@ def prompt_for_missing_vars(missing_vars):
     for var_name, default_value in missing_vars.items():
         log("INFO", f"New environment variable '{var_name}' needs to be added to your template")
 
-        use_default = questionary.confirm(f"Use default value '{default_value}' for {var_name}?", default=True).ask()
+        use_default = ask_or_exit(
+            questionary.confirm(f"Use default value '{default_value}' for {var_name}?", default=True)
+        )
 
         if use_default:
             updated_vars[var_name] = default_value
         else:
-            custom_value = questionary.text(f"Enter custom value for {var_name}:", default=str(default_value)).ask()
+            custom_value = ask_or_exit(
+                questionary.text(f"Enter custom value for {var_name}:", default=str(default_value))
+            )
             updated_vars[var_name] = custom_value
 
     return updated_vars

@@ -7,7 +7,7 @@ import subprocess
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, EXAMPLE_ENV_FILE, SHELL_ENV_FILENAME
 from caylent_devcontainer_cli.utils.env import get_missing_env_vars
 from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_project_files
-from caylent_devcontainer_cli.utils.ui import COLORS, exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, exit_cancelled, exit_with_error, log
 
 
 def prompt_upgrade_or_continue(missing_vars, template_name=None):
@@ -40,13 +40,18 @@ def prompt_upgrade_or_continue(missing_vars, template_name=None):
             f"<template-name>{COLORS['RESET']} # To load the upgraded template into the project"
         )
 
-    choice = questionary.select(
-        "What would you like to do?",
-        choices=["Exit and upgrade the profile first (recommended)", "Continue without the upgrade (may cause issues)"],
-        default="Exit and upgrade the profile first (recommended)",
-    ).ask()
+    choice = ask_or_exit(
+        questionary.select(
+            "What would you like to do?",
+            choices=[
+                "Exit and upgrade the profile first (recommended)",
+                "Continue without the upgrade (may cause issues)",
+            ],
+            default="Exit and upgrade the profile first (recommended)",
+        )
+    )
 
-    if choice and "Exit" in choice:
+    if "Exit" in choice:
         exit_cancelled("Please upgrade your profile and try again")
     else:
         log("WARN", "Continuing without upgrade - some features may not work correctly")

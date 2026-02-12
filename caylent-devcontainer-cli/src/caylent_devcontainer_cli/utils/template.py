@@ -12,7 +12,7 @@ from caylent_devcontainer_cli.utils.constants import (
     TEMPLATES_DIR,
     VALID_KEY_VALUES,
 )
-from caylent_devcontainer_cli.utils.ui import exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.ui import ask_or_exit, exit_with_error, log
 
 
 def get_template_path(name: str) -> str:
@@ -156,12 +156,12 @@ def _validate_base_key_completeness(data: Dict[str, Any]) -> None:
 
         if key not in container_env:
             log("WARN", f"Missing environment variable: {key} (default: {default_value})")
-            answer = questionary.text(
-                f"Enter value for {key}:",
-                default=default_value,
-            ).ask()
-            if answer is None:
-                exit_cancelled("Template validation cancelled by user.")
+            answer = ask_or_exit(
+                questionary.text(
+                    f"Enter value for {key}:",
+                    default=default_value,
+                )
+            )
             container_env[key] = answer
 
 
@@ -192,12 +192,12 @@ def _validate_known_key_values(data: Dict[str, Any]) -> None:
                 "WARN",
                 f"Invalid value for {key}: '{current}'. Must be one of: {', '.join(valid_values)}",
             )
-            answer = questionary.select(
-                f"Select a valid value for {key}:",
-                choices=list(valid_values),
-            ).ask()
-            if answer is None:
-                exit_cancelled("Template validation cancelled by user.")
+            answer = ask_or_exit(
+                questionary.select(
+                    f"Select a valid value for {key}:",
+                    choices=list(valid_values),
+                )
+            )
             container_env[key] = answer
 
     # Validate GIT_PROVIDER_URL — hostname only, no protocol, must contain a dot
@@ -222,12 +222,12 @@ def _validate_git_provider_url(container_env: Dict[str, Any]) -> None:
             f"Invalid GIT_PROVIDER_URL: '{url}'. Must be hostname only (no protocol prefix) "
             "and contain at least one dot (e.g., github.com).",
         )
-        answer = questionary.text(
-            "Enter a valid GIT_PROVIDER_URL (hostname only, e.g., github.com):",
-            default="github.com",
-        ).ask()
-        if answer is None:
-            exit_cancelled("Template validation cancelled by user.")
+        answer = ask_or_exit(
+            questionary.text(
+                "Enter a valid GIT_PROVIDER_URL (hostname only, e.g., github.com):",
+                default="github.com",
+            )
+        )
         container_env["GIT_PROVIDER_URL"] = answer
 
 
@@ -245,11 +245,11 @@ def _validate_host_proxy_url(container_env: Dict[str, Any]) -> None:
             "WARN",
             f"Invalid HOST_PROXY_URL: '{url}'. Must start with http:// or https://.",
         )
-        answer = questionary.text(
-            "Enter a valid HOST_PROXY_URL (must start with http:// or https://):",
-        ).ask()
-        if answer is None:
-            exit_cancelled("Template validation cancelled by user.")
+        answer = ask_or_exit(
+            questionary.text(
+                "Enter a valid HOST_PROXY_URL (must start with http:// or https://):",
+            )
+        )
         container_env["HOST_PROXY_URL"] = answer
 
 
@@ -275,9 +275,7 @@ def _validate_auth_consistency(data: Dict[str, Any]) -> None:
         git_token = container_env.get("GIT_TOKEN", "")
         if not git_token:
             log("WARN", "GIT_AUTH_METHOD is 'token' but GIT_TOKEN is empty.")
-            answer = questionary.text("Enter your GIT_TOKEN:").ask()
-            if answer is None:
-                exit_cancelled("Template validation cancelled by user.")
+            answer = ask_or_exit(questionary.text("Enter your GIT_TOKEN:"))
             container_env["GIT_TOKEN"] = answer
 
         # Remove ssh_private_key if present

@@ -253,14 +253,16 @@ def convert_standard_to_json(profiles: Dict[str, Dict[str, str]]) -> Dict[str, A
 
 def prompt_aws_profile_map() -> Dict[str, Any]:
     """Prompt for AWS profile map."""
-    if not questionary.confirm("Do you want to configure AWS profiles?", default=True).ask():
+    if not ask_or_exit(questionary.confirm("Do you want to configure AWS profiles?", default=True)):
         return {}
 
     # Present two options
-    input_method = questionary.select(
-        "How would you like to provide your AWS profiles?",
-        choices=["Standard format (enter profiles one by one)", "JSON format (paste complete configuration)"],
-    ).ask()
+    input_method = ask_or_exit(
+        questionary.select(
+            "How would you like to provide your AWS profiles?",
+            choices=["Standard format (enter profiles one by one)", "JSON format (paste complete configuration)"],
+        )
+    )
 
     if input_method == "Standard format (enter profiles one by one)":
         print("\nEnter AWS profiles in standard format. Example:")
@@ -275,13 +277,13 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
         profiles = {}
 
         while True:
-            profile_name = questionary.text(
-                "Enter profile name (e.g., 'default'):", validate=lambda text: len(text.strip()) > 0
-            ).ask()
+            profile_name = ask_or_exit(
+                questionary.text("Enter profile name (e.g., 'default'):", validate=lambda text: len(text.strip()) > 0)
+            )
 
             while True:
                 print(f"\nEnter configuration for profile '{profile_name}':")
-                profile_text = questionary.text("Paste the profile configuration:", multiline=True).ask()
+                profile_text = ask_or_exit(questionary.text("Paste the profile configuration:", multiline=True))
 
                 parsed_profile = parse_standard_profile(profile_text)
                 error = validate_standard_profile(parsed_profile)
@@ -294,7 +296,7 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
                 profiles[profile_name] = parsed_profile
                 break
 
-            if not questionary.confirm("Would you like to add another AWS profile?", default=False).ask():
+            if not ask_or_exit(questionary.confirm("Would you like to add another AWS profile?", default=False)):
                 break
 
         return convert_standard_to_json(profiles)
@@ -317,11 +319,13 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
             "https://github.com/caylent-solutions/devcontainer#4-configure-aws-profile-map-optional"
         )
         print("\nEnter AWS profile map JSON: (Finish with 'Esc then Enter')")
-        aws_profile_map_json = questionary.text(
-            "",
-            multiline=True,
-            validate=JsonValidator(),
-        ).ask()
+        aws_profile_map_json = ask_or_exit(
+            questionary.text(
+                "",
+                multiline=True,
+                validate=JsonValidator(),
+            )
+        )
         return json.loads(aws_profile_map_json)
 
 
@@ -395,9 +399,11 @@ def load_template_from_file(name: str) -> Dict[str, Any]:
                     "Exit without making changes",
                 ]
 
-                choice = questionary.select(
-                    "The template format may be incompatible. What would you like to do?", choices=choices
-                ).ask()
+                choice = ask_or_exit(
+                    questionary.select(
+                        "The template format may be incompatible. What would you like to do?", choices=choices
+                    )
+                )
 
                 if choice == choices[0]:  # Upgrade
                     template_data = upgrade_template(template_data)

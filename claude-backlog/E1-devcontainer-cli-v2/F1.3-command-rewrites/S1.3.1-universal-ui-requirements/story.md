@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.3.1 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.3 — Command Rewrites |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -57,21 +57,38 @@ All questionary prompts must use the shared ask_or_exit() wrapper. If user cance
 
 ## Acceptance Criteria
 
-- [ ] Input confirmation pattern implemented as reusable utility
-- [ ] Handles all input types: text, password, select, multi-line, file path
-- [ ] Password fields display masked value
-- [ ] File path inputs display SSH key fingerprint
-- [ ] "Is this correct?" re-prompt loop works correctly
-- [ ] All questionary prompts use ask_or_exit() wrapper
-- [ ] Ctrl+C and null returns handled with exit_cancelled()
-- [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Input confirmation pattern implemented as reusable utility
+- [x] Handles all input types: text, password, select, multi-line, file path
+- [x] Password fields display masked value
+- [x] File path inputs display SSH key fingerprint
+- [x] "Is this correct?" re-prompt loop works correctly
+- [x] All questionary prompts use ask_or_exit() wrapper
+- [x] Ctrl+C and null returns handled with exit_cancelled()
+- [x] 90%+ unit test coverage, functional tests pass
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Implemented `prompt_with_confirmation(prompt_fn, display_fn)` in `utils/ui.py` — reusable confirmation loop for any questionary prompt type
+- Implemented `mask_password(value)` — masks password for safe display, shows length only
+- Implemented `ssh_fingerprint(key_path)` — calls `ssh-keygen -l -f` to get fingerprint for display
+- Standardized 13 inconsistent `.ask()` calls to use `ask_or_exit()`:
+  - `utils/template.py`: 5 calls in validation functions (removed manual None checks)
+  - `commands/setup_interactive.py`: 7 calls in `prompt_aws_profile_map()` and `load_template_from_file()`
+  - `commands/code.py`: 1 call in `prompt_upgrade_or_continue()`
+  - `commands/template.py`: 2 calls in `prompt_for_missing_vars()`
+- Wrote 19 unit tests in `tests/unit/test_prompt_confirmation.py`
+- Wrote 13 functional tests in `tests/functional/test_prompt_confirmation.py` (including source inspection tests)
+- Coverage: 95% on `utils/ui.py`
+- Quality gate: 481 unit tests (3 skipped), 178 functional tests, lint clean, pre-commit clean
+
+**Remaining:**
+- None — all acceptance criteria met
 
 ---
 

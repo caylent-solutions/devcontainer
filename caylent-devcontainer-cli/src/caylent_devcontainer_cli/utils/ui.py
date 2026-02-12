@@ -1,6 +1,10 @@
 """UI utilities for the Caylent Devcontainer CLI."""
 
+import subprocess
 import sys
+from typing import Any, Callable, Optional
+
+import questionary
 
 from caylent_devcontainer_cli import __version__
 
@@ -74,6 +78,80 @@ def ask_or_exit(question):
         exit_cancelled()
 
     return result
+
+
+def mask_password(value: str) -> str:
+    """Mask a password value for safe display.
+
+    Args:
+        value: The password string to mask.
+
+    Returns:
+        A masked representation showing only the length.
+    """
+    return f"****** ({len(value)} characters)"
+
+
+def ssh_fingerprint(key_path: str) -> str:
+    """Get the SSH key fingerprint for display.
+
+    Args:
+        key_path: Path to the SSH private key file.
+
+    Returns:
+        The fingerprint string, or an error message if the key is invalid.
+    """
+    try:
+        result = subprocess.run(
+            ["ssh-keygen", "-l", "-f", key_path],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return f"Error reading key: {result.stderr.strip()}"
+        return result.stdout.strip()
+    except FileNotFoundError:
+        return "Error: ssh-keygen not found in PATH"
+
+
+def prompt_with_confirmation(
+    prompt_fn: Callable[[], Any],
+    display_fn: Optional[Callable[[Any], str]] = None,
+) -> Any:
+    """Prompt the user for input with a confirmation loop.
+
+    Implements the universal input confirmation pattern:
+    1. Call prompt_fn() to get a questionary question, then ask_or_exit() it
+    2. Display the entered value (formatted by display_fn if provided)
+    3. Ask "Is this correct?"
+    4. If no: repeat from step 1
+    5. If yes: return the value
+
+    Args:
+        prompt_fn: Callable that returns a questionary question object.
+        display_fn: Optional callable to format the value for display.
+                    If None, displays the raw value. Use mask_password
+                    for password fields, ssh_fingerprint for key paths.
+
+    Returns:
+        The confirmed user input value.
+
+    Raises:
+        SystemExit: If the user cancels at any point.
+    """
+    while True:
+        answer = ask_or_exit(prompt_fn())
+
+        if display_fn is not None:
+            display_value = display_fn(answer)
+        else:
+            display_value = str(answer)
+
+        log("INFO", f"You entered: {display_value}")
+
+        confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
+        if confirmed:
+            return answer
 
 
 def confirm_action(message):
