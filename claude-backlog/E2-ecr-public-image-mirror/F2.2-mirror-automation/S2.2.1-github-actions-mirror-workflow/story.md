@@ -97,6 +97,7 @@ permissions:
 - [ ] `crane` installed for digest comparison
 - [ ] 90%+ test coverage where applicable (workflow testing may be limited)
 - [ ] Linting/formatting pass
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

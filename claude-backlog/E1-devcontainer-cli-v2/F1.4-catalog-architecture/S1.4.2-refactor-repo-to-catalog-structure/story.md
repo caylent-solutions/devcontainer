@@ -101,6 +101,7 @@ DEFAULT_CATALOG_URL = "https://github.com/caylent-solutions/devcontainer.git"
 - [ ] Functional tests verify end-to-end behavior
 - [ ] All existing tests still pass after refactoring
 - [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

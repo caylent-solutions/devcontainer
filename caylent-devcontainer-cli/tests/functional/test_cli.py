@@ -45,7 +45,8 @@ def test_version_command():
 def test_setup_manual_mode(temp_project_dir):
     """Test the setup-devcontainer command in manual mode."""
     # Run the setup command with --manual flag
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+    # Use --ref main because the CLI version tag may not exist on the remote yet
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir])
 
     # Check that the command succeeded
     assert result.returncode == 0

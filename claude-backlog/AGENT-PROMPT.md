@@ -71,8 +71,23 @@ All development follows test-driven development:
 - After writing a file, read it back to confirm contents match intent
 - After running a command, check exit codes and output
 - After making changes, run tests to verify behavior
-- Run `make test` from `caylent-devcontainer-cli/` to run all tests
+- Run `make test` from `caylent-devcontainer-cli/` to run **all** tests (unit + functional) — not just unit tests
 - Run `make lint` from `caylent-devcontainer-cli/` to check formatting/style
+
+### Final Quality Gate — Pre-Commit Check
+
+**Before declaring any work unit complete or requesting human review, you MUST run:**
+
+```bash
+cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check
+```
+
+This runs:
+1. `make test` — all unit tests AND all functional tests (both must pass)
+2. `make lint` — code formatting and style checks
+3. `make pre-commit-check` — pre-commit hooks and JSON validation
+
+**All three must pass with zero failures.** If any fail, fix the issue before requesting review. Never present work as ready for review if these checks have not been run and passed in the current session.
 
 ### Never Bypass Quality Gates
 

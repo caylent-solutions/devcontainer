@@ -66,7 +66,8 @@ This flag is for when a user manually edits devcontainer-environment-variables.j
 - [ ] Regenerated shell.env includes metadata, sorted exports, static values, proxy vars
 - [ ] IDE command verification (in PATH check) still works
 - [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting/formatting pass
+- [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

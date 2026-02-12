@@ -63,6 +63,7 @@ When code Step 5 option 1 (from S1.3.3) needs to replace .devcontainer/ files:
 - [ ] Functional tests verify end-to-end behavior
 - [ ] All existing tests still pass after refactoring
 - [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

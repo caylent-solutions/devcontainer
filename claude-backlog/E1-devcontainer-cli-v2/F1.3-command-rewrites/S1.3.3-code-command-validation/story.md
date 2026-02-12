@@ -92,7 +92,8 @@ After either option: launch IDE.
 - [ ] Two-stage validation (base keys + template comparison) working
 - [ ] Shared function reusable by setup-devcontainer (informational mode)
 - [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting/formatting pass
+- [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

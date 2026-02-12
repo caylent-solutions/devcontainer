@@ -96,6 +96,7 @@ Remove deprecated commands (env, install, uninstall), the bin/cdevcontainer entr
 - [x] Functional tests verify end-to-end behavior
 - [x] All existing tests still pass after refactoring
 - [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 - [x] Docs updated if project documentation is affected by these changes
 
 ## Log

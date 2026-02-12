@@ -48,6 +48,8 @@ Set up an ECR Public repository in us-east-1 via the developer's authenticated A
 - [ ] Repository is publicly accessible globally
 - [ ] ALIAS value documented for use by other stories
 - [ ] ACCOUNT_ID documented for IAM setup story
+- [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

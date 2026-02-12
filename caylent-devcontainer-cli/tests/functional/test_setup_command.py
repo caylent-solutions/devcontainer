@@ -21,7 +21,8 @@ def run_command(cmd, cwd=None, input_text=None):
 def test_setup_manual_mode(temp_project_dir):
     """Test the setup-devcontainer command in manual mode."""
     # Run the setup command with --manual flag
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+    # Use --ref main because the CLI version tag may not exist on the remote yet
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir])
 
     # Check that the command succeeded
     assert result.returncode == 0
@@ -63,7 +64,8 @@ def test_version_command():
 def test_setup_gitignore_creation(temp_project_dir):
     """Test that setup command creates .gitignore entries."""
     # Run the setup command with --manual flag
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+    # Use --ref main because the CLI version tag may not exist on the remote yet
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir])
 
     assert result.returncode == 0
 
@@ -88,7 +90,8 @@ def test_setup_gitignore_update(temp_project_dir):
         f.write("shell.env\nother-file.txt\n")
 
     # Run the setup command
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+    # Use --ref main because the CLI version tag may not exist on the remote yet
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir])
 
     assert result.returncode == 0
 
@@ -106,7 +109,8 @@ def test_setup_existing_devcontainer():
     """Test setup behavior with existing devcontainer."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # First, create a devcontainer
-        result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_dir])
+        # Use --ref main because the CLI version tag may not exist on the remote yet
+        result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_dir])
         assert result.returncode == 0
 
         # Verify devcontainer was created
@@ -119,7 +123,8 @@ def test_setup_update_mode():
     """Test setup command with --update flag."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # First, create a devcontainer
-        result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_dir])
+        # Use --ref main because the CLI version tag may not exist on the remote yet
+        result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_dir])
         assert result.returncode == 0
 
         # Verify the devcontainer exists
@@ -138,8 +143,9 @@ def test_setup_creates_tool_versions_file(temp_project_dir):
     assert not os.path.exists(tool_versions_path)
 
     # Run the setup command with --manual flag and simulate pressing enter
+    # Use --ref main because the CLI version tag may not exist on the remote yet
     result = run_command(
-        ["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir],
+        ["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir],
         input_text="\n",  # Simulate pressing enter when prompted
     )
 
@@ -165,7 +171,8 @@ def test_setup_finds_existing_tool_versions_file(temp_project_dir):
         f.write("python 3.11.5\n")
 
     # Run the setup command
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+    # Use --ref main because the CLI version tag may not exist on the remote yet
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir])
 
     assert result.returncode == 0
 
@@ -226,14 +233,19 @@ def test_setup_help_shows_ref_flag():
 
 
 def test_setup_without_ref_uses_default_version(temp_project_dir):
-    """Test that setup command without --ref flag uses CLI version by default."""
+    """Test that setup command without --ref flag uses CLI version by default.
+
+    When no --ref is provided, the CLI uses __version__ as the git ref.
+    During development the version tag may not exist on the remote, causing
+    the clone to fail — but the log output proves the correct ref was used.
+    """
+    from caylent_devcontainer_cli import __version__
+
     # Run the setup command without --ref flag
     result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
 
-    # Check that the command succeeded
-    assert result.returncode == 0
-
-    # Check that the log message shows the CLI version (not "main" or other ref)
-    # The exact version will vary, but it should not say "ref: main"
-    assert "Cloning devcontainer repository (ref:" in result.stderr
-    assert "ref: main)" not in result.stderr  # Should not use main when no --ref specified
+    # The default ref is the CLI version — verify it appears in the log
+    assert f"Cloning devcontainer repository (ref: {__version__})" in result.stderr
+    assert f"Cloning repository with git_ref: {__version__}" in result.stderr
+    # Must not fall back to "main" or any other ref
+    assert "ref: main)" not in result.stderr

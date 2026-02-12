@@ -74,6 +74,8 @@ Create the IAM OIDC identity provider for GitHub Actions and an IAM role with le
 - [ ] Role ARN documented for GitHub Actions workflow
 - [ ] No long-lived AWS credentials anywhere
 - [ ] Verified: role can be assumed from GitHub Actions (test with dry run if possible)
+- [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

@@ -65,7 +65,8 @@ All questionary prompts must use the shared ask_or_exit() wrapper. If user cance
 - [ ] All questionary prompts use ask_or_exit() wrapper
 - [ ] Ctrl+C and null returns handled with exit_cancelled()
 - [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting/formatting pass
+- [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

@@ -96,6 +96,7 @@ All prompts use the universal input confirmation pattern (display value, "Is thi
 - [ ] Functional tests verify end-to-end behavior
 - [ ] All existing tests still pass after refactoring
 - [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

@@ -81,20 +81,23 @@ def test_code_command_ide_not_found():
         with open(shell_env, "w") as f:
             f.write("export TEST=value\n")
 
-        # Create empty directory and use only it in PATH
-        empty_dir = os.path.join(temp_dir, "empty")
-        os.makedirs(empty_dir)
-
-        # Add cdevcontainer to the empty directory so the CLI can run
+        # Create a directory with only cdevcontainer and python3 — no IDE commands.
+        # The cdevcontainer shebang is #!/usr/bin/env python3, so python3 must
+        # be discoverable in PATH for the script to execute.
         import shutil
+        import sys
+
+        isolated_dir = os.path.join(temp_dir, "isolated_bin")
+        os.makedirs(isolated_dir)
 
         cdevcontainer_path = shutil.which("cdevcontainer")
         if cdevcontainer_path:
-            fake_cdevcontainer = os.path.join(empty_dir, "cdevcontainer")
-            shutil.copy2(cdevcontainer_path, fake_cdevcontainer)
+            shutil.copy2(cdevcontainer_path, os.path.join(isolated_dir, "cdevcontainer"))
+
+        python_dir = os.path.dirname(sys.executable)
 
         env = os.environ.copy()
-        env["PATH"] = empty_dir
+        env["PATH"] = isolated_dir + ":" + python_dir
 
         result = subprocess.run(
             ["cdevcontainer", "code", "--ide", "vscode", temp_dir],
@@ -144,20 +147,23 @@ def test_code_command_default_ide():
         with open(shell_env, "w") as f:
             f.write("export TEST=value\n")
 
-        # Create empty directory and use only it in PATH
-        empty_dir = os.path.join(temp_dir, "empty")
-        os.makedirs(empty_dir)
-
-        # Add cdevcontainer to the empty directory so the CLI can run
+        # Create a directory with only cdevcontainer and python3 — no IDE commands.
+        # The cdevcontainer shebang is #!/usr/bin/env python3, so python3 must
+        # be discoverable in PATH for the script to execute.
         import shutil
+        import sys
+
+        isolated_dir = os.path.join(temp_dir, "isolated_bin")
+        os.makedirs(isolated_dir)
 
         cdevcontainer_path = shutil.which("cdevcontainer")
         if cdevcontainer_path:
-            fake_cdevcontainer = os.path.join(empty_dir, "cdevcontainer")
-            shutil.copy2(cdevcontainer_path, fake_cdevcontainer)
+            shutil.copy2(cdevcontainer_path, os.path.join(isolated_dir, "cdevcontainer"))
+
+        python_dir = os.path.dirname(sys.executable)
 
         env = os.environ.copy()
-        env["PATH"] = empty_dir
+        env["PATH"] = isolated_dir + ":" + python_dir
 
         result = subprocess.run(
             ["cdevcontainer", "code", temp_dir],

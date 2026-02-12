@@ -111,7 +111,8 @@ Exit non-zero with error: "GIT_AUTH_METHOD is required. Please regenerate projec
 - [ ] GIT_AUTH_METHOD unset produces clear error
 - [ ] GIT_PROVIDER_URL used correctly for each method (hostname only)
 - [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting/formatting pass
+- [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 

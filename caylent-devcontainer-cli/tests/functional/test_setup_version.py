@@ -20,7 +20,8 @@ def run_command(cmd, cwd=None, input_text=None):
 def test_setup_creates_version_file(temp_project_dir):
     """Test that setup-devcontainer creates a VERSION file."""
     # Run the setup command in manual mode
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+    # Use --ref main because the CLI version tag may not exist on the remote yet
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", "--manual", temp_project_dir])
 
     # Check that the command succeeded
     assert result.returncode == 0

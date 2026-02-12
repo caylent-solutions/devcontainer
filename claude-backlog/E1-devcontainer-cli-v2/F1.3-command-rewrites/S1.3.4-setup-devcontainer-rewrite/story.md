@@ -84,7 +84,8 @@ After interactive setup completes, write_project_files() generates both files.
 - [ ] Shared validation (Steps 0-3) runs in informational-only mode
 - [ ] File generation via write_project_files() after interactive setup
 - [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting/formatting pass
+- [ ] Linting and formatting pass (`make lint && make format`)
+- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
 
 ## Log
 
