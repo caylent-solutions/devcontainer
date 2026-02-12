@@ -221,7 +221,7 @@ fi
 #####################
 log_info "Installing core packages..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq curl vim git gh jq yq nmap sipcalc wget unzip zip netcat-openbsd
+sudo apt-get install -y -qq curl vim git gh jq yq nmap sipcalc wget unzip zip netcat-openbsd bc
 
 ##############################
 # Install Optional Extra Tools

@@ -74,6 +74,14 @@ All development follows test-driven development:
 - Run `make test` from `caylent-devcontainer-cli/` to run all tests
 - Run `make lint` from `caylent-devcontainer-cli/` to check formatting/style
 
+### Never Bypass Quality Gates
+
+- **Never use `--no-verify`** on any git command
+- **Never use `# noqa`, `// nosec`, `@SuppressWarnings`**, or any annotation that silences linters or security scanners
+- **Never modify linter/scanner configs to ignore findings**
+- If a hook, linter, or security check fails — **fix the root cause**, do not bypass it
+- If you believe a finding is a false positive, ask the human — never suppress it yourself
+
 ### Update the Log
 
 After each work iteration, update the **Log** section of the work unit file:

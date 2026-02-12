@@ -858,6 +858,23 @@ When adding files with git:
 - Formatting or cleanup changes outside the scope of the prompt
 - Files that were not part of the current work
 
+### Never Bypass Hooks, Linters, or Security Checks
+
+**Never use flags or options that skip or bypass quality gates:**
+
+- **Never use `--no-verify`** on `git commit`, `git push`, or any git command
+- **Never use `--no-gpg-sign`** or other hook-skipping flags
+- **Never use `# noqa`**, `// nosec`, `@SuppressWarnings`, or similar annotations to silence linters or security scanners
+- **Never modify linter/scanner configurations to ignore findings**
+- **Never use `--skip-checks`**, `--force`, or equivalent flags to bypass CI/CD quality gates
+
+**If a hook, linter, or security check fails:**
+1. Investigate and fix the root cause
+2. If you believe it's a false positive, ask the human for guidance
+3. Never work around the check — fix the code or fix the check
+
+**No exceptions.** If a pre-commit or pre-push hook is failing, the correct response is to fix the issue it found, not to bypass it.
+
 ### Commit and PR Messages
 
 When creating commit messages or pull request descriptions:
