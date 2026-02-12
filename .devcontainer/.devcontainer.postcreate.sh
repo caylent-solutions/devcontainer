@@ -11,15 +11,6 @@ WARNINGS=()
 # Source shared functions
 source "${WORK_DIR}/.devcontainer/devcontainer-functions.sh"
 
-# Ensure .tool-versions file exists with python entry
-if [ ! -f "${WORK_DIR}/.tool-versions" ]; then
-  log_info "Creating .tool-versions file with Python ${DEFAULT_PYTHON_VERSION}"
-  echo "python ${DEFAULT_PYTHON_VERSION}" > "${WORK_DIR}/.tool-versions"
-elif ! grep -q "^python " "${WORK_DIR}/.tool-versions"; then
-  log_info "Adding Python ${DEFAULT_PYTHON_VERSION} to .tool-versions"
-  echo "python ${DEFAULT_PYTHON_VERSION}" >> "${WORK_DIR}/.tool-versions"
-fi
-
 # Configure and log CICD environment
 CICD_VALUE="${CICD:-false}"
 if [ "$CICD_VALUE" = "true" ]; then
@@ -32,15 +23,22 @@ fi
 
 log_info "Starting post-create setup..."
 
+############################
+# Create Python Symlink    #
+############################
+if ! command -v python &> /dev/null; then
+  log_info "Creating python symlink to python3"
+  sudo ln -sf /usr/bin/python3 /usr/bin/python
+fi
+
+# Add Python tools to PATH for script execution
+export PATH="/usr/local/py-utils/bin:/usr/local/python/current/bin:$HOME/.local/bin:$PATH"
+
 #########################
 # Require Critical Envs #
 #########################
 if [ -z "${DEFAULT_GIT_BRANCH:-}" ]; then
   exit_with_error "❌ DEFAULT_GIT_BRANCH is not set in the environment"
-fi
-
-if [ -z "${DEFAULT_PYTHON_VERSION:-}" ]; then
-  exit_with_error "❌ DEFAULT_PYTHON_VERSION is not set in the environment"
 fi
 
 if [ "$CICD_VALUE" != "true" ]; then
@@ -82,9 +80,15 @@ fi
 echo "# Source project shell.env" >> "${BASH_RC}"
 echo "source \"${WORK_DIR}/shell.env\"" >> "${BASH_RC}"
 echo "export BASH_ENV=\"${WORK_DIR}/shell.env\"" >> "${BASH_RC}"
+echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "${BASH_RC}"
+echo "alias python=python3" >> "${BASH_RC}"
+echo "alias pip=pip3" >> "${BASH_RC}"
 
-# For zsh: source only in .zshenv (covers all zsh shells - interactive and non-interactive)
+# For zsh: source in .zshenv (covers all zsh shells - interactive and non-interactive)
 echo "source \"${WORK_DIR}/shell.env\"" > /home/${CONTAINER_USER}/.zshenv
+echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> /home/${CONTAINER_USER}/.zshenv
+echo "alias python=python3" >> /home/${CONTAINER_USER}/.zshenv
+echo "alias pip=pip3" >> /home/${CONTAINER_USER}/.zshenv
 
 ##############################
 # Install asdf & Tool Versions
@@ -98,12 +102,8 @@ export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
 export ASDF_DATA_DIR="/home/${CONTAINER_USER}/.asdf"
 . "/home/${CONTAINER_USER}/.asdf/asdf.sh"
 
-# Make asdf available system-wide for Amazon Q agents
-log_info "Configuring system-wide asdf access for Amazon Q agents..."
-
-
-
-
+# Make asdf available system-wide for AI agents
+log_info "Configuring system-wide asdf access for AI agents..."
 
 # Create plugins directory if it doesn't exist
 mkdir -p /home/${CONTAINER_USER}/.asdf/plugins
@@ -220,24 +220,8 @@ fi
 # Install Base Tools
 #####################
 log_info "Installing core packages..."
-sudo apt-get update
-sudo apt-get install -y curl vim git gh jq yq nmap sipcalc wget unzip zip
-
-# Install Python build dependencies for asdf Python compilation
-log_info "Installing Python build dependencies..."
-sudo apt-get install -y \
-  build-essential \
-  libbz2-dev \
-  libffi-dev \
-  libncurses5-dev \
-  libncursesw5-dev \
-  libreadline-dev \
-  libsqlite3-dev \
-  libssl-dev \
-  liblzma-dev \
-  tk-dev \
-  uuid-dev \
-  zlib1g-dev
+sudo apt-get update -qq
+sudo apt-get install -y -qq curl vim git gh jq yq nmap sipcalc wget unzip zip netcat-openbsd
 
 ##############################
 # Install Optional Extra Tools
@@ -253,23 +237,7 @@ if [ -f "${WORK_DIR}/.tool-versions" ]; then
     install_asdf_plugin "$plugin"
   done
 
-  # Install Python first (always required for other tools)
-  if grep -q "^python " "${WORK_DIR}/.tool-versions"; then
-    PYTHON_VERSION=$(grep "^python " "${WORK_DIR}/.tool-versions" | cut -d' ' -f2)
-    log_info "Installing Python ${PYTHON_VERSION} first (from .tool-versions, required for other tools)..."
-  else
-    PYTHON_VERSION="${DEFAULT_PYTHON_VERSION}"
-    log_info "Installing Python ${PYTHON_VERSION} first (fallback version, required for other tools)..."
-  fi
-
-  if ! asdf install python "$PYTHON_VERSION"; then
-    exit_with_error "❌ Failed to install python $PYTHON_VERSION"
-  fi
-  if ! asdf reshim python; then
-    exit_with_error "❌ Failed to reshim python after installation"
-  fi
-
-  log_info "Installing remaining tools from .tool-versions..."
+  log_info "Installing tools from .tool-versions..."
   if ! asdf install; then
     log_warn "❌ asdf install failed — tool versions may not be fully installed"
   fi
@@ -283,8 +251,8 @@ if ! asdf reshim; then
   exit_with_error "❌ asdf reshim failed"
 fi
 
-# Create symlinks in /usr/local/bin for direct access by Amazon Q agents
-log_info "Creating symlinks for Amazon Q agent direct access..."
+# Create symlinks in /usr/local/bin for direct access by AI agents
+log_info "Creating symlinks for AI agent direct access..."
 if [ -d "/home/${CONTAINER_USER}/.asdf/shims" ]; then
   for shim in /home/${CONTAINER_USER}/.asdf/shims/*; do
     if [ -f "$shim" ] && [ -x "$shim" ]; then
@@ -301,14 +269,6 @@ if [ -d "/home/${CONTAINER_USER}/.asdf/shims" ]; then
       fi
     fi
   done
-fi
-
-# Install pipx right after Python is available
-log_info "Installing pipx..."
-python -m pip install --upgrade pip --root-user-action=ignore
-python -m pip install pipx --root-user-action=ignore
-if ! asdf reshim python; then
-  exit_with_error "❌ asdf reshim python failed after pipx install"
 fi
 
 # Install Caylent Devcontainer CLI
@@ -333,23 +293,93 @@ if ! asdf current; then
   exit_with_error "❌ asdf current failed - installation may be incomplete"
 fi
 
-#################
-# Python Tools  #
-#################
-log_info "Verifying Python installation via asdf..."
-ASDF_PYTHON_PATH=$(asdf which python || true)
-if [[ -z "$ASDF_PYTHON_PATH" || "$ASDF_PYTHON_PATH" != *".asdf"* ]]; then
-  exit_with_error "❌ 'python' is not provided by asdf. Found: $ASDF_PYTHON_PATH"
-fi
+##############
+# Host Proxy #
+##############
+# Proxy environment variables are set in devcontainer.json containerEnv
+# This section only validates that host proxy is accessible
 
-log_info "Installing Python packages..."
-python -m pip install ruamel_yaml --root-user-action=ignore
+if [ "${HOST_PROXY:-false}" = "true" ]; then
+  # *nix Family OS Host Proxy Validation #
+  if [ -S /run/host-services/ssh-auth.sock ] || ! uname -r | grep -qi microsoft; then
+    log_info "Validating host tinyproxy accessibility..."
+    log_info "Checking if host proxy is reachable at host.docker.internal:3128..."
+    HOST_PROXY_TIMEOUT=10
+    HOST_PROXY_ELAPSED=0
+    while ! nc -z host.docker.internal 3128 2>/dev/null; do
+      if [ $HOST_PROXY_ELAPSED -ge $HOST_PROXY_TIMEOUT ]; then
+        log_error "❌ Cannot reach host proxy at host.docker.internal:3128"
+        log_error "Please ensure tinyproxy is running on your host with:"
+        log_error "  tinyproxy -c <path-to-tinyproxy.conf>"
+        log_error "See .devcontainer/nix-family-os/README.md for setup instructions"
+        exit_with_error "❌ Host proxy not accessible - devcontainer build cannot continue"
+      fi
+      sleep 1
+      HOST_PROXY_ELAPSED=$((HOST_PROXY_ELAPSED + 1))
+    done
+    log_success "Host tinyproxy is accessible at host.docker.internal:3128"
+  # Windows Host Proxy Validation#
+  elif uname -r | grep -qi microsoft; then
+    log_warn "Windows host detected - Windows host proxy validation not yet supported"
+  fi
+else
+  log_warn "Host proxy not enabled (HOST_PROXY=${HOST_PROXY:-false}) - skipping validation"
+fi
 
 #############
 # AWS Tools #
 #############
 log_info "Installing AWS SSO utilities..."
 install_with_pipx "aws-sso-util"
+
+###################
+# Claude Code CLI #
+###################
+log_info "Installing Claude Code CLI..."
+
+# Download install script first to ensure it succeeds before piping to bash
+CLAUDE_INSTALL_SCRIPT="/tmp/claude-install-${RANDOM}.sh"
+
+if ! sudo -u "${CONTAINER_USER}" curl -fsSL https://claude.ai/install.sh -o "${CLAUDE_INSTALL_SCRIPT}"; then
+  exit_with_error "❌ Failed to download Claude Code install script from https://claude.ai/install.sh - check network connectivity and proxy settings"
+fi
+
+# Verify script was downloaded and is not empty
+if [ ! -s "${CLAUDE_INSTALL_SCRIPT}" ]; then
+  exit_with_error "❌ Claude Code install script is empty or missing at ${CLAUDE_INSTALL_SCRIPT}"
+fi
+
+# Execute install script
+log_info "Executing Claude Code install script..."
+if uname -r | grep -i microsoft > /dev/null; then
+  # WSL compatibility: Run directly without sudo -u
+  if ! PATH="/home/${CONTAINER_USER}/.local/bin:$PATH" bash "${CLAUDE_INSTALL_SCRIPT}"; then
+    rm -f "${CLAUDE_INSTALL_SCRIPT}"
+    exit_with_error "❌ Failed to execute Claude Code install script"
+  fi
+else
+  # Non-WSL: Install as container user
+  if ! sudo -u "${CONTAINER_USER}" PATH="/home/${CONTAINER_USER}/.local/bin:$PATH" bash "${CLAUDE_INSTALL_SCRIPT}"; then
+    rm -f "${CLAUDE_INSTALL_SCRIPT}"
+    exit_with_error "❌ Failed to execute Claude Code install script"
+  fi
+fi
+
+# Clean up install script
+rm -f "${CLAUDE_INSTALL_SCRIPT}"
+
+log_info "Verifying Claude Code CLI installation..."
+CLAUDE_BIN="/home/${CONTAINER_USER}/.local/bin/claude"
+if [ ! -f "$CLAUDE_BIN" ]; then
+  exit_with_error "❌ Claude Code binary not found at expected location: $CLAUDE_BIN"
+fi
+
+if [ ! -x "$CLAUDE_BIN" ]; then
+  exit_with_error "❌ Claude Code binary exists but is not executable: $CLAUDE_BIN"
+fi
+
+CLAUDE_VERSION=$(sudo -u "${CONTAINER_USER}" "${CLAUDE_BIN}" --version 2>&1 || echo "unknown")
+log_success "Claude Code CLI installed successfully: ${CLAUDE_VERSION}"
 
 #################
 # Configure Git #

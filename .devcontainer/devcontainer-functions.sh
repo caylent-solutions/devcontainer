@@ -51,12 +51,12 @@ install_with_pipx() {
   local container_user="${CONTAINER_USER:?CONTAINER_USER must be set}"
   if is_wsl; then
     # WSL compatibility: Do not use sudo -u in WSL as it fails
-    if ! python -m pipx install "${package}"; then
+    if ! pipx install "${package}"; then
       exit_with_error "Failed to install ${package} with pipx in WSL environment"
     fi
   else
     # Non-WSL: Use sudo -u to ensure correct user environment
-    if ! sudo -u "${container_user}" bash -c "export PATH=\"\$PATH:/home/${container_user}/.local/bin\" && source /home/${container_user}/.asdf/asdf.sh && python -m pipx install '${package}'"; then
+    if ! sudo -u "${container_user}" bash -c "export PATH=\"/usr/local/py-utils/bin:/usr/local/python/current/bin:\$PATH\" && pipx install '${package}'"; then
       exit_with_error "Failed to install ${package} with pipx in non-WSL environment"
     fi
   fi
