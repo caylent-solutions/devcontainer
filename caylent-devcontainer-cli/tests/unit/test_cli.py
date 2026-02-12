@@ -13,21 +13,6 @@ from caylent_devcontainer_cli.cli import main
 
 
 # Tests from original test_cli.py
-def test_main_with_auto_yes():
-    mock_args = MagicMock()
-    mock_args.command = "test"
-    mock_args.yes = True
-    mock_args.func = MagicMock()
-
-    with patch("argparse.ArgumentParser.parse_args", return_value=mock_args):
-        with patch("caylent_devcontainer_cli.utils.ui.log"):
-            with patch("caylent_devcontainer_cli.utils.ui.set_auto_yes") as mock_set_auto_yes:
-                cli.main()
-
-                mock_set_auto_yes.assert_called_once_with(True)
-                mock_args.func.assert_called_once_with(mock_args)
-
-
 def test_main_with_command():
     mock_args = MagicMock()
     mock_args.command = "test"
@@ -77,17 +62,6 @@ def test_main_with_command_from_commands():
         mock_parse_args.return_value = MagicMock(command="code", func=mock_func, yes=False)
         main()
         mock_func.assert_called_once()
-
-
-def test_main_with_yes_flag():
-    """Test main with yes flag."""
-    mock_func = MagicMock()
-    with patch("argparse.ArgumentParser.parse_args") as mock_parse_args:
-        mock_parse_args.return_value = MagicMock(command="code", func=mock_func, yes=True)
-        with patch("caylent_devcontainer_cli.utils.ui.set_auto_yes") as mock_set_auto_yes:
-            main()
-            mock_set_auto_yes.assert_called_once_with(True)
-            mock_func.assert_called_once()
 
 
 def test_main_with_exception():

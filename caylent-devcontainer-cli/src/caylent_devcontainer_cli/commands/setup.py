@@ -13,7 +13,7 @@ from caylent_devcontainer_cli.utils.constants import (
     SHELL_ENV_FILENAME,
 )
 from caylent_devcontainer_cli.utils.fs import remove_example_files
-from caylent_devcontainer_cli.utils.ui import log
+from caylent_devcontainer_cli.utils.ui import confirm_action, exit_cancelled, exit_with_error, log
 
 # Constants
 REPO_URL = "https://github.com/caylent-solutions/devcontainer.git"
@@ -31,15 +31,6 @@ EXAMPLE_ENV_VALUES = {
     "GIT_USER_EMAIL": "your-email@example.com",
     "PAGER": "cat",
 }
-
-
-def confirm_overwrite(message):
-    """Ask for user confirmation without logging error on decline."""
-    from caylent_devcontainer_cli.utils.ui import COLORS
-
-    print(f"{COLORS['YELLOW']}⚠️  {message}{COLORS['RESET']}")
-    response = input(f"{COLORS['BOLD']}Do you want to overwrite? [y/N]{COLORS['RESET']} ")
-    return response.lower().startswith("y")
 
 
 def register_command(subparsers):
@@ -63,10 +54,7 @@ def handle_setup(args):
 
     # Validate target path
     if not os.path.isdir(target_path):
-        log("ERR", f"Target path does not exist or is not a directory: {target_path}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Target path does not exist or is not a directory: {target_path}")
 
     # Check if devcontainer already exists
     target_devcontainer = os.path.join(target_path, ".devcontainer")
@@ -78,11 +66,11 @@ def handle_setup(args):
             with open(version_file, "r") as f:
                 current_version = f.read().strip()
             log("INFO", f"Found existing devcontainer (version {current_version})")
-            if not confirm_overwrite(f"Devcontainer already exists. Overwrite with version {__version__}?"):
+            if not confirm_action(f"Devcontainer already exists. Overwrite with version {__version__}?"):
                 log("INFO", "Overwrite declined by user.")
                 should_clone = False  # Skip cloning, work with existing setup
         else:
-            if not confirm_overwrite(
+            if not confirm_action(
                 f"Devcontainer already exists but has no version information. Overwrite with version {__version__}?"
             ):
                 log("INFO", "Overwrite declined by user.")
@@ -228,10 +216,7 @@ def clone_repo(temp_dir: str, git_ref: str) -> None:
         log("ERR", f"Failed to clone devcontainer repository at ref '{git_ref}'")
         log("ERR", f"Reference '{git_ref}' does not exist in the repository")
         log("ERR", f"Please check available branches/tags at: {REPO_URL}")
-        log("ERR", f"Git error: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Git error: {e}")
 
 
 def copy_devcontainer_files(source_dir: str, target_path: str, keep_examples: bool = False) -> None:
@@ -243,11 +228,7 @@ def copy_devcontainer_files(source_dir: str, target_path: str, keep_examples: bo
         from caylent_devcontainer_cli.utils.ui import confirm_action
 
         if not confirm_action(f".devcontainer folder already exists at {target_devcontainer}. Overwrite?"):
-            log("INFO", "Setup cancelled by user.")
-            import sys
-
-            sys.exit(0)
-            return  # This return is needed for tests but will never be reached in real code
+            exit_cancelled("Setup cancelled by user.")
 
         try:
             shutil.rmtree(target_devcontainer)
@@ -320,10 +301,7 @@ def interactive_setup(source_dir: str, target_path: str) -> None:
         apply_template(template_data, target_path, source_dir)
         log("OK", "Setup completed successfully.")
     except KeyboardInterrupt:
-        log("INFO", "Setup cancelled by user.")
-        import sys
-
-        sys.exit(0)
+        exit_cancelled("Setup cancelled by user.")
 
 
 def interactive_setup_without_clone(target_path: str) -> None:
@@ -362,7 +340,4 @@ def interactive_setup_without_clone(target_path: str) -> None:
         apply_template_without_clone(template_data, target_path)
         log("OK", "Setup completed successfully.")
     except KeyboardInterrupt:
-        log("INFO", "Setup cancelled by user.")
-        import sys
-
-        sys.exit(0)
+        exit_cancelled("Setup cancelled by user.")

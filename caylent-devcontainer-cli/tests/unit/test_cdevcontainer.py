@@ -44,19 +44,6 @@ def test_confirm_action_no(mock_input, capsys):
     mock_input.assert_called_once()
 
 
-# Test the confirm_action function with AUTO_YES=True
-def test_confirm_action_auto_yes(capsys):
-    from caylent_devcontainer_cli.utils.ui import set_auto_yes
-
-    set_auto_yes(True)
-    result = confirm_action("Test confirmation")
-    captured = capsys.readouterr()
-    assert result is True
-    assert "Test confirmation" in captured.out
-    assert "Automatically confirmed" in captured.out
-    set_auto_yes(False)
-
-
 # Test the generate_exports function
 def test_generate_exports():
     env_dict = {"TEST_VAR": "test_value", "TEST_JSON": {"key": "value"}, "TEST_LIST": [1, 2, 3]}

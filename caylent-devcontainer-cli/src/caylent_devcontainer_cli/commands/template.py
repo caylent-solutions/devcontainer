@@ -14,7 +14,7 @@ from caylent_devcontainer_cli.utils.template import (
     get_template_names,
     get_template_path,
 )
-from caylent_devcontainer_cli.utils.ui import confirm_action, log
+from caylent_devcontainer_cli.utils.ui import confirm_action, exit_cancelled, exit_with_error, log
 
 
 def prompt_for_missing_vars(missing_vars):
@@ -148,24 +148,17 @@ def save_template(project_root, template_name):
     env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
     if not os.path.exists(env_vars_json):
-        log("ERR", f"No {ENV_VARS_FILENAME} found in {project_root}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"No {ENV_VARS_FILENAME} found in {project_root}")
 
     template_path = get_template_path(template_name)
 
     # Ask for confirmation before saving
     if os.path.exists(template_path):
         if not confirm_action(f"This will overwrite the existing template at:\n{template_path}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
     else:
         if not confirm_action(f"This will create a new template at:\n{template_path}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
 
     try:
         log("INFO", f"Saving template from {env_vars_json}")
@@ -181,10 +174,7 @@ def save_template(project_root, template_name):
 
         log("OK", f"Template saved as: {template_name} at {template_path}")
     except Exception as e:
-        log("ERR", f"Failed to save template: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Failed to save template: {e}")
 
 
 def load_template(project_root, template_name):
@@ -192,24 +182,17 @@ def load_template(project_root, template_name):
     template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
-        log("ERR", f"Template '{template_name}' not found at {template_path}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
 
     env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
     # Ask for confirmation before loading
     if os.path.exists(env_vars_json):
         if not confirm_action(f"This will overwrite your existing configuration at:\n{env_vars_json}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
     else:
         if not confirm_action(f"This will create a new configuration at:\n{env_vars_json}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
 
     try:
         # Read the template file
@@ -246,22 +229,13 @@ def load_template(project_root, template_name):
                             log("OK", f"Template upgraded to version {current_version}")
                             break
                         elif choice == "2":
-                            log("INFO", "Please use 'cdevcontainer template save' to create a new profile")
-                            import sys
-
-                            sys.exit(0)
+                            exit_cancelled("Please use 'cdevcontainer template save' to create a new profile")
                         elif choice == "3":
                             if not confirm_action("The template format may be incompatible. Continue anyway?"):
-                                log("INFO", "Operation cancelled by user")
-                                import sys
-
-                                sys.exit(0)
+                                exit_cancelled()
                             break
                         elif choice == "4":
-                            log("INFO", "Operation cancelled by user")
-                            import sys
-
-                            sys.exit(0)
+                            exit_cancelled()
                         else:
                             print("Invalid choice. Please enter a number between 1 and 4.")
             except ValueError:
@@ -273,10 +247,7 @@ def load_template(project_root, template_name):
 
         log("OK", f"Template '{template_name}' loaded to {env_vars_json}")
     except Exception as e:
-        log("ERR", f"Failed to load template: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Failed to load template: {e}")
 
 
 def list_templates():
@@ -362,10 +333,7 @@ def upgrade_template_file(template_name, force=False):
     template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
-        log("ERR", f"Template '{template_name}' not found at {template_path}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
 
     try:
         # Read the template file
@@ -411,7 +379,4 @@ def upgrade_template_file(template_name, force=False):
             f"{template_data.get('cli_version', 'unknown')} to {__version__}",
         )
     except Exception as e:
-        log("ERR", f"Failed to upgrade template: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Failed to upgrade template: {e}")

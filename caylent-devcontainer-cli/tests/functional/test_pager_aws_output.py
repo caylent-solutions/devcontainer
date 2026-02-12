@@ -11,7 +11,7 @@ def run_command(cmd, cwd=None, input_text=None):
     result = subprocess.run(
         cmd,
         cwd=cwd,
-        input=input_text.encode() if input_text else None,
+        input=input_text if input_text else None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -48,7 +48,7 @@ def test_env_export_includes_pager_and_aws_output():
 
         # Test env export command
         output_file = os.path.join(temp_dir, "output.sh")
-        result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file, "-y"])
+        result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file], input_text="y\n")
 
         assert result.returncode == 0
 
@@ -87,7 +87,7 @@ def test_env_export_with_default_values():
 
         # Test env export command
         output_file = os.path.join(temp_dir, "output.sh")
-        result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file, "-y"])
+        result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file], input_text="y\n")
 
         assert result.returncode == 0
 
@@ -124,7 +124,7 @@ def test_env_export_pager_options():
                 json.dump(env_data, f, indent=2)
 
             output_file = os.path.join(temp_dir, "output.sh")
-            result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file, "-y"])
+            result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file], input_text="y\n")
 
             assert result.returncode == 0
 
@@ -164,7 +164,7 @@ def test_env_export_aws_output_options():
                 json.dump(env_data, f, indent=2)
 
             output_file = os.path.join(temp_dir, "output.sh")
-            result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file, "-y"])
+            result = run_command(["cdevcontainer", "env", "export", env_file, "-o", output_file], input_text="y\n")
 
             assert result.returncode == 0
 

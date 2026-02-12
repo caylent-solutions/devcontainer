@@ -2,10 +2,9 @@
 
 import os
 import shutil
-import sys
 
 from caylent_devcontainer_cli.utils.constants import INSTALL_DIR
-from caylent_devcontainer_cli.utils.ui import confirm_action, log
+from caylent_devcontainer_cli.utils.ui import confirm_action, exit_cancelled, exit_with_error, log
 
 
 def register_command(subparsers):
@@ -47,8 +46,7 @@ def install_cli():
         )
 
     if not os.path.exists(script_path):
-        log("ERR", "Could not find the CLI entry point script")
-        sys.exit(1)
+        exit_with_error("Could not find the CLI entry point script")
 
     install_path = os.path.join(INSTALL_DIR, "cdevcontainer")
 
@@ -60,7 +58,7 @@ def install_cli():
         if not confirm_action(
             f"The Caylent Devcontainer CLI is already installed at:\n{install_path}\nDo you want to overwrite it?"
         ):
-            sys.exit(1)
+            exit_cancelled()
 
     try:
         # Copy the script to the installation directory
@@ -77,8 +75,7 @@ def install_cli():
         log("OK", f"Caylent Devcontainer CLI installed successfully at {install_path}")
         log("INFO", "You can now run 'cdevcontainer' from anywhere")
     except Exception as e:
-        log("ERR", f"Failed to install CLI: {e}")
-        sys.exit(1)
+        exit_with_error(f"Failed to install CLI: {e}")
 
 
 def uninstall_cli():
@@ -90,11 +87,10 @@ def uninstall_cli():
         return
 
     if not confirm_action(f"This will remove the Caylent Devcontainer CLI from:\n{install_path}"):
-        sys.exit(1)
+        exit_cancelled()
 
     try:
         os.remove(install_path)
         log("OK", "Caylent Devcontainer CLI uninstalled successfully")
     except Exception as e:
-        log("ERR", f"Failed to uninstall CLI: {e}")
-        sys.exit(1)
+        exit_with_error(f"Failed to uninstall CLI: {e}")

@@ -1,14 +1,13 @@
 """Template utility functions for the Caylent Devcontainer CLI."""
 
 import os
-import sys
 from typing import Any, Dict, List
 
 import semver
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
-from caylent_devcontainer_cli.utils.ui import log
+from caylent_devcontainer_cli.utils.ui import exit_with_error, log
 
 
 def get_template_path(name: str) -> str:
@@ -73,32 +72,25 @@ def check_template_version(template_data: Dict[str, Any]) -> None:
         SystemExit: If the template version is incompatible.
     """
     if "cli_version" not in template_data:
-        log("ERR", "Template is missing cli_version field")
         log("INFO", "Templates must include a cli_version to be compatible with this CLI version")
-        sys.exit(1)
+        exit_with_error("Template is missing cli_version field")
 
     template_version_str = template_data["cli_version"]
 
     try:
         template_ver = semver.VersionInfo.parse(template_version_str)
     except ValueError:
-        log("ERR", f"Invalid template version format: {template_version_str}")
         log("INFO", "The cli_version field must be a valid semantic version (e.g. 2.0.0)")
-        sys.exit(1)
+        exit_with_error(f"Invalid template version format: {template_version_str}")
 
     try:
         current_ver = semver.VersionInfo.parse(__version__)
     except ValueError:
-        log("ERR", f"Invalid current CLI version format: {__version__}")
-        sys.exit(1)
+        exit_with_error(f"Invalid current CLI version format: {__version__}")
 
     if template_ver.major != current_ver.major:
         log(
-            "ERR",
-            f"Template version {template_version_str} is incompatible with CLI version {__version__}",
-        )
-        log(
             "INFO",
-            f"Template major version ({template_ver.major}) must match " f"CLI major version ({current_ver.major})",
+            f"Template major version ({template_ver.major}) must match CLI major version ({current_ver.major})",
         )
-        sys.exit(1)
+        exit_with_error(f"Template version {template_version_str} is incompatible with CLI version {__version__}")

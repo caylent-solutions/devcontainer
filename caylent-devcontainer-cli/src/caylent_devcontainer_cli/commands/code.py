@@ -7,7 +7,7 @@ import subprocess
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, EXAMPLE_ENV_FILE, SHELL_ENV_FILENAME
 from caylent_devcontainer_cli.utils.env import get_missing_env_vars
 from caylent_devcontainer_cli.utils.fs import generate_shell_env, load_json_config, resolve_project_root
-from caylent_devcontainer_cli.utils.ui import COLORS, log
+from caylent_devcontainer_cli.utils.ui import COLORS, exit_cancelled, exit_with_error, log
 
 
 def prompt_upgrade_or_continue(missing_vars, template_name=None):
@@ -47,10 +47,7 @@ def prompt_upgrade_or_continue(missing_vars, template_name=None):
     ).ask()
 
     if choice and "Exit" in choice:
-        log("INFO", "Please upgrade your profile and try again")
-        import sys
-
-        sys.exit(0)
+        exit_cancelled("Please upgrade your profile and try again")
     else:
         log("WARN", "Continuing without upgrade - some features may not work correctly")
 
@@ -101,12 +98,9 @@ def handle_code(args):
     shell_env = os.path.join(project_root, SHELL_ENV_FILENAME)
 
     if not os.path.isfile(env_json):
-        log("ERR", f"Configuration file not found: {env_json}")
         log("INFO", "Please create this file first:")
         print(f"cp .devcontainer/{EXAMPLE_ENV_FILE} {ENV_VARS_FILENAME}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Configuration file not found: {env_json}")
 
     # Check for missing environment variables
     try:
@@ -144,11 +138,8 @@ def handle_code(args):
 
     # Check if IDE command exists
     if not shutil.which(ide_command):
-        log("ERR", f"{ide_name} command '{ide_command}' not found in PATH")
         log("INFO", ide_config["install_instructions"])
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"{ide_name} command '{ide_command}' not found in PATH")
 
     # Launch IDE
     log("INFO", f"Launching {ide_name}...")
@@ -162,7 +153,4 @@ def handle_code(args):
         process.wait()
         log("OK", f"{ide_name} launched. Accept the prompt to reopen in container when it appears.")
     except Exception as e:
-        log("ERR", f"Failed to launch {ide_name}: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Failed to launch {ide_name}: {e}")

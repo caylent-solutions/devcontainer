@@ -5,7 +5,7 @@ import os
 from typing import Any, Dict, List, Union
 
 from caylent_devcontainer_cli.utils.constants import EXAMPLE_AWS_FILE, EXAMPLE_ENV_FILE
-from caylent_devcontainer_cli.utils.ui import confirm_action, log
+from caylent_devcontainer_cli.utils.ui import confirm_action, exit_cancelled, exit_with_error, log
 
 
 def write_json_file(path: str, data: Union[Dict[str, Any], List[Any]]) -> None:
@@ -20,10 +20,7 @@ def write_json_file(path: str, data: Union[Dict[str, Any], List[Any]]) -> None:
             json.dump(data, f, indent=2)
             f.write("\n")
     except Exception as e:
-        log("ERR", f"Failed to write JSON file {path}: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Failed to write JSON file {path}: {e}")
 
 
 def remove_example_files(target_devcontainer: str) -> None:
@@ -49,10 +46,7 @@ def load_json_config(file_path: str) -> Dict[str, Any]:
             data = json.load(f)
         return data
     except Exception as e:
-        log("ERR", f"Error loading {file_path}: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Error loading {file_path}: {e}")
 
 
 def generate_exports(env_dict: Dict[str, Any], export_prefix: bool = True) -> List[str]:
@@ -78,13 +72,7 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
     if "containerEnv" in data and isinstance(data["containerEnv"], dict):
         env_data = data["containerEnv"].copy()
     else:
-        log(
-            "ERR",
-            f"Invalid JSON format in {json_file}. The file must contain a 'containerEnv' object.",
-        )
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Invalid JSON format in {json_file}. The file must contain a 'containerEnv' object.")
 
     # Include cli_version if it exists at the top level
     if "cli_version" in data:
@@ -102,24 +90,17 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
     # Ask for confirmation before writing to file
     if os.path.exists(output_file):
         if not confirm_action(f"This will overwrite the existing file at:\n{output_file}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
     else:
         if not confirm_action(f"This will create a new file at:\n{output_file}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
 
     try:
         with open(output_file, "w") as f:
             f.write("\n".join(lines) + "\n")
         log("OK", f"Wrote {len(lines)} exports to {output_file}")
     except Exception as e:
-        log("ERR", f"Failed to write to {output_file}: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Failed to write to {output_file}: {e}")
 
 
 def find_project_root(path: str) -> str:
@@ -156,8 +137,5 @@ def resolve_project_root(path: str = None) -> str:
     if os.path.isdir(os.path.join(path, ".devcontainer")):
         return path
 
-    log("ERR", f"Could not find a valid project root at {path}")
     log("INFO", "A valid project root must contain a .devcontainer directory")
-    import sys
-
-    sys.exit(1)
+    exit_with_error(f"Could not find a valid project root at {path}")

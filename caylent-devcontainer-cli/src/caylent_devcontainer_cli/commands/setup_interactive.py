@@ -20,7 +20,7 @@ from caylent_devcontainer_cli.utils.template import (
     get_template_names,
     get_template_path,
 )
-from caylent_devcontainer_cli.utils.ui import log
+from caylent_devcontainer_cli.utils.ui import ask_or_exit, exit_cancelled, exit_with_error, log
 
 
 class JsonValidator(Validator):
@@ -52,24 +52,13 @@ def prompt_use_template() -> bool:
         log("INFO", "No saved templates found.")
         return False
 
-    try:
-        print("\n⚠️  Do not press enter after your answer for this prompt. ⚠️")
-        result = questionary.confirm("Do you want to use a saved template?", default=True).ask()
-        if result is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+    print("\n⚠️  Do not press enter after your answer for this prompt. ⚠️")
+    result = ask_or_exit(questionary.confirm("Do you want to use a saved template?", default=True))
+    # Small delay to ensure proper terminal handling
+    import time
 
-            sys.exit(0)
-        # Small delay to ensure proper terminal handling
-        import time
-
-        time.sleep(0.1)
-        return result
-    except KeyboardInterrupt:
-        log("INFO", "Setup cancelled by user.")
-        import sys
-
-        sys.exit(0)
+    time.sleep(0.1)
+    return result
 
 
 def select_template() -> Optional[str]:
@@ -81,218 +70,138 @@ def select_template() -> Optional[str]:
 
     templates.append("< Go back")
 
-    try:
-        selected = questionary.select("Select a template:", choices=templates).ask()
-        if selected is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+    selected = ask_or_exit(questionary.select("Select a template:", choices=templates))
 
-            sys.exit(0)
+    if selected == "< Go back":
+        return None
 
-        if selected == "< Go back":
-            return None
-
-        return selected
-    except KeyboardInterrupt:
-        log("INFO", "Setup cancelled by user.")
-        import sys
-
-        sys.exit(0)
+    return selected
 
 
 def prompt_save_template() -> bool:
     """Ask if the user wants to save the template."""
-    try:
-        result = questionary.confirm(
-            "Do you want to save this configuration as a reusable template?", default=False
-        ).ask()
-        if result is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
-
-            sys.exit(0)
-        return result
-    except KeyboardInterrupt:
-        log("INFO", "Setup cancelled by user.")
-        import sys
-
-        sys.exit(0)
+    return ask_or_exit(
+        questionary.confirm("Do you want to save this configuration as a reusable template?", default=False)
+    )
 
 
 def prompt_template_name() -> str:
     """Prompt for template name."""
-    try:
-        result = questionary.text("Enter a name for this template:", validate=lambda text: len(text) > 0).ask()
-        if result is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
-
-            sys.exit(0)
-        return result
-    except KeyboardInterrupt:
-        log("INFO", "Setup cancelled by user.")
-        import sys
-
-        sys.exit(0)
+    return ask_or_exit(questionary.text("Enter a name for this template:", validate=lambda text: len(text) > 0))
 
 
 def prompt_env_values() -> Dict[str, Any]:
     """Prompt for environment values."""
     env_values = {}
 
-    try:
-        # AWS Config Enabled
-        aws_config = questionary.select("Enable AWS configuration?", choices=["true", "false"], default="true").ask()
-        if aws_config is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+    # AWS Config Enabled
+    aws_config = ask_or_exit(questionary.select("Enable AWS configuration?", choices=["true", "false"], default="true"))
+    env_values["AWS_CONFIG_ENABLED"] = aws_config
 
-            sys.exit(0)
-        env_values["AWS_CONFIG_ENABLED"] = aws_config
+    # CICD mode (always false for interactive setup)
+    env_values["CICD"] = "false"
 
-        # CICD mode (always false for interactive setup)
-        env_values["CICD"] = "false"
-
-        # Git branch
-        git_branch = questionary.text(
+    # Git branch
+    git_branch = ask_or_exit(
+        questionary.text(
             "Default Git branch (e.g., main):",
             default="main",
             validate=lambda text: len(text.strip()) > 0 or "You must provide a Git branch name",
-        ).ask()
-        if git_branch is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+        )
+    )
+    env_values["DEFAULT_GIT_BRANCH"] = git_branch
 
-            sys.exit(0)
-        env_values["DEFAULT_GIT_BRANCH"] = git_branch
-
-        # Python version
-        python_version = questionary.text(
+    # Python version
+    python_version = ask_or_exit(
+        questionary.text(
             "Default Python version (e.g., 3.12.9):",
             default="3.12.9",
             validate=lambda text: len(text.strip()) > 0 or "You must provide a Python version",
-        ).ask()
-        if python_version is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+        )
+    )
+    env_values["DEFAULT_PYTHON_VERSION"] = python_version
 
-            sys.exit(0)
-        env_values["DEFAULT_PYTHON_VERSION"] = python_version
-
-        # Developer name
-        dev_name = questionary.text(
+    # Developer name
+    dev_name = ask_or_exit(
+        questionary.text(
             "Developer name:",
             instruction="Your name will be used in the devcontainer",
             validate=lambda text: len(text.strip()) > 0 or "You must provide a developer name",
-        ).ask()
-        if dev_name is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+        )
+    )
+    env_values["DEVELOPER_NAME"] = dev_name
 
-            sys.exit(0)
-        env_values["DEVELOPER_NAME"] = dev_name
-
-        # Git credentials
-        git_provider = questionary.text(
+    # Git credentials
+    git_provider = ask_or_exit(
+        questionary.text(
             "Git provider URL:",
             default="github.com",
             validate=lambda text: len(text.strip()) > 0 or "You must provide a Git provider URL",
-        ).ask()
-        if git_provider is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+        )
+    )
+    env_values["GIT_PROVIDER_URL"] = git_provider
 
-            sys.exit(0)
-        env_values["GIT_PROVIDER_URL"] = git_provider
-
-        git_user = questionary.text(
+    git_user = ask_or_exit(
+        questionary.text(
             "Git username:",
             instruction="Your username for authentication",
             validate=lambda text: len(text.strip()) > 0 or "You must provide a Git username",
-        ).ask()
-        if git_user is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+        )
+    )
+    env_values["GIT_USER"] = git_user
 
-            sys.exit(0)
-        env_values["GIT_USER"] = git_user
-
-        git_email = questionary.text(
+    git_email = ask_or_exit(
+        questionary.text(
             "Git email:",
             instruction="Your email for Git commits",
             validate=lambda text: len(text.strip()) > 0 or "You must provide a Git email",
-        ).ask()
-        if git_email is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
-
-            sys.exit(0)
-        env_values["GIT_USER_EMAIL"] = git_email
-
-        gitignore_header = (
-            "\n\033[35mAll 3 files that contain secrets will automatically be added to your .gitignore; "
-            "be sure to commit these changes for your protection:\033[0m"
         )
-        print(gitignore_header)
-        print(f"- {SHELL_ENV_FILENAME} \033[35m(contains Git token)\033[0m")
-        print(f"- {ENV_VARS_FILENAME} \033[35m(contains Git token)\033[0m")
-        aws_file_desc = (
-            "- .devcontainer/aws-profile-map.json \033[35m(contains aws account id "
-            "if you chose to create an AWS config)\033[0m"
-        )
-        print(aws_file_desc)
-        print()
+    )
+    env_values["GIT_USER_EMAIL"] = git_email
 
-        git_token = questionary.password(
+    gitignore_header = (
+        "\n\033[35mAll 3 files that contain secrets will automatically be added to your .gitignore; "
+        "be sure to commit these changes for your protection:\033[0m"
+    )
+    print(gitignore_header)
+    print(f"- {SHELL_ENV_FILENAME} \033[35m(contains Git token)\033[0m")
+    print(f"- {ENV_VARS_FILENAME} \033[35m(contains Git token)\033[0m")
+    aws_file_desc = (
+        "- .devcontainer/aws-profile-map.json \033[35m(contains aws account id "
+        "if you chose to create an AWS config)\033[0m"
+    )
+    print(aws_file_desc)
+    print()
+
+    git_token = ask_or_exit(
+        questionary.password(
             "Git token:",
             instruction="Your personal access token (will be stored in the config)",
             validate=lambda text: len(text.strip()) > 0 or "You must provide a Git token",
-        ).ask()
-        if git_token is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+        )
+    )
+    env_values["GIT_TOKEN"] = git_token
 
-            sys.exit(0)
-        env_values["GIT_TOKEN"] = git_token
+    # Extra packages
+    extra_packages = ask_or_exit(questionary.text("Extra APT packages (space-separated):", default=""))
+    env_values["EXTRA_APT_PACKAGES"] = extra_packages
 
-        # Extra packages
-        extra_packages = questionary.text("Extra APT packages (space-separated):", default="").ask()
-        if extra_packages is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
+    # Pager selection
+    pager_choice = ask_or_exit(
+        questionary.select("Select default pager:", choices=["cat", "less", "more", "most"], default="cat")
+    )
+    env_values["PAGER"] = pager_choice
 
-            sys.exit(0)
-        env_values["EXTRA_APT_PACKAGES"] = extra_packages
-
-        # Pager selection
-        pager_choice = questionary.select(
-            "Select default pager:", choices=["cat", "less", "more", "most"], default="cat"
-        ).ask()
-        if pager_choice is None:
-            log("INFO", "Setup cancelled by user.")
-            import sys
-
-            sys.exit(0)
-        env_values["PAGER"] = pager_choice
-
-        # AWS output format (only if AWS is enabled)
-        if aws_config == "true":
-            aws_output = questionary.select(
+    # AWS output format (only if AWS is enabled)
+    if aws_config == "true":
+        aws_output = ask_or_exit(
+            questionary.select(
                 "Select default AWS CLI output format:", choices=["json", "table", "text", "yaml"], default="json"
-            ).ask()
-            if aws_output is None:
-                log("INFO", "Setup cancelled by user.")
-                import sys
+            )
+        )
+        env_values["AWS_DEFAULT_OUTPUT"] = aws_output
 
-                sys.exit(0)
-            env_values["AWS_DEFAULT_OUTPUT"] = aws_output
-
-        return env_values
-    except KeyboardInterrupt:
-        log("INFO", "Setup cancelled by user.")
-        import sys
-
-        sys.exit(0)
+    return env_values
 
 
 def parse_standard_profile(profile_text: str) -> Dict[str, str]:
@@ -456,10 +365,7 @@ def load_template_from_file(name: str) -> Dict[str, Any]:
     template_path = get_template_path(name)
 
     if not os.path.exists(template_path):
-        log("ERR", f"Template {name} not found")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Template {name} not found")
 
     template_data = load_json_config(template_path)
 
@@ -497,10 +403,7 @@ def load_template_from_file(name: str) -> Dict[str, Any]:
                     log("INFO", "Creating a new template instead...")
                     return create_template_interactive()
                 elif choice == choices[3]:  # Exit
-                    log("INFO", "Operation cancelled by user")
-                    import sys
-
-                    sys.exit(0)
+                    exit_cancelled()
                 # For choice[2], we continue with the existing template
         except ValueError:
             # If version parsing fails, just continue with the template as is

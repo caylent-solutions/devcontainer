@@ -51,15 +51,7 @@ def main():
 
     if not hasattr(args, "func"):
         parser.print_help()
-        import sys as _sys
-
-        _sys.exit(1)
-
-    # Set global AUTO_YES flag if needed
-    if hasattr(args, "yes") and args.yes:
-        from caylent_devcontainer_cli.utils.ui import set_auto_yes
-
-        set_auto_yes(True)
+        sys.exit(1)
 
     # Execute the command
     args.func(args)

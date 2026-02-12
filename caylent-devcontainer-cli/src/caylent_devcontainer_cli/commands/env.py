@@ -4,7 +4,7 @@ import os
 
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, SHELL_ENV_FILENAME
 from caylent_devcontainer_cli.utils.fs import generate_shell_env, resolve_project_root
-from caylent_devcontainer_cli.utils.ui import log
+from caylent_devcontainer_cli.utils.ui import exit_with_error, log
 
 
 def register_command(subparsers):
@@ -49,10 +49,7 @@ def load_environment(project_root):
             log("INFO", f"Generating shell.env from {env_vars_json}")
             generate_shell_env(env_vars_json, shell_env_path)
         else:
-            log("ERR", f"Configuration file not found: {env_vars_json}")
-            import sys
-
-            sys.exit(1)
+            exit_with_error(f"Configuration file not found: {env_vars_json}")
 
     # Print instructions for sourcing the environment
     from caylent_devcontainer_cli.utils.ui import COLORS

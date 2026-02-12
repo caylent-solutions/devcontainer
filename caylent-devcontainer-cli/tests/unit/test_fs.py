@@ -438,10 +438,13 @@ class TestResolveProjectRoot:
         """Test that resolve_project_root exits with a clear error message."""
         with patch("os.path.isdir", return_value=False), patch("os.path.isfile", return_value=False), patch(
             "caylent_devcontainer_cli.utils.fs.log"
-        ) as mock_log, patch("sys.exit", side_effect=SystemExit(1)):
+        ) as mock_log, patch(
+            "caylent_devcontainer_cli.utils.fs.exit_with_error", side_effect=SystemExit(1)
+        ) as mock_exit_error:
             with pytest.raises(SystemExit):
                 resolve_project_root("/bad/path")
-            mock_log.assert_any_call("ERR", "Could not find a valid project root at /bad/path")
+            mock_log.assert_any_call("INFO", "A valid project root must contain a .devcontainer directory")
+            mock_exit_error.assert_called_once_with("Could not find a valid project root at /bad/path")
 
     def test_empty_string_defaults_to_cwd(self):
         """Test that empty string path defaults to cwd."""

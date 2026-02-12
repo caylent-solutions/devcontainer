@@ -231,10 +231,11 @@ def test_copy_devcontainer_files_overwrite(
 @patch("shutil.copytree")
 @patch("os.path.exists", return_value=True)
 @patch("caylent_devcontainer_cli.utils.ui.confirm_action", return_value=False)
-@patch("sys.exit")
-def test_copy_devcontainer_files_cancel(mock_exit, mock_confirm, mock_exists, mock_copytree):
-    copy_devcontainer_files("/source", "/target")
-    mock_exit.assert_called_once_with(0)
+@patch("caylent_devcontainer_cli.commands.setup.exit_cancelled", side_effect=SystemExit(0))
+def test_copy_devcontainer_files_cancel(mock_exit_cancelled, mock_confirm, mock_exists, mock_copytree):
+    with pytest.raises(SystemExit):
+        copy_devcontainer_files("/source", "/target")
+    mock_exit_cancelled.assert_called_once_with("Setup cancelled by user.")
     mock_copytree.assert_not_called()
 
 
@@ -674,7 +675,7 @@ def test_handle_setup_with_existing_version():
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
         "builtins.open", mock_open(read_data="1.0.0")
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=True), patch(
+    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True), patch(
         "caylent_devcontainer_cli.commands.setup.clone_repo"
     ), patch(
         "caylent_devcontainer_cli.commands.setup.interactive_setup"
@@ -694,7 +695,7 @@ def test_handle_setup_with_existing_version_cancel():
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, True]), patch(
         "builtins.open", mock_open(read_data="1.0.0")
-    ), patch("caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=False), patch(
+    ), patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False), patch(
         "caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone"
     ) as mock_interactive_no_clone, patch(
         "caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"
@@ -710,7 +711,7 @@ def test_handle_setup_with_existing_no_version():
     args.manual = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
-        "caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=True
+        "caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True
     ), patch("caylent_devcontainer_cli.commands.setup.clone_repo"), patch(
         "caylent_devcontainer_cli.commands.setup.interactive_setup"
     ), patch(
@@ -728,7 +729,7 @@ def test_handle_setup_with_existing_no_version_cancel():
     args.manual = False
 
     with patch("os.path.isdir", return_value=True), patch("os.path.exists", side_effect=[True, False]), patch(
-        "caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=False
+        "caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False
     ), patch(
         "caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone"
     ) as mock_interactive_no_clone, patch(
@@ -797,7 +798,7 @@ def test_create_version_file(mock_file):
 
 
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.setup.confirm_overwrite", return_value=True)
+@patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=True)
 @patch("caylent_devcontainer_cli.commands.setup.create_version_file")
 @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
 @patch("caylent_devcontainer_cli.commands.setup.clone_repo")
@@ -1029,53 +1030,6 @@ def test_interactive_setup_save_new_template(
     mock_name.assert_called_once()
     mock_save.assert_called_once_with({"env_values": {}, "aws_profile_map": {}}, "new-template")
     mock_apply.assert_called_once()
-
-
-# Tests for confirm_overwrite function
-@patch("builtins.input", return_value="y")
-def test_confirm_overwrite_yes(mock_input, capsys):
-    """Test confirm_overwrite with yes response."""
-    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
-
-    result = confirm_overwrite("Test message")
-
-    assert result is True
-    captured = capsys.readouterr()
-    assert "Test message" in captured.out
-    mock_input.assert_called_once()
-
-
-@patch("builtins.input", return_value="n")
-def test_confirm_overwrite_no(mock_input, capsys):
-    """Test confirm_overwrite with no response."""
-    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
-
-    result = confirm_overwrite("Test message")
-
-    assert result is False
-    captured = capsys.readouterr()
-    assert "Test message" in captured.out
-    mock_input.assert_called_once()
-
-
-@patch("builtins.input", return_value="Y")
-def test_confirm_overwrite_uppercase_yes(mock_input):
-    """Test confirm_overwrite with uppercase Y."""
-    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
-
-    result = confirm_overwrite("Test message")
-    assert result is True
-    mock_input.assert_called_once()
-
-
-@patch("builtins.input", return_value="")
-def test_confirm_overwrite_empty_default_no(mock_input):
-    """Test confirm_overwrite with empty input defaults to no."""
-    from caylent_devcontainer_cli.commands.setup import confirm_overwrite
-
-    result = confirm_overwrite("Test message")
-    assert result is False
-    mock_input.assert_called_once()
 
 
 # Tests for ensure_gitignore_entries function
