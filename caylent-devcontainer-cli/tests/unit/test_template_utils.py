@@ -112,22 +112,43 @@ class TestEnsureTemplatesDir:
 
 
 class TestValidateTemplate:
-    """Tests for validate_template() stub."""
+    """Tests for validate_template()."""
 
-    def test_returns_template_data_unchanged(self):
-        """Test that validate_template returns the data as-is (stub behavior)."""
+    def test_valid_template_returns_data_with_all_keys(self):
+        """Test that validate_template returns data for a fully valid template."""
         from caylent_devcontainer_cli.utils.template import validate_template
 
-        data = {"containerEnv": {"KEY": "value"}, "cli_version": "2.0.0"}
+        data = {
+            "containerEnv": {
+                "AWS_CONFIG_ENABLED": "true",
+                "AWS_DEFAULT_OUTPUT": "json",
+                "DEFAULT_GIT_BRANCH": "main",
+                "DEFAULT_PYTHON_VERSION": "3.12.9",
+                "DEVELOPER_NAME": "Test Dev",
+                "EXTRA_APT_PACKAGES": "",
+                "GIT_AUTH_METHOD": "token",
+                "GIT_PROVIDER_URL": "github.com",
+                "GIT_TOKEN": "my-token",
+                "GIT_USER": "testuser",
+                "GIT_USER_EMAIL": "test@example.com",
+                "HOST_PROXY": "false",
+                "HOST_PROXY_URL": "",
+                "PAGER": "cat",
+            },
+            "cli_version": "2.0.0",
+            "template_name": "test-template",
+            "template_path": "/templates/test.json",
+        }
         result = validate_template(data)
-        assert result == data
+        assert result["containerEnv"]["AWS_CONFIG_ENABLED"] == "true"
+        assert result["cli_version"] == "2.0.0"
 
-    def test_returns_empty_dict_for_empty_input(self):
-        """Test validate_template with empty dict input."""
+    def test_rejects_empty_dict(self):
+        """Test validate_template rejects empty dict (missing required keys)."""
         from caylent_devcontainer_cli.utils.template import validate_template
 
-        result = validate_template({})
-        assert result == {}
+        with pytest.raises(SystemExit):
+            validate_template({})
 
 
 class TestCheckTemplateVersion:

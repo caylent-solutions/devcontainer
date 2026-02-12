@@ -85,15 +85,17 @@ def test_code_command_no_missing_vars():
                     "containerEnv": {
                         "AWS_CONFIG_ENABLED": "true",
                         "AWS_DEFAULT_OUTPUT": "json",
-                        "CICD": "false",
                         "DEFAULT_GIT_BRANCH": "main",
                         "DEFAULT_PYTHON_VERSION": "3.12.9",
                         "DEVELOPER_NAME": "test",
                         "EXTRA_APT_PACKAGES": "",
+                        "GIT_AUTH_METHOD": "token",
                         "GIT_PROVIDER_URL": "github.com",
                         "GIT_TOKEN": "test",
                         "GIT_USER": "test",
                         "GIT_USER_EMAIL": "test@example.com",
+                        "HOST_PROXY": "false",
+                        "HOST_PROXY_URL": "",
                         "PAGER": "cat",
                     }
                 },

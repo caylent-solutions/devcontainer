@@ -59,6 +59,7 @@ Both files use the same base image and must be kept in sync by the mirror workfl
 - [ ] Image pulls from ECR Public (verify with `docker pull`)
 - [ ] Linting and formatting pass (`make lint && make format`)
 - [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [ ] Docs updated if project documentation is affected by these changes
 
 ## Log
 

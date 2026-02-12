@@ -87,17 +87,35 @@ class TestEnsureTemplatesDirEndToEnd:
 
 
 class TestValidateTemplateEndToEnd:
-    """Functional tests for validate_template stub."""
+    """Functional tests for validate_template."""
 
-    def test_returns_data_unchanged(self):
-        """Test that validate_template returns data unchanged (stub)."""
+    def test_valid_template_passes_validation(self):
+        """Test that a fully valid template passes all validation phases."""
         data = {
-            "containerEnv": {"KEY": "value"},
+            "containerEnv": {
+                "AWS_CONFIG_ENABLED": "true",
+                "AWS_DEFAULT_OUTPUT": "json",
+                "DEFAULT_GIT_BRANCH": "main",
+                "DEFAULT_PYTHON_VERSION": "3.12.9",
+                "DEVELOPER_NAME": "Test Dev",
+                "EXTRA_APT_PACKAGES": "",
+                "GIT_AUTH_METHOD": "token",
+                "GIT_PROVIDER_URL": "github.com",
+                "GIT_TOKEN": "my-token",
+                "GIT_USER": "testuser",
+                "GIT_USER_EMAIL": "test@example.com",
+                "HOST_PROXY": "false",
+                "HOST_PROXY_URL": "",
+                "PAGER": "cat",
+            },
             "cli_version": "2.0.0",
+            "template_name": "test-template",
+            "template_path": "/templates/test.json",
             "aws_profile_map": {},
         }
         result = validate_template(data)
-        assert result == data
+        assert result["containerEnv"]["AWS_CONFIG_ENABLED"] == "true"
+        assert result["aws_profile_map"] == {}
 
 
 class TestCheckTemplateVersionEndToEnd:

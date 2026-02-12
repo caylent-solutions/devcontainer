@@ -973,8 +973,9 @@ def test_load_template_from_file_without_version():
 @patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=True)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.select_template", return_value="test-template")
 @patch("caylent_devcontainer_cli.commands.setup_interactive.load_template_from_file")
+@patch("caylent_devcontainer_cli.utils.template.validate_template", side_effect=lambda d: d)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template")
-def test_interactive_setup_with_template(mock_apply, mock_load, mock_select, mock_prompt):
+def test_interactive_setup_with_template(mock_apply, mock_validate, mock_load, mock_select, mock_prompt):
     mock_load.return_value = {"env_values": {}, "aws_profile_map": {}}
 
     interactive_setup("/target")
@@ -982,6 +983,7 @@ def test_interactive_setup_with_template(mock_apply, mock_load, mock_select, moc
     mock_prompt.assert_called_once()
     mock_select.assert_called_once()
     mock_load.assert_called_once_with("test-template")
+    mock_validate.assert_called_once()
     mock_apply.assert_called_once()
 
 
@@ -1083,8 +1085,9 @@ def test_ensure_gitignore_entries_all_present(mock_file, mock_exists, capsys):
 @patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=True)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.select_template", return_value="test-template")
 @patch("caylent_devcontainer_cli.commands.setup_interactive.load_template_from_file")
+@patch("caylent_devcontainer_cli.utils.template.validate_template", side_effect=lambda d: d)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template")
-def test_interactive_setup_existing_template_no_clone(mock_apply, mock_load, mock_select, mock_prompt):
+def test_interactive_setup_existing_template_no_clone(mock_apply, mock_validate, mock_load, mock_select, mock_prompt):
     """Test interactive setup using existing template (no-clone path)."""
     mock_load.return_value = {"containerEnv": {"TEST": "value"}, "aws_profile_map": {}}
 
@@ -1093,6 +1096,7 @@ def test_interactive_setup_existing_template_no_clone(mock_apply, mock_load, moc
     mock_prompt.assert_called_once()
     mock_select.assert_called_once()
     mock_load.assert_called_once_with("test-template")
+    mock_validate.assert_called_once()
     mock_apply.assert_called_once()
 
 
@@ -1306,12 +1310,18 @@ def test_handle_setup_with_tag_ref(mock_temp_dir, mock_clone, mock_interactive, 
 # Tests for JsonValidator class
 
 
-def test_example_env_values_includes_cicd():
-    """Test that EXAMPLE_ENV_VALUES includes CICD=false."""
+def test_example_env_values_includes_required_keys():
+    """Test that EXAMPLE_ENV_VALUES includes all required base keys."""
     from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
 
-    assert "CICD" in EXAMPLE_ENV_VALUES
-    assert EXAMPLE_ENV_VALUES["CICD"] == "false"
+    assert "GIT_AUTH_METHOD" in EXAMPLE_ENV_VALUES
+    assert EXAMPLE_ENV_VALUES["GIT_AUTH_METHOD"] == "token"
+    assert "HOST_PROXY" in EXAMPLE_ENV_VALUES
+    assert EXAMPLE_ENV_VALUES["HOST_PROXY"] == "false"
+    assert "HOST_PROXY_URL" in EXAMPLE_ENV_VALUES
+    assert EXAMPLE_ENV_VALUES["HOST_PROXY_URL"] == ""
+    # CICD removed in v2 — no longer a template variable
+    assert "CICD" not in EXAMPLE_ENV_VALUES
 
 
 def test_is_single_line_env_var():

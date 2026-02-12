@@ -18,6 +18,7 @@ from caylent_devcontainer_cli.utils.template import (
     ensure_templates_dir,
     get_template_names,
     get_template_path,
+    validate_template,
 )
 from caylent_devcontainer_cli.utils.ui import COLORS, confirm_action, exit_cancelled, exit_with_error, log
 
@@ -238,6 +239,9 @@ def load_template(project_root, template_name):
             except ValueError:
                 # If version parsing fails, just continue with the template as is
                 log("WARN", f"Could not parse template version: {template_version}")
+
+        # Validate template data before applying
+        template_data = validate_template(template_data)
 
         # Generate all project files (env vars JSON, shell.env, gitignore, etc.)
         write_project_files(project_root, template_data, template_name, template_path)

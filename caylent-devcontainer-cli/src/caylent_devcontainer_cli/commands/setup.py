@@ -20,15 +20,17 @@ REPO_URL = "https://github.com/caylent-solutions/devcontainer.git"
 EXAMPLE_ENV_VALUES = {
     "AWS_CONFIG_ENABLED": "true",
     "AWS_DEFAULT_OUTPUT": "json",
-    "CICD": "false",
     "DEFAULT_GIT_BRANCH": "main",
     "DEFAULT_PYTHON_VERSION": "3.12.9",
     "DEVELOPER_NAME": "Your Name",
     "EXTRA_APT_PACKAGES": "",
+    "GIT_AUTH_METHOD": "token",
     "GIT_PROVIDER_URL": "github.com",
     "GIT_TOKEN": "your-git-token",
     "GIT_USER": "your-username",
     "GIT_USER_EMAIL": "your-email@example.com",
+    "HOST_PROXY": "false",
+    "HOST_PROXY_URL": "",
     "PAGER": "cat",
 }
 
@@ -287,6 +289,7 @@ def interactive_setup(target_path: str) -> None:
         save_template_to_file,
         select_template,
     )
+    from caylent_devcontainer_cli.utils.template import validate_template
 
     try:
         # Ask if they want to use a saved template
@@ -294,6 +297,7 @@ def interactive_setup(target_path: str) -> None:
             template_name = select_template()
             if template_name:
                 template_data = load_template_from_file(template_name)
+                template_data = validate_template(template_data)
                 apply_template(template_data, target_path)
                 log("OK", f"Template '{template_name}' applied successfully.")
                 return

@@ -99,6 +99,7 @@ Optional fields:
 - [ ] All existing tests still pass after refactoring
 - [ ] Linting and formatting pass (`make lint && make format`)
 - [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [ ] Docs updated if project documentation is affected by these changes
 
 ## Log
 

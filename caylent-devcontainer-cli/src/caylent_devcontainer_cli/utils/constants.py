@@ -15,3 +15,19 @@ EXAMPLE_ENV_FILE = "example-container-env-values.json"
 EXAMPLE_AWS_FILE = "example-aws-profile-map.json"
 CATALOG_ENTRY_FILENAME = "catalog-entry.json"
 SSH_KEY_FILENAME = "ssh-private-key"
+
+# Template structural requirements — top-level keys that must exist
+REQUIRED_TEMPLATE_KEYS = ("containerEnv", "cli_version", "template_name", "template_path")
+
+# Known key value constraints — maps key name to valid choices
+VALID_KEY_VALUES = {
+    "AWS_CONFIG_ENABLED": ("true", "false"),
+    "AWS_DEFAULT_OUTPUT": ("json", "table", "text", "yaml"),
+    "GIT_AUTH_METHOD": ("token", "ssh"),
+    "HOST_PROXY": ("true", "false"),
+    "PAGER": ("cat", "less", "more", "most"),
+}
+
+# Keys whose values are validated only under certain conditions
+# GIT_PROVIDER_URL: hostname only — no protocol prefix, must contain at least one dot
+# HOST_PROXY_URL: must start with http:// or https:// — only validated when HOST_PROXY=true

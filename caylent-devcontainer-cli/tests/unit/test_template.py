@@ -102,6 +102,7 @@ def test_load_template():
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
         patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
 
@@ -450,6 +451,7 @@ def test_load_template_upgrade_choice():
         patch("builtins.input", return_value="1"),
         patch("caylent_devcontainer_cli.commands.template.upgrade_template", return_value=upgraded_data),
         patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
         patch("json.load", return_value=mock_template_data),
         patch("json.dump"),
     ):
@@ -485,6 +487,7 @@ def test_load_template_use_anyway_choice():
         patch("os.path.exists", return_value=True),
         patch("builtins.input", return_value="3"),
         patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
         patch("json.load", return_value=mock_template_data),
         patch("json.dump"),
     ):
@@ -712,6 +715,7 @@ def test_load_template_version_parse_error():
         patch("json.load", return_value=template_data),
         patch("json.dump"),
         patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
     ):
 
         load_template("/test/path", "test-template")
@@ -784,6 +788,7 @@ def test_load_template_create_new_env_file():
         patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
         patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
         patch("json.load", return_value=template_data),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
         patch("caylent_devcontainer_cli.commands.template.write_project_files"),
     ):
 
@@ -839,6 +844,7 @@ def test_load_template_version_mismatch_choices():
         patch("json.load", return_value=template_data),
         patch("json.dump"),
         patch("caylent_devcontainer_cli.commands.template.upgrade_template", return_value=template_data),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
     ):
 
         load_template("/test/path", "test-template")
@@ -857,6 +863,7 @@ def test_load_template_version_mismatch_invalid_then_valid():
         patch("json.load", return_value=template_data),
         patch("json.dump"),
         patch("caylent_devcontainer_cli.commands.template.upgrade_template", return_value=template_data),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
         patch("builtins.print"),
     ):
 

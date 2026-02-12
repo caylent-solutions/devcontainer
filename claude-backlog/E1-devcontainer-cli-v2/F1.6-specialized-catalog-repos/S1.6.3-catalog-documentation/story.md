@@ -72,6 +72,7 @@ The README.md must cover all of the following sections:
 - [ ] 3-layer customization model clearly explained (catalog collections, developer templates, `project-setup.sh`)
 - [ ] Linting and formatting pass (`make lint && make format`)
 - [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [ ] Docs updated if project documentation is affected by these changes
 
 ## Log
 
