@@ -193,7 +193,14 @@ def save_template(project_root, template_name):
 
 
 def load_template(project_root, template_name):
-    """Load a template into the current project."""
+    """Load a template into the current project.
+
+    Reads the template from ~/.devcontainer-templates/<name>.json,
+    validates it via validate_template(), and generates all project
+    files via write_project_files().
+    """
+    import questionary
+
     template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
@@ -201,69 +208,28 @@ def load_template(project_root, template_name):
 
     env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
-    # Ask for confirmation before loading
+    # Confirm overwrite if configuration already exists
     if os.path.exists(env_vars_json):
-        if not confirm_action(f"This will overwrite your existing configuration at:\n{env_vars_json}"):
-            exit_cancelled()
-    else:
-        if not confirm_action(f"This will create a new configuration at:\n{env_vars_json}"):
-            exit_cancelled()
+        overwrite = ask_or_exit(
+            questionary.confirm(
+                f"This will overwrite your existing configuration at:\n{env_vars_json}",
+                default=False,
+            )
+        )
+        if not overwrite:
+            exit_cancelled("Template load cancelled")
 
-    try:
-        # Read the template file
-        template_data = load_json_config(template_path)
+    # Read the template file
+    template_data = load_json_config(template_path)
 
-        # Check version compatibility
-        if "cli_version" in template_data:
-            template_version = template_data["cli_version"]
-            current_version = __version__
+    # Validate template — rejects v1.x, validates structure, checks base keys,
+    # validates constraints, checks auth consistency
+    template_data = validate_template(template_data)
 
-            try:
-                # Parse versions using semver
-                template_semver = semver.VersionInfo.parse(template_version)
-                current_semver = semver.VersionInfo.parse(current_version)
+    # Generate all project files (env vars JSON, shell.env, gitignore, etc.)
+    write_project_files(project_root, template_data, template_name, template_path)
 
-                # Check if major versions differ
-                if template_semver.major < current_semver.major:
-                    log(
-                        "WARN",
-                        f"Template was created with CLI version {template_version}, "
-                        f"but you're using version {current_version}",
-                    )
-                    print("\nPlease choose one of the following options:")
-                    print("1. Upgrade the profile to the current version")
-                    print("2. Create a new profile from scratch")
-                    print("3. Try to use the profile anyway (may fail)")
-                    print("4. Exit and revert changes")
-
-                    while True:
-                        choice = input("\nEnter your choice (1-4): ").strip()
-                        if choice == "1":
-                            # Upgrade the template
-                            template_data = upgrade_template(template_data)
-                            log("OK", f"Template upgraded to version {current_version}")
-                            break
-                        elif choice == "2":
-                            exit_cancelled("Please use 'cdevcontainer template save' to create a new profile")
-                        elif choice == "3":
-                            if not confirm_action("The template format may be incompatible. Continue anyway?"):
-                                exit_cancelled()
-                            break
-                        elif choice == "4":
-                            exit_cancelled()
-                        else:
-                            print("Invalid choice. Please enter a number between 1 and 4.")
-            except ValueError:
-                # If version parsing fails, just continue with the template as is
-                log("WARN", f"Could not parse template version: {template_version}")
-
-        # Validate template data before applying
-        template_data = validate_template(template_data)
-
-        # Generate all project files (env vars JSON, shell.env, gitignore, etc.)
-        write_project_files(project_root, template_data, template_name, template_path)
-    except Exception as e:
-        exit_with_error(f"Failed to load template: {e}")
+    log("OK", f"Template '{template_name}' loaded successfully")
 
 
 def list_templates():

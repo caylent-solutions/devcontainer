@@ -208,12 +208,32 @@ def validate_ssh_key_file(key_path: str) -> tuple:
         os.chmod(tmp_path, 0o600)
 
         # Real key validation via ssh-keygen -y -f (extract public key)
-        result = subprocess.run(
-            ["ssh-keygen", "-y", "-f", tmp_path],
-            capture_output=True,
-            text=True,
-            input="",
-        )
+        # Use SSH_ASKPASS=/bin/false and DISPLAY="" to prevent interactive
+        # passphrase prompts from opening /dev/tty. Also set
+        # SSH_ASKPASS_REQUIRE=force so ssh-keygen uses SSH_ASKPASS instead
+        # of /dev/tty. With /bin/false as the askpass program, any
+        # passphrase-protected key will fail immediately instead of hanging.
+        validation_env = os.environ.copy()
+        validation_env["SSH_ASKPASS"] = "/bin/false"
+        validation_env["SSH_ASKPASS_REQUIRE"] = "force"
+        validation_env["DISPLAY"] = ""
+
+        try:
+            result = subprocess.run(
+                ["ssh-keygen", "-y", "-f", tmp_path],
+                capture_output=True,
+                text=True,
+                input="",
+                timeout=10,
+                env=validation_env,
+            )
+        except subprocess.TimeoutExpired:
+            return (
+                False,
+                "SSH key validation timed out. The key may require a "
+                "passphrase. Please use a key without a passphrase or "
+                "remove the passphrase with: ssh-keygen -p -f <keyfile>",
+            )
 
         if result.returncode != 0:
             stderr = result.stderr.strip().lower()

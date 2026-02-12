@@ -94,14 +94,14 @@ def test_save_template():
         assert "cli_version" in saved_data
 
 
-def test_load_template():
-    mock_template_data = {"key": "value"}
+def test_load_template_no_existing_file():
+    """Test load_template when no existing env file — no confirmation prompt."""
+    mock_template_data = {"containerEnv": {"TEST": "val"}, "cli_version": "2.0.0"}
 
     with (
-        patch("os.path.exists", return_value=True),
+        patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
         patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
@@ -113,6 +113,79 @@ def test_load_template():
         call_args = mock_write_files.call_args
         assert call_args[0][0] == "/test/path"
         assert call_args[0][1] == mock_template_data
+
+
+def test_load_template_overwrite_accepted():
+    """Test load_template when existing env file and user accepts overwrite."""
+    mock_template_data = {"containerEnv": {"TEST": "val"}, "cli_version": "2.0.0"}
+    mock_confirm = MagicMock()
+    mock_confirm.ask.return_value = True
+
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("questionary.confirm", return_value=mock_confirm),
+        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
+        patch("json.load", return_value=mock_template_data),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
+    ):
+
+        load_template("/test/path", "test-template")
+
+        mock_write_files.assert_called_once()
+
+
+def test_load_template_overwrite_declined():
+    """Test load_template when existing env file and user declines overwrite."""
+    mock_confirm = MagicMock()
+    mock_confirm.ask.return_value = False
+
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("questionary.confirm", return_value=mock_confirm),
+    ):
+        with pytest.raises(SystemExit):
+            load_template("/test/path", "test-template")
+
+
+def test_load_template_calls_validate_template():
+    """Test that load_template calls validate_template before write_project_files."""
+    mock_template_data = {"containerEnv": {"K": "v"}, "cli_version": "2.0.0"}
+    validated_data = {"containerEnv": {"K": "v", "ADDED": "by_validate"}, "cli_version": "2.0.0"}
+
+    with (
+        patch("os.path.exists", side_effect=lambda p: "templates" in p),
+        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
+        patch("json.load", return_value=mock_template_data),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", return_value=validated_data),
+        patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
+    ):
+
+        load_template("/test/path", "test-template")
+
+        # write_project_files should receive the validated data, not the original
+        mock_write_files.assert_called_once()
+        assert mock_write_files.call_args[0][1] == validated_data
+
+
+def test_load_template_passes_name_and_path_to_write():
+    """Test that load_template passes template_name and template_path to write_project_files."""
+    mock_template_data = {"containerEnv": {"K": "v"}, "cli_version": "2.0.0"}
+
+    with (
+        patch("os.path.exists", side_effect=lambda p: "templates" in p),
+        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
+        patch("json.load", return_value=mock_template_data),
+        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
+        patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/home/.devcontainer-templates"),
+    ):
+
+        load_template("/test/path", "my-template")
+
+        call_args = mock_write_files.call_args[0]
+        assert call_args[2] == "my-template"
+        assert call_args[3] == "/home/.devcontainer-templates/my-template.json"
 
 
 @patch("os.listdir", return_value=["template1.json", "template2.json", "not-a-template.txt"])
@@ -378,22 +451,15 @@ def test_load_template_not_found():
             load_template("/test/path", "test-template")
 
 
-def test_load_template_cancel():
-    """Test canceling template loading."""
-    with (
-        patch("os.path.exists", return_value=True),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=False),
-        patch("sys.exit", side_effect=SystemExit(1)),
-    ):
-        with pytest.raises(SystemExit):
-            load_template("/test/path", "test-template")
-
-
 def test_load_template_error():
+    """Test load_template when file read raises an error."""
+    mock_confirm = MagicMock()
+    mock_confirm.ask.return_value = True
+
     with (
         patch("os.path.exists", return_value=True),
+        patch("questionary.confirm", return_value=mock_confirm),
         patch("builtins.open", side_effect=Exception("Test error")),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
         patch("sys.exit", side_effect=SystemExit(1)),
     ):
         with pytest.raises(SystemExit):
@@ -423,93 +489,18 @@ def test_save_template_adds_version():
         assert saved_data["cli_version"] == __version__
 
 
-def test_load_template_version_mismatch():
-    """Test that load_template handles version mismatches correctly."""
-    mock_template_data = {"key": "value", "cli_version": "1.0.0"}  # Old version
+def test_load_template_v1x_rejected_by_validate():
+    """Test that v1.x templates are rejected via validate_template()."""
+    mock_template_data = {"containerEnv": {"K": "v"}, "cli_version": "1.0.0"}
 
-    # Mock current version to be 2.0.0 — choice "4" triggers exit_cancelled() which raises SystemExit
     with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
+        patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="4"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
         patch("json.load", return_value=mock_template_data),
-        patch("json.dump"),
-    ):
-        with pytest.raises(SystemExit):
-            load_template("/test/path", "test-template")
-
-
-def test_load_template_upgrade_choice():
-    """Test that load_template handles the upgrade choice correctly."""
-    mock_template_data = {"key": "value", "cli_version": "1.0.0"}  # Old version
-    upgraded_data = {"upgraded": True, "cli_version": "2.0.0"}
-
-    # Mock current version to be 2.0.0
-    with (
-        patch("caylent_devcontainer_cli.__version__", "2.0.0"),
-        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="1"),
-        patch("caylent_devcontainer_cli.commands.template.upgrade_template", return_value=upgraded_data),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
-        patch("json.load", return_value=mock_template_data),
-        patch("json.dump"),
-    ):
-        load_template("/test/path", "test-template")
-
-
-def test_load_template_new_profile_choice():
-    """Test that load_template handles the new profile choice correctly."""
-    mock_template_data = {"key": "value", "cli_version": "1.0.0"}  # Old version
-
-    # Mock current version to be 2.0.0 — choice "2" triggers exit_cancelled() which raises SystemExit
-    with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
-        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="2"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("json.load", return_value=mock_template_data),
-        patch("json.dump"),
-    ):
-        with pytest.raises(SystemExit):
-            load_template("/test/path", "test-template")
-
-
-def test_load_template_use_anyway_choice():
-    """Test that load_template handles the 'use anyway' choice correctly."""
-    mock_template_data = {"key": "value", "cli_version": "1.0.0"}  # Old version
-
-    # Mock current version to be 2.0.0
-    with (
-        patch("caylent_devcontainer_cli.__version__", "2.0.0"),
-        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="3"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
-        patch("json.load", return_value=mock_template_data),
-        patch("json.dump"),
-    ):
-        load_template("/test/path", "test-template")
-
-
-def test_load_template_invalid_choice():
-    """Test that load_template handles invalid choices correctly."""
-    mock_template_data = {"key": "value", "cli_version": "1.0.0"}  # Old version
-
-    # Mock current version to be 2.0.0 — invalid then "4" triggers exit_cancelled() which raises SystemExit
-    with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
-        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", side_effect=["invalid", "4"]),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("json.load", return_value=mock_template_data),
-        patch("json.dump"),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=SystemExit(1),
+        ),
     ):
         with pytest.raises(SystemExit):
             load_template("/test/path", "test-template")
@@ -708,37 +699,22 @@ def test_save_template_confirm_cancel():
             save_template("/test/path", "test-template")
 
 
-def test_load_template_version_parse_error():
-    """Test load_template with version parse error."""
-    template_data = {"key": "value", "cli_version": "invalid.version"}
+def test_load_template_success_message(capsys):
+    """Test that load_template outputs success message."""
+    mock_template_data = {"containerEnv": {"K": "v"}, "cli_version": "2.0.0"}
 
     with (
-        patch("os.path.exists", return_value=True),
-        patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
-        patch("json.load", return_value=template_data),
-        patch("json.dump"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("os.path.exists", side_effect=lambda p: "templates" in p),
+        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
+        patch("json.load", return_value=mock_template_data),
         patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch("caylent_devcontainer_cli.commands.template.write_project_files"),
     ):
 
         load_template("/test/path", "test-template")
 
-
-def test_load_template_use_anyway_cancel():
-    """Test load_template when user cancels 'use anyway' confirmation."""
-    template_data = {"key": "value", "cli_version": "1.0.0"}
-
-    with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="3"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", side_effect=[True, False]),
-        patch("json.load", return_value=template_data),
-        patch("sys.exit", side_effect=SystemExit(0)),
-    ):
-
-        with pytest.raises(SystemExit):
-            load_template("/test/path", "test-template")
+    captured = capsys.readouterr()
+    assert "loaded successfully" in captured.err
 
 
 def test_delete_template_exception():
@@ -785,19 +761,20 @@ def test_create_new_template_overwrite():
 
 
 def test_load_template_create_new_env_file():
-    """Test load_template when creating new env file."""
-    template_data = {"key": "value"}
+    """Test load_template when creating new env file — no overwrite prompt."""
+    template_data = {"containerEnv": {"K": "v"}, "cli_version": "2.0.0"}
 
     with (
-        patch("os.path.exists", side_effect=[True, False]),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
         patch("json.load", return_value=template_data),
         patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
-        patch("caylent_devcontainer_cli.commands.template.write_project_files"),
+        patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write,
     ):
 
         load_template("/test/path", "test-template")
+
+        mock_write.assert_called_once()
 
 
 def test_save_template_create_new_template():
@@ -835,77 +812,21 @@ def test_register_command():
     assert mock_template_subparsers.add_parser.call_count >= 5
 
 
-def test_load_template_version_mismatch_choices():
-    """Test load_template version mismatch with different choices."""
-    template_data = {"key": "value", "cli_version": "1.0.0"}
+def test_load_template_no_confirm_action_used():
+    """Test that load_template does not use confirm_action (uses questionary.confirm instead)."""
+    import inspect
 
-    # Test choice 1 (upgrade)
-    with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="1"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
-        patch("json.load", return_value=template_data),
-        patch("json.dump"),
-        patch("caylent_devcontainer_cli.commands.template.upgrade_template", return_value=template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
-    ):
+    from caylent_devcontainer_cli.commands import template
 
-        load_template("/test/path", "test-template")
+    source = inspect.getsource(template.load_template)
+    assert "confirm_action" not in source
 
 
-def test_load_template_version_mismatch_invalid_then_valid():
-    """Test load_template version mismatch with invalid then valid choice."""
-    template_data = {"key": "value", "cli_version": "1.0.0"}
+def test_load_template_no_raw_input():
+    """Test that load_template does not use raw input()."""
+    import inspect
 
-    with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", side_effect=["invalid", "1"]),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
-        patch("json.load", return_value=template_data),
-        patch("json.dump"),
-        patch("caylent_devcontainer_cli.commands.template.upgrade_template", return_value=template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
-        patch("builtins.print"),
-    ):
+    from caylent_devcontainer_cli.commands import template
 
-        load_template("/test/path", "test-template")
-
-
-def test_load_template_version_mismatch_exit():
-    """Test load_template version mismatch with exit choice."""
-    template_data = {"key": "value", "cli_version": "1.0.0"}
-
-    with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="4"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
-        patch("json.load", return_value=template_data),
-        patch("sys.exit", side_effect=SystemExit(0)),
-    ):
-
-        with pytest.raises(SystemExit):
-            load_template("/test/path", "test-template")
-
-
-def test_load_template_version_mismatch_new_profile():
-    """Test load_template version mismatch with new profile choice."""
-    template_data = {"key": "value", "cli_version": "1.0.0"}
-
-    with (
-        patch("caylent_devcontainer_cli.commands.template.__version__", "2.0.0"),
-        patch("os.path.exists", return_value=True),
-        patch("builtins.input", return_value="2"),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
-        patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
-        patch("json.load", return_value=template_data),
-        patch("sys.exit", side_effect=SystemExit(0)),
-    ):
-
-        with pytest.raises(SystemExit):
-            load_template("/test/path", "test-template")
+    source = inspect.getsource(template.load_template)
+    assert "input(" not in source
