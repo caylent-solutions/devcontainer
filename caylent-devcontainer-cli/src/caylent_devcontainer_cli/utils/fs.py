@@ -13,7 +13,7 @@ from caylent_devcontainer_cli.utils.constants import (
     SHELL_ENV_FILENAME,
     SSH_KEY_FILENAME,
 )
-from caylent_devcontainer_cli.utils.ui import confirm_action, exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.ui import exit_with_error, log
 
 
 def write_json_file(path: str, data: Union[Dict[str, Any], List[Any]]) -> None:
@@ -55,60 +55,6 @@ def load_json_config(file_path: str) -> Dict[str, Any]:
         return data
     except Exception as e:
         exit_with_error(f"Error loading {file_path}: {e}")
-
-
-def generate_exports(env_dict: Dict[str, Any], export_prefix: bool = True) -> List[str]:
-    """Generate shell export statements from a dictionary."""
-    lines = []
-    for key, value in env_dict.items():
-        if isinstance(value, (dict, list)):
-            val = json.dumps(value)
-        else:
-            val = str(value)
-        prefix = "export " if export_prefix else ""
-        line = f"{prefix}{key}='{val}'"
-        lines.append(line)
-    return lines
-
-
-def generate_shell_env(json_file: str, output_file: str, no_export: bool = False) -> None:
-    """Generate shell environment file from JSON config."""
-    log("INFO", f"Reading configuration from {json_file}")
-    data = load_json_config(json_file)
-
-    # Only support containerEnv format
-    if "containerEnv" in data and isinstance(data["containerEnv"], dict):
-        env_data = data["containerEnv"].copy()
-    else:
-        exit_with_error(f"Invalid JSON format in {json_file}. The file must contain a 'containerEnv' object.")
-
-    # Include cli_version if it exists at the top level
-    if "cli_version" in data:
-        env_data["CLI_VERSION"] = data["cli_version"]
-
-    lines = generate_exports(env_data, export_prefix=not no_export)
-
-    # Add dynamic PATH and unset GIT_EDITOR
-    project_root = find_project_root(json_file)
-    project_folder = os.path.basename(os.path.abspath(project_root))
-    lines.append(f'export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:/workspaces/{project_folder}/.localscripts:$PATH"')
-    lines.append("")
-    lines.append("unset GIT_EDITOR")
-
-    # Ask for confirmation before writing to file
-    if os.path.exists(output_file):
-        if not confirm_action(f"This will overwrite the existing file at:\n{output_file}"):
-            exit_cancelled()
-    else:
-        if not confirm_action(f"This will create a new file at:\n{output_file}"):
-            exit_cancelled()
-
-    try:
-        with open(output_file, "w") as f:
-            f.write("\n".join(lines) + "\n")
-        log("OK", f"Wrote {len(lines)} exports to {output_file}")
-    except Exception as e:
-        exit_with_error(f"Failed to write to {output_file}: {e}")
 
 
 def write_shell_env(
@@ -283,14 +229,6 @@ def _ensure_gitignore_entries(project_root: str) -> None:
         f.write("# Environment files\n")
         for entry in missing:
             f.write(entry + "\n")
-
-
-def find_project_root(path: str) -> str:
-    """Find the project root directory.
-
-    Deprecated: Use resolve_project_root() instead.
-    """
-    return resolve_project_root(path)
 
 
 def resolve_project_root(path: str = None) -> str:

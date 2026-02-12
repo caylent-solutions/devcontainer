@@ -2,7 +2,7 @@
 import json
 import os
 import sys
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -18,9 +18,6 @@ from caylent_devcontainer_cli.utils.constants import (
     SSH_KEY_FILENAME,
 )
 from caylent_devcontainer_cli.utils.fs import (
-    find_project_root,
-    generate_exports,
-    generate_shell_env,
     load_json_config,
     remove_example_files,
     resolve_project_root,
@@ -50,162 +47,6 @@ def test_load_json_config_file_not_found():
         with pytest.raises(SystemExit):
             load_json_config("/test/path/nonexistent.json")
         mock_exit.assert_called_once_with(1)
-
-
-def test_generate_exports():
-    env_dict = {"TEST_VAR": "test_value", "TEST_JSON": {"key": "value"}, "TEST_LIST": [1, 2, 3]}
-
-    # Test with export_prefix=True
-    lines = generate_exports(env_dict, export_prefix=True)
-    assert len(lines) == 3
-    assert "export TEST_VAR='test_value'" in lines
-    assert "export TEST_JSON='" in lines[1]
-    assert "export TEST_LIST='" in lines[2]
-
-    # Test with export_prefix=False
-    lines = generate_exports(env_dict, export_prefix=False)
-    assert len(lines) == 3
-    assert "TEST_VAR='test_value'" in lines
-    assert "TEST_JSON='" in lines[1]
-    assert "TEST_LIST='" in lines[2]
-
-
-def test_generate_exports_with_special_chars():
-    """Test generating exports with values containing special characters."""
-    env_values = {
-        "NORMAL_VALUE": "simple",
-        "QUOTED_VALUE": "value with spaces",
-        "SPECIAL_CHARS": 'value with $pecial & "chars"',
-    }
-
-    exports = generate_exports(env_values)
-
-    assert len(exports) == 3
-    assert any("NORMAL_VALUE='simple'" in e for e in exports)
-    assert any("QUOTED_VALUE='value with spaces'" in e for e in exports)
-    assert any("SPECIAL_CHARS='value with $pecial & \"chars\"'" in e for e in exports)
-
-
-@patch(
-    "caylent_devcontainer_cli.utils.fs.load_json_config",
-    return_value={"containerEnv": {"TEST_VAR": "test_value"}, "cli_version": "1.0.0"},
-)
-@patch("os.path.exists", return_value=False)
-@patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True)
-@patch("caylent_devcontainer_cli.utils.fs.find_project_root", return_value="/test/project")
-def test_generate_shell_env(mock_find_root, mock_confirm, mock_exists, mock_load_json):
-    with patch("builtins.open", mock_open()) as mock_file:
-        generate_shell_env("test_file.json", "output_file.sh")
-        mock_file().write.assert_called()
-
-
-@patch("os.path.exists", return_value=False)
-@patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value={"invalid": []})
-@patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True)
-def test_generate_shell_env_invalid_json(mock_confirm, mock_load_json, mock_exists):
-    with pytest.raises(SystemExit):
-        generate_shell_env("test_file.json", "output_file.sh")
-
-
-def test_generate_shell_env_confirmation_cancel():
-    """Test generate_shell_env when user cancels confirmation."""
-    with patch(
-        "caylent_devcontainer_cli.utils.fs.load_json_config",
-        return_value={"containerEnv": {"TEST": "value"}, "cli_version": "1.0.0"},
-    ):
-        with patch("os.path.exists", return_value=True):
-            with patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=False):
-                with pytest.raises(SystemExit):
-                    generate_shell_env("/test/input.json", "/test/output.env")
-
-
-def test_generate_shell_env_new_file():
-    """Test generate_shell_env when creating a new file."""
-    with patch(
-        "caylent_devcontainer_cli.utils.fs.load_json_config",
-        return_value={"containerEnv": {"TEST": "value"}, "cli_version": "1.0.0"},
-    ):
-        with patch("os.path.exists", return_value=False):
-            with patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True):
-                with patch("caylent_devcontainer_cli.utils.fs.find_project_root", return_value="/test/project"):
-                    with patch("builtins.open", MagicMock()):
-                        generate_shell_env("/test/input.json", "/test/output.env")
-
-
-def test_generate_shell_env_includes_cli_version():
-    """Test that generate_shell_env includes CLI_VERSION from cli_version field."""
-    test_data = {"containerEnv": {"TEST_VAR": "test_value"}, "cli_version": "1.5.0"}
-
-    with patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value=test_data):
-        with patch("os.path.exists", return_value=False):
-            with patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True):
-                with patch("caylent_devcontainer_cli.utils.fs.find_project_root", return_value="/test/project"):
-                    with patch("builtins.open", mock_open()) as mock_file:
-                        generate_shell_env("/test/input.json", "/test/output.env")
-
-                        # Get the written content
-                        written_content = mock_file().write.call_args[0][0]
-
-                        # Verify both TEST_VAR and CLI_VERSION are included
-                        assert "export TEST_VAR='test_value'" in written_content
-                        assert "export CLI_VERSION='1.5.0'" in written_content
-
-
-def test_generate_shell_env_without_cli_version():
-    """Test that generate_shell_env works when cli_version is not present."""
-    test_data = {"containerEnv": {"TEST_VAR": "test_value"}}
-
-    with patch("caylent_devcontainer_cli.utils.fs.load_json_config", return_value=test_data):
-        with patch("os.path.exists", return_value=False):
-            with patch("caylent_devcontainer_cli.utils.fs.confirm_action", return_value=True):
-                with patch("caylent_devcontainer_cli.utils.fs.find_project_root", return_value="/test/project"):
-                    with patch("builtins.open", mock_open()) as mock_file:
-                        generate_shell_env("/test/input.json", "/test/output.env")
-
-                        # Get the written content
-                        written_content = mock_file().write.call_args[0][0]
-
-                        # Verify TEST_VAR is included but CLI_VERSION is not
-                        assert "export TEST_VAR='test_value'" in written_content
-                        assert "CLI_VERSION" not in written_content
-
-
-@patch("os.path.isdir", return_value=True)
-def test_find_project_root(mock_isdir):
-    result = find_project_root("/test/path")
-    assert result == "/test/path"
-    mock_isdir.assert_called_with("/test/path/.devcontainer")
-
-
-@patch("os.path.isdir", return_value=False)
-def test_find_project_root_invalid(mock_isdir):
-    with pytest.raises(SystemExit):
-        find_project_root("/test/path")
-
-
-@patch("os.path.isfile", return_value=True)
-@patch("os.path.isdir", return_value=True)
-@patch("os.path.dirname", return_value="/test")
-def test_find_project_root_file(mock_dirname, mock_isdir, mock_isfile):
-    result = find_project_root("/test/file.txt")
-    assert result == "/test"
-    mock_isfile.assert_called_with("/test/file.txt")
-    mock_dirname.assert_called_with("/test/file.txt")
-    mock_isdir.assert_called_with("/test/.devcontainer")
-
-
-def test_find_project_root_with_git_dir():
-    """Test finding project root with .devcontainer directory."""
-    with patch("os.path.isdir", return_value=True):
-        result = find_project_root("/test/path/subdir")
-        assert result == "/test/path/subdir"
-
-
-def test_find_project_root_with_path():
-    """Test find_project_root with a provided path."""
-    with patch("os.path.isdir", return_value=True):
-        result = find_project_root("/test/path")
-        assert result == "/test/path"
 
 
 # =============================================================================

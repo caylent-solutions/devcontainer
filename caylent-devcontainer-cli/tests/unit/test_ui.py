@@ -6,7 +6,7 @@ from unittest.mock import patch
 # Add the parent directory to the path so we can import the CLI module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from caylent_devcontainer_cli.utils.ui import COLORS, confirm_action, log, show_banner
+from caylent_devcontainer_cli.utils.ui import COLORS, confirm_action, log
 
 
 def test_colors():
@@ -52,12 +52,6 @@ def test_log_unknown(capsys):
     captured = capsys.readouterr()
     assert "[UNKNOWN]" in captured.err
     assert "Test message" in captured.err
-
-
-def test_show_banner(capsys):
-    show_banner()
-    captured = capsys.readouterr()
-    assert "Caylent Devcontainer CLI" in captured.out
 
 
 def test_confirm_action_yes(capsys):

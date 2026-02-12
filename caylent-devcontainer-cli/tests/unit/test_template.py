@@ -601,20 +601,6 @@ def test_load_template_v1x_rejected_by_validate():
 # Additional tests for missing coverage
 
 
-def test_get_missing_env_vars():
-    """Test get_missing_env_vars function."""
-    from caylent_devcontainer_cli.utils.env import get_missing_env_vars
-
-    container_env = {"EXISTING_VAR": "value"}
-    example_values = {"EXISTING_VAR": "existing", "MISSING_VAR": "default_value", "COMPLEX_VAR": {"nested": "object"}}
-
-    with patch("caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES", example_values):
-        result = get_missing_env_vars(container_env)
-        assert "MISSING_VAR" in result
-        assert "EXISTING_VAR" not in result
-        assert "COMPLEX_VAR" not in result
-
-
 def test_save_template_no_env_file():
     """Test save_template when environment file doesn't exist."""
     with (

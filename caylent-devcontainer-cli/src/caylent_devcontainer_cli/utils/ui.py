@@ -8,8 +8,6 @@ from typing import Any, Callable, Optional
 
 import questionary
 
-from caylent_devcontainer_cli import __version__
-
 # ANSI Colors
 COLORS = {
     "CYAN": "\033[1;36m",
@@ -246,16 +244,12 @@ def validate_ssh_key_file(key_path: str) -> tuple:
                 )
             return (False, f"Invalid SSH key: {result.stderr.strip()}")
 
-        # Get fingerprint
-        fp_result = subprocess.run(
-            ["ssh-keygen", "-l", "-f", tmp_path],
-            capture_output=True,
-            text=True,
-        )
-        if fp_result.returncode != 0:
-            return (False, f"Could not read key fingerprint: {fp_result.stderr.strip()}")
+        # Get fingerprint (reuse ssh_fingerprint to avoid duplicating subprocess call)
+        fingerprint = ssh_fingerprint(tmp_path)
+        if fingerprint.startswith("Error"):
+            return (False, f"Could not read key fingerprint: {fingerprint}")
 
-        return (True, fp_result.stdout.strip())
+        return (True, fingerprint)
     finally:
         os.unlink(tmp_path)
 
@@ -269,13 +263,3 @@ def confirm_action(message):
         return False
     print()
     return True
-
-
-def show_banner():
-    """Display a fancy banner."""
-    print(f"{COLORS['BLUE']}╔═══════════════════════════════════════════════════════════╗")
-    print("║                                                           ║")
-    print(f"║   {COLORS['CYAN']}🐳 Caylent Devcontainer CLI v{__version__}{COLORS['BLUE']}                      ║")
-    print("║                                                           ║")
-    print(f"╚═══════════════════════════════════════════════════════════╝{COLORS['RESET']}")
-    print()

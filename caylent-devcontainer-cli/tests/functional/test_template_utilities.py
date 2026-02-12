@@ -7,12 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
-from caylent_devcontainer_cli.utils.env import get_missing_env_vars
 from caylent_devcontainer_cli.utils.fs import resolve_project_root
 from caylent_devcontainer_cli.utils.template import (
-    check_template_version,
     ensure_templates_dir,
     get_template_names,
     get_template_path,
@@ -116,49 +113,6 @@ class TestValidateTemplateEndToEnd:
         result = validate_template(data)
         assert result["containerEnv"]["AWS_CONFIG_ENABLED"] == "true"
         assert result["aws_profile_map"] == {}
-
-
-class TestCheckTemplateVersionEndToEnd:
-    """Functional tests for check_template_version."""
-
-    def test_accepts_compatible_template(self):
-        """Test accepting a template with matching major version."""
-        data = {"cli_version": __version__}
-        # Should not raise
-        check_template_version(data)
-
-    def test_rejects_incompatible_template(self):
-        """Test rejecting a template with wrong major version."""
-        data = {"cli_version": "1.0.0"}
-        with patch("caylent_devcontainer_cli.utils.template.__version__", "2.0.0"):
-            with pytest.raises(SystemExit):
-                check_template_version(data)
-
-    def test_rejects_missing_version(self):
-        """Test rejecting a template without cli_version."""
-        data = {"containerEnv": {}}
-        with pytest.raises(SystemExit):
-            check_template_version(data)
-
-
-class TestGetMissingEnvVarsEndToEnd:
-    """Functional tests for get_missing_env_vars."""
-
-    def test_detects_missing_vars_against_example_values(self):
-        """Test detecting missing env vars against EXAMPLE_ENV_VALUES."""
-        example = {
-            "VAR_A": "default_a",
-            "VAR_B": "default_b",
-            "VAR_C": {"complex": "object"},
-        }
-        container_env = {"VAR_A": "my_value"}
-
-        with patch("caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES", example):
-            missing = get_missing_env_vars(container_env)
-
-        assert missing == {"VAR_B": "default_b"}
-        assert "VAR_A" not in missing
-        assert "VAR_C" not in missing
 
 
 class TestResolveProjectRootEndToEnd:

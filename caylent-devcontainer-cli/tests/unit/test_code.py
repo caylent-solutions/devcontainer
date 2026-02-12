@@ -638,17 +638,3 @@ def test_step4_displays_missing_variables(
 # =============================================================================
 # Backward compat tests
 # =============================================================================
-
-
-@patch(
-    "caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES",
-    {"EXISTING_VAR": "default1", "MISSING_VAR": "default2", "COMPLEX_VAR": {"key": "value"}},
-)
-def test_get_missing_env_vars():
-    """Test checking for missing environment variables."""
-    from caylent_devcontainer_cli.utils.env import get_missing_env_vars
-
-    container_env = {"EXISTING_VAR": "value"}
-    missing = get_missing_env_vars(container_env)
-
-    assert missing == {"MISSING_VAR": "default2"}

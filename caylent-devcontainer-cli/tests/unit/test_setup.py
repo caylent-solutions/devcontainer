@@ -1355,38 +1355,3 @@ def test_example_env_values_includes_required_keys():
     assert EXAMPLE_ENV_VALUES["HOST_PROXY_URL"] == ""
     # CICD removed in v2 — no longer a template variable
     assert "CICD" not in EXAMPLE_ENV_VALUES
-
-
-def test_is_single_line_env_var():
-    """Test single line environment variable detection."""
-    from caylent_devcontainer_cli.utils.env import is_single_line_env_var
-
-    # Single line strings
-    assert is_single_line_env_var("simple_string") is True
-    assert is_single_line_env_var("value with spaces") is True
-    assert is_single_line_env_var("") is True
-
-    # Multiline strings
-    assert is_single_line_env_var("line1\nline2") is False
-    assert is_single_line_env_var("line1\n") is False
-
-    # Complex types
-    assert is_single_line_env_var({"key": "value"}) is False
-    assert is_single_line_env_var(["item1", "item2"]) is False
-    assert is_single_line_env_var(123) is False
-    assert is_single_line_env_var(True) is False
-
-
-@patch(
-    "caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES",
-    {"VAR1": "value1", "VAR2": "value2", "VAR3": {"complex": "object"}, "VAR4": "multiline\nvalue"},
-)
-def test_get_missing_env_vars():
-    """Test getting missing single line variables."""
-    from caylent_devcontainer_cli.utils.env import get_missing_env_vars
-
-    container_env = {"VAR1": "existing_value"}
-    missing = get_missing_env_vars(container_env)
-
-    # Should only include VAR2 (single line, missing)
-    assert missing == {"VAR2": "value2"}
