@@ -76,9 +76,11 @@ All development follows test-driven development:
 
 ### Never Bypass Quality Gates
 
+**Never use any mechanism that causes quality tools to skip or ignore findings:**
+
 - **Never use `--no-verify`** on any git command
-- **Never use `# noqa`, `// nosec`, `@SuppressWarnings`**, or any annotation that silences linters or security scanners
-- **Never modify linter/scanner configs to ignore findings**
+- **Never add inline suppression comments** to code — this includes `# noqa`, `# nosec`, `# type: ignore`, `# pragma: no cover`, `// nolint`, `// eslint-disable`, `@SuppressWarnings`, or any similar annotation in any language that tells a linter, security scanner, type checker, or coverage tool to ignore a finding
+- **Never modify tool configurations** (`.flake8`, `.eslintignore`, `.banditrc`, etc.) to add ignore rules or exclude files
 - If a hook, linter, or security check fails — **fix the root cause**, do not bypass it
 - If you believe a finding is a false positive, ask the human — never suppress it yourself
 

@@ -860,13 +860,29 @@ When adding files with git:
 
 ### Never Bypass Hooks, Linters, or Security Checks
 
-**Never use flags or options that skip or bypass quality gates:**
+**Never use flags, options, inline comments, configuration changes, or any other mechanism that causes quality tools to skip or ignore findings:**
 
-- **Never use `--no-verify`** on `git commit`, `git push`, or any git command
-- **Never use `--no-gpg-sign`** or other hook-skipping flags
-- **Never use `# noqa`**, `// nosec`, `@SuppressWarnings`, or similar annotations to silence linters or security scanners
-- **Never modify linter/scanner configurations to ignore findings**
-- **Never use `--skip-checks`**, `--force`, or equivalent flags to bypass CI/CD quality gates
+**Prohibited command-line flags:**
+- `--no-verify` on any git command
+- `--no-gpg-sign` or other hook-skipping flags
+- `--skip-checks`, `--force`, or equivalent flags to bypass CI/CD quality gates
+
+**Prohibited inline code annotations (these tell tools to ignore findings):**
+- `# noqa` (flake8/ruff ignore)
+- `# nosec` (bandit security ignore)
+- `// nosec` (gosec ignore)
+- `# type: ignore` (mypy ignore)
+- `@SuppressWarnings` (Java ignore)
+- `// nolint` (golangci-lint ignore)
+- `// eslint-disable` or `/* eslint-disable */` (ESLint ignore)
+- `# pragma: no cover` (coverage ignore)
+- `# skipcq` (DeepSource ignore)
+- Any similar annotation in any language that suppresses a linter, formatter, type checker, or security scanner finding
+
+**Prohibited configuration changes:**
+- Adding files or patterns to `.flake8`, `.eslintignore`, `.banditrc`, or similar ignore lists to hide findings
+- Adding `exclude` rules to security scanner configs
+- Modifying tool configurations to raise thresholds or disable rules
 
 **If a hook, linter, or security check fails:**
 1. Investigate and fix the root cause
