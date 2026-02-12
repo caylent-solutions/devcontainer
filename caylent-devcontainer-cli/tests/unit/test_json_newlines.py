@@ -9,31 +9,21 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from caylent_devcontainer_cli.commands.setup_interactive import apply_template, save_template_to_file
 
 
-@patch("os.path.exists", return_value=False)
-@patch("shutil.copytree")
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.load", return_value={"containerEnv": {}})
-@patch("json.dump")
-@patch("os.path.basename", return_value="target")
-@patch("os.path.abspath", return_value="/target")
-def test_apply_template_adds_newlines(
-    mock_abspath, mock_basename, mock_json_dump, mock_json_load, mock_file, mock_copytree, mock_exists
-):
+@patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
+def test_apply_template_calls_write_project_files(mock_write_files):
+    """Test that apply_template delegates to write_project_files."""
     template_data = {
         "env_values": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
-        apply_template(template_data, "/target", "/source")
+        apply_template(template_data, "/target")
 
-    # Check that write was called with a newline for both files
-    write_calls = mock_file().write.call_args_list
-    assert any(args[0][0] == "\n" for args in write_calls)
-
-    # We don't need to check the exact count as json.dump() makes multiple write calls
-    # Just verify that at least one newline was written
-    assert sum(1 for args in write_calls if args[0][0] == "\n") >= 1
+    mock_write_files.assert_called_once()
+    call_args = mock_write_files.call_args
+    assert call_args[0][0] == "/target"
+    assert call_args[0][1] == template_data
 
 
 @patch("os.path.exists", return_value=False)

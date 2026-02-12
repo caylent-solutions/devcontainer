@@ -94,7 +94,7 @@ def handle_setup(args):
                 show_manual_instructions(target_path)
             else:
                 # Interactive setup
-                interactive_setup(temp_dir, target_path)
+                interactive_setup(target_path)
                 # Create VERSION file
                 create_version_file(target_path)
                 # Ensure .gitignore entries
@@ -108,8 +108,8 @@ def handle_setup(args):
             ensure_gitignore_entries(target_path)
             show_manual_instructions(target_path)
         else:
-            # Interactive setup without cloning - just create environment files
-            interactive_setup_without_clone(target_path)
+            # Interactive setup - just create environment files
+            interactive_setup(target_path)
             # Ensure .gitignore entries
             ensure_gitignore_entries(target_path)
 
@@ -270,8 +270,13 @@ def show_manual_instructions(target_path: str) -> None:
     print("\n📚 For more information, see: https://github.com/caylent-solutions/devcontainer#-quick-start")
 
 
-def interactive_setup(source_dir: str, target_path: str) -> None:
-    """Run interactive setup process."""
+def interactive_setup(target_path: str) -> None:
+    """Run interactive setup process.
+
+    Handles template selection/creation flow and calls apply_template()
+    for environment file generation. Does NOT copy .devcontainer/ files —
+    that responsibility belongs to the catalog pipeline.
+    """
     from caylent_devcontainer_cli.commands.setup_interactive import (
         apply_template,
         create_template_interactive,
@@ -289,7 +294,7 @@ def interactive_setup(source_dir: str, target_path: str) -> None:
             template_name = select_template()
             if template_name:
                 template_data = load_template_from_file(template_name)
-                apply_template(template_data, target_path, source_dir)
+                apply_template(template_data, target_path)
                 log("OK", f"Template '{template_name}' applied successfully.")
                 return
 
@@ -303,46 +308,7 @@ def interactive_setup(source_dir: str, target_path: str) -> None:
             save_template_to_file(template_data, template_name)
 
         # Apply the template
-        apply_template(template_data, target_path, source_dir)
-        log("OK", "Setup completed successfully.")
-    except KeyboardInterrupt:
-        exit_cancelled("Setup cancelled by user.")
-
-
-def interactive_setup_without_clone(target_path: str) -> None:
-    """Run interactive setup without cloning - only create environment files."""
-    from caylent_devcontainer_cli.commands.setup_interactive import (
-        apply_template_without_clone,
-        create_template_interactive,
-        load_template_from_file,
-        prompt_save_template,
-        prompt_template_name,
-        prompt_use_template,
-        save_template_to_file,
-        select_template,
-    )
-
-    try:
-        # Ask if they want to use a saved template
-        if prompt_use_template():
-            template_name = select_template()
-            if template_name:
-                template_data = load_template_from_file(template_name)
-                apply_template_without_clone(template_data, target_path)
-                log("OK", f"Template '{template_name}' applied successfully.")
-                return
-
-        # Create new template
-        log("INFO", "Creating a new configuration...")
-        template_data = create_template_interactive()
-
-        # Ask if they want to save the template
-        if prompt_save_template():
-            template_name = prompt_template_name()
-            save_template_to_file(template_data, template_name)
-
-        # Apply the template without overwriting .devcontainer
-        apply_template_without_clone(template_data, target_path)
+        apply_template(template_data, target_path)
         log("OK", "Setup completed successfully.")
     except KeyboardInterrupt:
         exit_cancelled("Setup cancelled by user.")

@@ -2,7 +2,6 @@
 
 import json
 import os
-import shutil
 from typing import Any, Dict, List, Optional
 
 import questionary
@@ -16,7 +15,6 @@ from caylent_devcontainer_cli.utils.constants import (
 )
 from caylent_devcontainer_cli.utils.fs import (
     load_json_config,
-    remove_example_files,
     write_json_file,
     write_project_files,
 )
@@ -457,42 +455,14 @@ def upgrade_template(template_data: Dict[str, Any]) -> Dict[str, Any]:
     return new_template
 
 
-def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: str) -> None:
-    """Apply template to target path."""
-    # Copy .devcontainer folder
-    source_devcontainer = os.path.join(source_dir, ".devcontainer")
-    target_devcontainer = os.path.join(target_path, ".devcontainer")
+def apply_template(template_data: Dict[str, Any], target_path: str) -> None:
+    """Apply template to target path.
 
-    if os.path.exists(target_devcontainer):
-        shutil.rmtree(target_devcontainer)
-
-    log("INFO", f"Copying .devcontainer folder to {target_path}...")
-    shutil.copytree(source_devcontainer, target_devcontainer)
-
-    # Remove example files
-    remove_example_files(target_devcontainer)
-
-    # Resolve template name from data or use "unknown"
-    template_name = template_data.get("template_name", "unknown")
-    template_path = template_data.get("template_path", "")
-
-    # Generate all project files (env vars JSON, shell.env, aws map, ssh key, gitignore)
-    write_project_files(target_path, template_data, template_name, template_path)
-
-    # Check and create .tool-versions file
-    container_env = template_data.get("containerEnv", {})
-    python_version = container_env.get("DEFAULT_PYTHON_VERSION")
-
-    if python_version:
-        from caylent_devcontainer_cli.commands.setup import check_and_create_tool_versions
-
-        check_and_create_tool_versions(target_path, python_version)
-
-    log("OK", "Template applied successfully")
-
-
-def apply_template_without_clone(template_data: Dict[str, Any], target_path: str) -> None:
-    """Apply template to target path without overwriting .devcontainer directory."""
+    Generates all project configuration files (environment variables JSON,
+    shell.env, AWS profile map, SSH key, .gitignore entries) via write_project_files().
+    Does NOT copy .devcontainer/ files — that responsibility belongs to the
+    catalog pipeline's copy_collection_to_project().
+    """
     # Resolve template name from data or use "unknown"
     template_name = template_data.get("template_name", "unknown")
     template_path_str = template_data.get("template_path", "")
@@ -509,4 +479,4 @@ def apply_template_without_clone(template_data: Dict[str, Any], target_path: str
 
         check_and_create_tool_versions(target_path, python_version)
 
-    log("OK", "Template applied successfully (existing .devcontainer preserved)")
+    log("OK", "Template applied successfully")

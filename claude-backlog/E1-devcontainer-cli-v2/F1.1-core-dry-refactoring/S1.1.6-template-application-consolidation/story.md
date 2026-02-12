@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.1.6 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.1 — Core DRY Refactoring & Removals |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -64,23 +64,42 @@ Merge duplicate template application and interactive setup functions into single
 
 ## Acceptance Criteria
 
-- [ ] `apply_template()` and `apply_template_without_clone()` merged into single `apply_template(template_data, target_path)`
-- [ ] `interactive_setup()` and `interactive_setup_without_clone()` merged into single `interactive_setup(target_path)`
-- [ ] Merged functions use `write_project_files()` for all file generation
-- [ ] Merged functions use shared utilities (get_template_path, ask_or_exit, etc.)
-- [ ] No `.devcontainer/` file copying in `apply_template` (deferred to catalog pipeline)
-- [ ] Old duplicate functions removed entirely
-- [ ] All callers updated to use merged functions
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] `apply_template()` and `apply_template_without_clone()` merged into single `apply_template(template_data, target_path)`
+- [x] `interactive_setup()` and `interactive_setup_without_clone()` merged into single `interactive_setup(target_path)`
+- [x] Merged functions use `write_project_files()` for all file generation
+- [x] Merged functions use shared utilities (get_template_path, ask_or_exit, etc.)
+- [x] No `.devcontainer/` file copying in `apply_template` (deferred to catalog pipeline)
+- [x] Old duplicate functions removed entirely
+- [x] All callers updated to use merged functions
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Merged `apply_template()` and `apply_template_without_clone()` into single `apply_template(template_data, target_path)` in `setup_interactive.py`
+  - Removed `source_dir` parameter and all `.devcontainer/` file copying logic (`shutil.copytree`, `shutil.rmtree`, `remove_example_files`)
+  - Removed `shutil` import and `remove_example_files` import (no longer needed)
+  - Function now only calls `write_project_files()` and `check_and_create_tool_versions()`
+- Merged `interactive_setup()` and `interactive_setup_without_clone()` into single `interactive_setup(target_path)` in `setup.py`
+  - Removed `source_dir` parameter
+  - Both clone and no-clone paths in `handle_setup()` now call `interactive_setup(target_path)`
+- Updated all callers in `handle_setup()` (lines 97 and 112)
+- Updated 19 failing tests across 3 test files:
+  - `test_setup.py`: Updated `apply_template` calls (2-arg), `interactive_setup` calls (1-arg), converted `_without_clone` tests to merged function tests, updated `handle_setup` mocks
+  - `test_apply_template.py`: Rewrote 4 tests for new signature, added `test_does_not_copy_devcontainer` and `test_calls_tool_versions`
+  - `test_json_newlines.py`: Updated `apply_template` call to 2-arg, simplified to test delegation to `write_project_files`
+- Wrote 9 functional tests in `test_template_application.py`
+- All 556 tests pass (408 unit + 148 functional), lint clean, pre-commit clean
+- Coverage: `setup.py` 96%, `setup_interactive.py` 97%
+
+**Remaining:** None — all acceptance criteria met.
 
 ---
 

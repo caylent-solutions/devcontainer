@@ -20,20 +20,16 @@ def test_apply_template_with_container_env():
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    devcontainer_json = {"containerEnv": {}}
     with (
-        patch("os.path.exists", return_value=False),
-        patch("shutil.copytree"),
-        patch("shutil.rmtree"),
-        patch("builtins.open"),
-        patch("json.dump"),
-        patch("json.load", return_value=devcontainer_json),
-        patch("os.remove"),
+        patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files") as mock_write,
         patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"),
-        patch("os.path.basename", return_value="path"),
-        patch("os.path.abspath", return_value="/target/path"),
     ):
-        apply_template(template_data, "/target/path", "/source/path")
+        apply_template(template_data, "/target/path")
+
+    mock_write.assert_called_once()
+    call_args = mock_write.call_args
+    assert call_args[0][0] == "/target/path"
+    assert call_args[0][1] == template_data
 
 
 def test_apply_template_with_env_values():
@@ -47,48 +43,20 @@ def test_apply_template_with_env_values():
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    devcontainer_json = {"containerEnv": {}}
     with (
-        patch("os.path.exists", return_value=False),
-        patch("shutil.copytree"),
-        patch("shutil.rmtree"),
-        patch("builtins.open"),
-        patch("json.dump"),
-        patch("json.load", return_value=devcontainer_json),
-        patch("os.remove"),
+        patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files") as mock_write,
         patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"),
-        patch("os.path.basename", return_value="path"),
-        patch("os.path.abspath", return_value="/target/path"),
     ):
-        apply_template(template_data, "/target/path", "/source/path")
+        apply_template(template_data, "/target/path")
+
+    mock_write.assert_called_once()
+    call_args = mock_write.call_args
+    assert call_args[0][0] == "/target/path"
+    assert call_args[0][1] == template_data
 
 
-def test_apply_template_with_existing_target():
-    """Test applying a template when target directory already exists."""
-    template_data = {
-        "containerEnv": {
-            "AWS_CONFIG_ENABLED": "false",
-        },
-    }
-
-    devcontainer_json = {"containerEnv": {}}
-    with (
-        patch("os.path.exists", return_value=True),
-        patch("shutil.copytree"),
-        patch("shutil.rmtree") as mock_rmtree,
-        patch("builtins.open"),
-        patch("json.dump"),
-        patch("json.load", return_value=devcontainer_json),
-        patch("os.remove"),
-        patch("os.path.basename", return_value="path"),
-        patch("os.path.abspath", return_value="/target/path"),
-    ):
-        apply_template(template_data, "/target/path", "/source/path")
-        mock_rmtree.assert_called_once()
-
-
-def test_apply_template_with_example_files():
-    """Test applying a template with example files that need to be removed."""
+def test_apply_template_does_not_copy_devcontainer():
+    """Test that apply_template does NOT copy .devcontainer/ files."""
     template_data = {
         "containerEnv": {
             "AWS_CONFIG_ENABLED": "false",
@@ -96,11 +64,27 @@ def test_apply_template_with_example_files():
     }
 
     with (
-        patch("os.path.exists", side_effect=[False, True, True]),
-        patch("shutil.copytree"),
-        patch("shutil.rmtree"),
-        patch("os.remove") as mock_remove,
         patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files"),
+        patch("shutil.copytree") as mock_copytree,
+        patch("shutil.rmtree") as mock_rmtree,
     ):
-        apply_template(template_data, "/target/path", "/source/path")
-        assert mock_remove.call_count == 2
+        apply_template(template_data, "/target/path")
+        mock_copytree.assert_not_called()
+        mock_rmtree.assert_not_called()
+
+
+def test_apply_template_calls_tool_versions():
+    """Test that apply_template calls check_and_create_tool_versions when python version present."""
+    template_data = {
+        "containerEnv": {
+            "AWS_CONFIG_ENABLED": "false",
+            "DEFAULT_PYTHON_VERSION": "3.12.9",
+        },
+    }
+
+    with (
+        patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files"),
+        patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions") as mock_tool,
+    ):
+        apply_template(template_data, "/target/path")
+        mock_tool.assert_called_once_with("/target/path", "3.12.9")

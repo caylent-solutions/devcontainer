@@ -528,34 +528,28 @@ def test_load_template_from_file_not_found(mock_exists):
 
 
 @patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
-@patch("os.path.exists", return_value=False)
-@patch("shutil.copytree")
-def test_apply_template_without_aws(mock_copytree, mock_exists, mock_write_files):
+def test_apply_template_without_aws(mock_write_files):
     template_data = {
         "env_values": {"AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {},
     }
 
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
-        apply_template(template_data, "/target", "/source")
+        apply_template(template_data, "/target")
 
-    mock_copytree.assert_called_once()
     mock_write_files.assert_called_once()
 
 
 @patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
-@patch("os.path.exists", return_value=False)
-@patch("shutil.copytree")
-def test_apply_template_with_aws(mock_copytree, mock_exists, mock_write_files):
+def test_apply_template_with_aws(mock_write_files):
     template_data = {
         "env_values": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
-        apply_template(template_data, "/target", "/source")
+        apply_template(template_data, "/target")
 
-    mock_copytree.assert_called_once()
     mock_write_files.assert_called_once()
 
 
@@ -688,11 +682,11 @@ def test_handle_setup_with_existing_version_cancel():
         patch("os.path.exists", side_effect=[True, True]),
         patch("builtins.open", mock_open(read_data="1.0.0")),
         patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False),
-        patch("caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone") as mock_interactive_no_clone,
+        patch("caylent_devcontainer_cli.commands.setup.interactive_setup") as mock_interactive,
         patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"),
     ):
         handle_setup(args)
-        mock_interactive_no_clone.assert_called_once_with("/test/path")
+        mock_interactive.assert_called_once_with("/test/path")
 
 
 def test_handle_setup_with_existing_no_version():
@@ -723,11 +717,11 @@ def test_handle_setup_with_existing_no_version_cancel():
         patch("os.path.isdir", return_value=True),
         patch("os.path.exists", side_effect=[True, False]),
         patch("caylent_devcontainer_cli.commands.setup.confirm_action", return_value=False),
-        patch("caylent_devcontainer_cli.commands.setup.interactive_setup_without_clone") as mock_interactive_no_clone,
+        patch("caylent_devcontainer_cli.commands.setup.interactive_setup") as mock_interactive,
         patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries"),
     ):
         handle_setup(args)
-        mock_interactive_no_clone.assert_called_once_with("/test/path")
+        mock_interactive.assert_called_once_with("/test/path")
 
 
 # Tests from test_setup_version.py
@@ -983,7 +977,7 @@ def test_load_template_from_file_without_version():
 def test_interactive_setup_with_template(mock_apply, mock_load, mock_select, mock_prompt):
     mock_load.return_value = {"env_values": {}, "aws_profile_map": {}}
 
-    interactive_setup("/source", "/target")
+    interactive_setup("/target")
 
     mock_prompt.assert_called_once()
     mock_select.assert_called_once()
@@ -998,7 +992,7 @@ def test_interactive_setup_with_template(mock_apply, mock_load, mock_select, moc
 def test_interactive_setup_without_template(mock_apply, mock_save_prompt, mock_create, mock_prompt):
     mock_create.return_value = {"env_values": {}, "aws_profile_map": {}}
 
-    interactive_setup("/source", "/target")
+    interactive_setup("/target")
 
     mock_prompt.assert_called_once()
     mock_create.assert_called_once()
@@ -1017,7 +1011,7 @@ def test_interactive_setup_save_new_template(
 ):
     mock_create.return_value = {"env_values": {}, "aws_profile_map": {}}
 
-    interactive_setup("/source", "/target")
+    interactive_setup("/target")
 
     mock_prompt.assert_called_once()
     mock_create.assert_called_once()
@@ -1085,18 +1079,16 @@ def test_ensure_gitignore_entries_all_present(mock_file, mock_exists, capsys):
     assert "All required entries already present in .gitignore" in captured.err
 
 
-# Tests for interactive_setup_without_clone function
+# Tests for interactive_setup (merged — covers both clone and no-clone paths)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=True)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.select_template", return_value="test-template")
 @patch("caylent_devcontainer_cli.commands.setup_interactive.load_template_from_file")
-@patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template_without_clone")
-def test_interactive_setup_without_clone_with_template(mock_apply, mock_load, mock_select, mock_prompt):
-    """Test interactive setup without clone using existing template."""
-    from caylent_devcontainer_cli.commands.setup import interactive_setup_without_clone
-
+@patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template")
+def test_interactive_setup_existing_template_no_clone(mock_apply, mock_load, mock_select, mock_prompt):
+    """Test interactive setup using existing template (no-clone path)."""
     mock_load.return_value = {"containerEnv": {"TEST": "value"}, "aws_profile_map": {}}
 
-    interactive_setup_without_clone("/target")
+    interactive_setup("/target")
 
     mock_prompt.assert_called_once()
     mock_select.assert_called_once()
@@ -1107,14 +1099,12 @@ def test_interactive_setup_without_clone_with_template(mock_apply, mock_load, mo
 @patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=False)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive")
 @patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_save_template", return_value=False)
-@patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template_without_clone")
-def test_interactive_setup_without_clone_new_template(mock_apply, mock_save_prompt, mock_create, mock_prompt):
-    """Test interactive setup without clone creating new template."""
-    from caylent_devcontainer_cli.commands.setup import interactive_setup_without_clone
-
+@patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template")
+def test_interactive_setup_new_template_no_clone(mock_apply, mock_save_prompt, mock_create, mock_prompt):
+    """Test interactive setup creating new template (no-clone path)."""
     mock_create.return_value = {"containerEnv": {"TEST": "value"}, "aws_profile_map": {}}
 
-    interactive_setup_without_clone("/target")
+    interactive_setup("/target")
 
     mock_prompt.assert_called_once()
     mock_create.assert_called_once()
@@ -1123,27 +1113,23 @@ def test_interactive_setup_without_clone_new_template(mock_apply, mock_save_prom
 
 
 @patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", side_effect=KeyboardInterrupt)
-def test_interactive_setup_without_clone_keyboard_interrupt(mock_prompt):
-    """Test interactive setup without clone handles KeyboardInterrupt."""
-    from caylent_devcontainer_cli.commands.setup import interactive_setup_without_clone
-
+def test_interactive_setup_keyboard_interrupt(mock_prompt):
+    """Test interactive setup handles KeyboardInterrupt."""
     with pytest.raises(SystemExit):
-        interactive_setup_without_clone("/target")
+        interactive_setup("/target")
 
 
-# Tests for apply_template_without_clone function
+# Tests for apply_template (merged — single function, no .devcontainer/ copying)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
-def test_apply_template_without_clone_containerenv(mock_write_files):
-    """Test apply template without clone using containerEnv format."""
-    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
-
+def test_apply_template_containerenv(mock_write_files):
+    """Test apply template using containerEnv format."""
     template_data = {
         "containerEnv": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {},
     }
 
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
-        apply_template_without_clone(template_data, "/target")
+        apply_template(template_data, "/target")
 
     mock_write_files.assert_called_once()
     call_args = mock_write_files.call_args
@@ -1152,17 +1138,15 @@ def test_apply_template_without_clone_containerenv(mock_write_files):
 
 
 @patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
-def test_apply_template_without_clone_env_values(mock_write_files):
-    """Test apply template without clone using old env_values format."""
-    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
-
+def test_apply_template_env_values(mock_write_files):
+    """Test apply template using old env_values format."""
     template_data = {
         "env_values": {"TEST_VAR": "test_value", "AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {},
     }
 
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
-        apply_template_without_clone(template_data, "/target")
+        apply_template(template_data, "/target")
 
     mock_write_files.assert_called_once()
     call_args = mock_write_files.call_args
@@ -1171,17 +1155,15 @@ def test_apply_template_without_clone_env_values(mock_write_files):
 
 
 @patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
-def test_apply_template_without_clone_with_aws(mock_write_files):
-    """Test apply template without clone with AWS configuration."""
-    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
-
+def test_apply_template_with_aws_config(mock_write_files):
+    """Test apply template with AWS configuration."""
     template_data = {
         "containerEnv": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
-        apply_template_without_clone(template_data, "/target")
+        apply_template(template_data, "/target")
 
     mock_write_files.assert_called_once()
     call_args = mock_write_files.call_args
@@ -1190,13 +1172,11 @@ def test_apply_template_without_clone_with_aws(mock_write_files):
 
 
 @patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
-def test_apply_template_without_clone_no_aws(mock_write_files):
-    """Test apply template without clone without AWS configuration."""
-    from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
-
+def test_apply_template_no_aws_config(mock_write_files):
+    """Test apply template without AWS configuration."""
     template_data = {"containerEnv": {"AWS_CONFIG_ENABLED": "false"}, "aws_profile_map": {}}
 
-    apply_template_without_clone(template_data, "/target")
+    apply_template(template_data, "/target")
 
     mock_write_files.assert_called_once()
     call_args = mock_write_files.call_args
