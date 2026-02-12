@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.3.2 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.3 — Command Rewrites |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -58,21 +58,39 @@ This flag is for when a user manually edits devcontainer-environment-variables.j
 
 ## Acceptance Criteria
 
-- [ ] code command does not source shell.env before launching IDE
-- [ ] Launch command is simply `<ide_command> <project_root>`
-- [ ] Missing file detection with clear error messages for each file
-- [ ] --regenerate-shell-env flag implemented
-- [ ] --regenerate-shell-env reads JSON, regenerates shell.env only, does not modify JSON
-- [ ] Regenerated shell.env includes metadata, sorted exports, static values, proxy vars
-- [ ] IDE command verification (in PATH check) still works
-- [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] code command does not source shell.env before launching IDE
+- [x] Launch command is simply `<ide_command> <project_root>`
+- [x] Missing file detection with clear error messages for each file
+- [x] --regenerate-shell-env flag implemented
+- [x] --regenerate-shell-env reads JSON, regenerates shell.env only, does not modify JSON
+- [x] Regenerated shell.env includes metadata, sorted exports, static values, proxy vars
+- [x] IDE command verification (in PATH check) still works
+- [x] 90%+ unit test coverage, functional tests pass
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — Current
+
+**Completed:**
+- Extracted `write_shell_env()` from `write_project_files()` in `fs.py` for DRY reuse
+- Wrote 17 unit tests (TDD RED then GREEN) covering register_command, IDE_CONFIG, missing file detection, no-source launch, --regenerate-shell-env, launch failure, backward compat
+- Rewrote `handle_code()` in `code.py`: removed shell.env sourcing, removed auto-regeneration/staleness check, removed `ensure_gitignore_entries`, added `--regenerate-shell-env` flag, launch is `[ide_command, project_root]`
+- Added 12 functional tests: file detection (3), source inspection (8), --regenerate-shell-env end-to-end with proxy vars (2)
+- Added 2 CLI end-to-end tests in `test_code_command.py`: regenerate creates shell.env + launches, regenerate requires JSON
+- Updated `test_cdevcontainer.py` to match new behavior
+- 100% unit test coverage on code.py, 92% on fs.py
+- 733 tests pass (3 skipped), lint clean, pre-commit clean
+
+**Files Modified:**
+- `src/caylent_devcontainer_cli/commands/code.py` — rewrote handle_code, added --regenerate-shell-env
+- `src/caylent_devcontainer_cli/utils/fs.py` — extracted write_shell_env()
+- `tests/unit/test_code.py` — rewrote with 17 tests
+- `tests/unit/test_cdevcontainer.py` — simplified test_handle_code
+- `tests/functional/test_code_missing_vars.py` — rewrote with 12 tests (file detection + source inspection + e2e)
+- `tests/functional/test_code_command.py` — added regenerate tests, updated assertions
 
 ---
 

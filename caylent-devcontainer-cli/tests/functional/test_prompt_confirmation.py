@@ -173,12 +173,12 @@ class TestAskOrExitStandardization:
         assert "ask_or_exit" in source
 
     def test_template_command_uses_ask_or_exit(self):
-        """commands/template.py prompt function uses ask_or_exit, not .ask()."""
+        """commands/template.py load_template uses ask_or_exit, not .ask()."""
         import inspect
 
         from caylent_devcontainer_cli.commands import template
 
-        source = inspect.getsource(template.prompt_for_missing_vars)
+        source = inspect.getsource(template.load_template)
         assert ".ask()" not in source
         assert "ask_or_exit" in source
 

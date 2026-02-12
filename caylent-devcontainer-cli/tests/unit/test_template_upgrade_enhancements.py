@@ -3,10 +3,6 @@
 from unittest.mock import patch
 
 from caylent_devcontainer_cli.commands.code import prompt_upgrade_or_continue
-from caylent_devcontainer_cli.commands.template import (
-    prompt_for_missing_vars,
-    upgrade_template_with_missing_vars,
-)
 from caylent_devcontainer_cli.utils.env import get_missing_env_vars, is_single_line_env_var
 
 
@@ -57,92 +53,6 @@ class TestMissingVarsDetection:
         missing = get_missing_env_vars(container_env)
 
         assert missing == {}
-
-
-class TestPromptForMissingVars:
-    """Test prompting for missing variables."""
-
-    @patch("questionary.confirm")
-    @patch("questionary.text")
-    def test_prompt_for_missing_vars_use_defaults(self, mock_text, mock_confirm):
-        """Test using default values for missing variables."""
-        mock_confirm.return_value.ask.return_value = True
-
-        missing_vars = {"VAR1": "default1", "VAR2": "default2"}
-
-        result = prompt_for_missing_vars(missing_vars)
-
-        assert result == {"VAR1": "default1", "VAR2": "default2"}
-        assert mock_confirm.call_count == 2
-
-    @patch("questionary.confirm")
-    @patch("questionary.text")
-    def test_prompt_for_missing_vars_custom_values(self, mock_text, mock_confirm):
-        """Test using custom values for missing variables."""
-        mock_confirm.return_value.ask.return_value = False
-        mock_text.return_value.ask.side_effect = ["custom1", "custom2"]
-
-        missing_vars = {"VAR1": "default1", "VAR2": "default2"}
-
-        result = prompt_for_missing_vars(missing_vars)
-
-        assert result == {"VAR1": "custom1", "VAR2": "custom2"}
-        assert mock_text.call_count == 2
-
-
-class TestUpgradeTemplateWithMissingVars:
-    """Test template upgrade with missing variables."""
-
-    @patch("caylent_devcontainer_cli.commands.setup_interactive.upgrade_template")
-    @patch("caylent_devcontainer_cli.commands.template.get_missing_env_vars")
-    @patch("caylent_devcontainer_cli.commands.template.prompt_for_missing_vars")
-    def test_upgrade_template_with_missing_vars(self, mock_prompt, mock_get_missing, mock_upgrade):
-        """Test upgrading template with missing variables."""
-        from caylent_devcontainer_cli import __version__
-
-        # Setup mocks
-        mock_upgrade.return_value = {
-            "containerEnv": {"existing_var": "value"},
-            "cli_version": __version__,
-            "aws_profile_map": {},
-        }
-        mock_get_missing.return_value = {"NEW_VAR": "default_value"}
-        mock_prompt.return_value = {"NEW_VAR": "user_value"}
-
-        template_data = {"containerEnv": {"existing_var": "value"}}
-
-        result = upgrade_template_with_missing_vars(template_data)
-
-        # Check that NEW_VAR was added
-        assert "NEW_VAR" in result["containerEnv"]
-        assert result["containerEnv"]["NEW_VAR"] == "user_value"
-        assert result["containerEnv"]["existing_var"] == "value"
-        assert result["cli_version"] == __version__
-
-        mock_upgrade.assert_called_once_with(template_data)
-        mock_get_missing.assert_called_once()
-        mock_prompt.assert_called_once_with({"NEW_VAR": "default_value"})
-
-    @patch("caylent_devcontainer_cli.commands.setup_interactive.upgrade_template")
-    @patch("caylent_devcontainer_cli.commands.template.get_missing_env_vars")
-    def test_upgrade_template_no_missing_vars(self, mock_get_missing, mock_upgrade):
-        """Test upgrading template with no missing variables."""
-        from caylent_devcontainer_cli import __version__
-
-        mock_upgrade.return_value = {
-            "containerEnv": {"existing_var": "value"},
-            "cli_version": __version__,
-            "aws_profile_map": {},
-        }
-        mock_get_missing.return_value = {}
-
-        template_data = {"containerEnv": {"existing_var": "value"}}
-
-        result = upgrade_template_with_missing_vars(template_data)
-
-        # Check basic structure
-        assert result["containerEnv"]["existing_var"] == "value"
-        assert result["cli_version"] == __version__
 
 
 class TestCodeCommandMissingVars:

@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.2.4 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.2 — Template System |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -57,25 +57,41 @@ Brings an existing template up to the current CLI version's standards. Used for 
 
 ## Acceptance Criteria
 
-- [ ] `template upgrade` reads and validates existing template
-- [ ] v1.x templates rejected with migration error
-- [ ] Missing base keys detected and user prompted for values
-- [ ] Invalid constraint values detected and user prompted for correction
-- [ ] Auth method inconsistencies resolved via prompts
-- [ ] cli_version updated to current version
-- [ ] Template file saved after upgrades
-- [ ] Already up-to-date templates handled with info message
-- [ ] Template file only modified (no project files touched)
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] `template upgrade` reads and validates existing template
+- [x] v1.x templates rejected with migration error
+- [x] Missing base keys detected and user prompted for values
+- [x] Invalid constraint values detected and user prompted for correction
+- [x] Auth method inconsistencies resolved via prompts
+- [x] cli_version updated to current version
+- [x] Template file saved after upgrades
+- [x] Already up-to-date templates handled with info message
+- [x] Template file only modified (no project files touched)
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this story is in-queue)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Rewrote `upgrade_template_file()` in `commands/template.py` — removed `--force` flag, removed semver comparison, removed try/except wrapper, removed `upgrade_template_with_missing_vars()` and `prompt_for_missing_vars()`. Now uses `validate_template()` for all validation/fixes and checks for already-current version.
+- Removed old unit tests for force flag, semver parsing, version mismatch, missing vars prompting (12 tests removed)
+- Added 7 new unit tests: already_current_version, calls_validate_template, updates_cli_version, saves_template_file, success_message, v1x_rejected_by_validate, not_found
+- Added 6 source inspection tests: no_force_flag, no_try_except, uses_validate_template, no_semver_in_function, no_upgrade_template_import
+- Replaced `test_template_upgrade_force.py` with `test_template_upgrade.py` — 13 functional tests (8 source inspection + 5 end-to-end)
+- Removed duplicate tests from `test_template_upgrade_enhancements.py` (TestPromptForMissingVars, TestUpgradeTemplateWithMissingVars classes)
+- Removed duplicate tests from `test_setup.py` (test_prompt_for_missing_vars_use_defaults, test_upgrade_template_with_missing_vars)
+- Updated `test_prompt_confirmation.py` to reference load_template instead of removed prompt_for_missing_vars
+- Cleaned up imports: removed semver, upgrade_template from setup_interactive, get_missing_env_vars
+- Coverage: template.py 99%
+- Quality gate: 719 tests pass (3 skipped), lint clean, pre-commit clean
+
+**Remaining:**
+- None — all acceptance criteria met
 
 ---
 

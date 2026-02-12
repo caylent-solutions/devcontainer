@@ -4,10 +4,14 @@ import os
 import shutil
 import subprocess
 
-from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, EXAMPLE_ENV_FILE, SHELL_ENV_FILENAME
-from caylent_devcontainer_cli.utils.env import get_missing_env_vars
-from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_project_files
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, SHELL_ENV_FILENAME
+from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_shell_env
 from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, exit_cancelled, exit_with_error, log
+
+_GENERATE_HINT = (
+    "Run `cdevcontainer setup-devcontainer <path>` or "
+    "`cdevcontainer template load <name> -p <path>` to generate project files"
+)
 
 
 def prompt_upgrade_or_continue(missing_vars, template_name=None):
@@ -23,7 +27,7 @@ def prompt_upgrade_or_continue(missing_vars, template_name=None):
     print(f"\n{COLORS['BLUE']}To fix this issue:{COLORS['RESET']}")
     if template_name:
         print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force {template_name}{COLORS['RESET']} "
+            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade {template_name}{COLORS['RESET']} "
             "# To upgrade the template"
         )
         print(
@@ -32,7 +36,7 @@ def prompt_upgrade_or_continue(missing_vars, template_name=None):
         )
     else:
         print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade --force <template-name>{COLORS['RESET']} "
+            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade <template-name>{COLORS['RESET']} "
             "# To upgrade the template"
         )
         print(
@@ -90,51 +94,46 @@ def register_command(subparsers):
     code_parser.add_argument(
         "--ide", choices=["vscode", "cursor"], default="vscode", help="IDE to launch (default: vscode)"
     )
+    code_parser.add_argument(
+        "--regenerate-shell-env",
+        action="store_true",
+        help="Regenerate shell.env from existing JSON configuration without full setup",
+    )
     code_parser.set_defaults(func=handle_code)
 
 
 def handle_code(args):
-    """Handle the code command."""
+    """Handle the code command.
+
+    Environment variables are sourced inside the devcontainer by the
+    postCreateCommand — not before IDE launch.  The launch command is
+    simply ``<ide_command> <project_root>``.
+    """
     project_root = resolve_project_root(args.project_root)
 
-    # Check if devcontainer-environment-variables.json exists
     env_json = os.path.join(project_root, ENV_VARS_FILENAME)
     shell_env = os.path.join(project_root, SHELL_ENV_FILENAME)
 
-    if not os.path.isfile(env_json):
-        log("INFO", "Please create this file first:")
-        print(f"cp .devcontainer/{EXAMPLE_ENV_FILE} {ENV_VARS_FILENAME}")
-        exit_with_error(f"Configuration file not found: {env_json}")
+    # --regenerate-shell-env: read JSON, regenerate shell.env only
+    if args.regenerate_shell_env:
+        if not os.path.isfile(env_json):
+            exit_with_error(f"{ENV_VARS_FILENAME} not found at {env_json}. {_GENERATE_HINT}")
 
-    # Check for missing environment variables
-    try:
         config_data = load_json_config(env_json)
-        container_env = config_data.get("containerEnv", {})
-        missing_vars = get_missing_env_vars(container_env)
-        if missing_vars:
-            template_name = None
-            if "cli_version" in config_data:
-                # This might be from a template, but we can't determine the name
-                # So we'll just show the generic upgrade command
-                pass
-
-            prompt_upgrade_or_continue(list(missing_vars.keys()), template_name)
-    except SystemExit:
-        # If config loading fails, the error was already logged, just re-raise
-        raise
-
-    # Regenerate project files if shell.env is missing or stale
-    if not os.path.isfile(shell_env) or os.path.getmtime(env_json) > os.path.getmtime(shell_env):
-        log("INFO", "Generating environment variables...")
-        template_name = config_data.get("template_name", "unknown")
-        template_path = config_data.get("template_path", "")
-        write_project_files(project_root, config_data, template_name, template_path)
+        write_shell_env(
+            project_root,
+            config_data.get("containerEnv", {}),
+            config_data.get("cli_version", ""),
+            config_data.get("template_name", "unknown"),
+            config_data.get("template_path", ""),
+        )
+        log("OK", "Regenerated shell.env from existing JSON configuration")
     else:
-        log("INFO", "Using existing shell.env file")
-        # Ensure .gitignore entries even when not regenerating
-        from caylent_devcontainer_cli.commands.setup import ensure_gitignore_entries
-
-        ensure_gitignore_entries(project_root)
+        # Both files must already exist
+        if not os.path.isfile(env_json):
+            exit_with_error(f"{ENV_VARS_FILENAME} not found at {env_json}. {_GENERATE_HINT}")
+        if not os.path.isfile(shell_env):
+            exit_with_error(f"{SHELL_ENV_FILENAME} not found at {shell_env}. {_GENERATE_HINT}")
 
     # Get IDE configuration
     ide_config = IDE_CONFIG[args.ide]
@@ -146,15 +145,11 @@ def handle_code(args):
         log("INFO", ide_config["install_instructions"])
         exit_with_error(f"{ide_name} command '{ide_command}' not found in PATH")
 
-    # Launch IDE
+    # Launch IDE — env vars are sourced inside the devcontainer, not here
     log("INFO", f"Launching {ide_name}...")
 
-    # Create a command that sources the environment and runs the IDE
-    command = f"source {shell_env} && {ide_command} {project_root}"
-
     try:
-        # Execute the command in a new shell
-        process = subprocess.Popen(command, shell=True, executable=os.environ.get("SHELL", "/bin/bash"))
+        process = subprocess.Popen([ide_command, project_root])
         process.wait()
         log("OK", f"{ide_name} launched. Accept the prompt to reopen in container when it appears.")
     except Exception as e:

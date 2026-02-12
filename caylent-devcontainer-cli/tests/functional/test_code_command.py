@@ -28,6 +28,7 @@ def test_code_command_help():
     assert "vscode" in result.stdout
     assert "cursor" in result.stdout
     assert "IDE to launch" in result.stdout
+    assert "--regenerate-shell-env" in result.stdout
 
 
 def test_code_command_missing_config():
@@ -41,8 +42,8 @@ def test_code_command_missing_config():
         result = run_command(["cdevcontainer", "code", temp_dir])
 
         assert result.returncode != 0
-        assert "Configuration file not found" in result.stderr
         assert "devcontainer-environment-variables.json" in result.stderr
+        assert "setup-devcontainer" in result.stderr or "template load" in result.stderr
 
 
 def test_code_command_ide_not_found():
@@ -238,122 +239,22 @@ def test_code_command_cursor_ide():
         assert "Cursor command 'cursor' not found" in result.stderr
 
 
-def test_code_command_gitignore_creation():
-    """Test that code command creates .gitignore entries."""
+def test_code_command_launches_ide():
+    """Test that code command launches the IDE when both files exist."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create .devcontainer directory
         devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
         os.makedirs(devcontainer_dir)
 
-        # Create environment file with required variables
+        # Create environment file
         env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
         with open(env_file, "w") as f:
-            json.dump(
-                {
-                    "containerEnv": {
-                        "AWS_CONFIG_ENABLED": "true",
-                        "AWS_DEFAULT_OUTPUT": "json",
-                        "DEFAULT_GIT_BRANCH": "main",
-                        "DEFAULT_PYTHON_VERSION": "3.12.9",
-                        "DEVELOPER_NAME": "test",
-                        "EXTRA_APT_PACKAGES": "",
-                        "GIT_AUTH_METHOD": "token",
-                        "GIT_PROVIDER_URL": "github.com",
-                        "GIT_TOKEN": "test",
-                        "GIT_USER": "test",
-                        "GIT_USER_EMAIL": "test@example.com",
-                        "HOST_PROXY": "false",
-                        "HOST_PROXY_URL": "",
-                        "PAGER": "cat",
-                        "TEST": "value",
-                    }
-                },
-                f,
-            )
+            json.dump({"containerEnv": {"TEST": "value"}}, f)
 
-        # Create shell.env to skip generation step
+        # Create shell.env
         shell_env = os.path.join(temp_dir, "shell.env")
         with open(shell_env, "w") as f:
             f.write("export TEST=value\n")
-
-        # Create a fake IDE command that will succeed
-        fake_ide_dir = os.path.join(temp_dir, "fake_bin")
-        os.makedirs(fake_ide_dir)
-        fake_code = os.path.join(fake_ide_dir, "code")
-        with open(fake_code, "w") as f:
-            f.write("#!/bin/bash\necho 'fake code launched'\n")
-        os.chmod(fake_code, 0o755)
-
-        # Run code command with fake IDE in PATH
-        env = os.environ.copy()
-        env["PATH"] = fake_ide_dir + ":" + env.get("PATH", "")
-
-        result = subprocess.run(
-            ["cdevcontainer", "code", temp_dir],
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-
-        # Command should succeed
-        assert result.returncode == 0
-
-        # Check that .gitignore was created with required entries
-        gitignore_path = os.path.join(temp_dir, ".gitignore")
-        assert os.path.exists(gitignore_path)
-
-        with open(gitignore_path, "r") as f:
-            gitignore_content = f.read()
-
-        assert "shell.env" in gitignore_content
-        assert "devcontainer-environment-variables.json" in gitignore_content
-        assert ".devcontainer/aws-profile-map.json" in gitignore_content
-        assert "# Environment files" in gitignore_content
-
-
-def test_code_command_gitignore_update():
-    """Test that code command updates existing .gitignore."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Create .devcontainer directory
-        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
-        os.makedirs(devcontainer_dir)
-
-        # Create environment file with required variables
-        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
-        with open(env_file, "w") as f:
-            json.dump(
-                {
-                    "containerEnv": {
-                        "AWS_CONFIG_ENABLED": "true",
-                        "AWS_DEFAULT_OUTPUT": "json",
-                        "DEFAULT_GIT_BRANCH": "main",
-                        "DEFAULT_PYTHON_VERSION": "3.12.9",
-                        "DEVELOPER_NAME": "test",
-                        "EXTRA_APT_PACKAGES": "",
-                        "GIT_AUTH_METHOD": "token",
-                        "GIT_PROVIDER_URL": "github.com",
-                        "GIT_TOKEN": "test",
-                        "GIT_USER": "test",
-                        "GIT_USER_EMAIL": "test@example.com",
-                        "HOST_PROXY": "false",
-                        "HOST_PROXY_URL": "",
-                        "PAGER": "cat",
-                        "TEST": "value",
-                    }
-                },
-                f,
-            )
-
-        # Create shell.env to skip generation step
-        shell_env = os.path.join(temp_dir, "shell.env")
-        with open(shell_env, "w") as f:
-            f.write("export TEST=value\n")
-
-        # Create existing .gitignore with some entries
-        gitignore_path = os.path.join(temp_dir, ".gitignore")
-        with open(gitignore_path, "w") as f:
-            f.write("shell.env\nother-file.txt\n")
 
         # Create a fake IDE command
         fake_ide_dir = os.path.join(temp_dir, "fake_bin")
@@ -363,7 +264,6 @@ def test_code_command_gitignore_update():
             f.write("#!/bin/bash\necho 'fake code launched'\n")
         os.chmod(fake_code, 0o755)
 
-        # Run code command
         env = os.environ.copy()
         env["PATH"] = fake_ide_dir + ":" + env.get("PATH", "")
 
@@ -376,15 +276,89 @@ def test_code_command_gitignore_update():
         )
 
         assert result.returncode == 0
+        assert "launched" in result.stderr
 
-        # Check that .gitignore was updated with missing entries
-        with open(gitignore_path, "r") as f:
-            gitignore_content = f.read()
 
-        assert "shell.env" in gitignore_content  # Already existed
-        assert "other-file.txt" in gitignore_content  # Already existed
-        assert "devcontainer-environment-variables.json" in gitignore_content  # Added
-        assert ".devcontainer/aws-profile-map.json" in gitignore_content  # Added
+def test_code_command_missing_shell_env():
+    """Test code command fails when shell.env is missing."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create .devcontainer directory
+        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
+        os.makedirs(devcontainer_dir)
 
-        # Should show update message in stderr
-        assert "Updated .gitignore with" in result.stderr
+        # Create only the JSON file — no shell.env
+        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
+        with open(env_file, "w") as f:
+            json.dump({"containerEnv": {"TEST": "value"}}, f)
+
+        result = run_command(["cdevcontainer", "code", temp_dir])
+
+        assert result.returncode != 0
+        assert "shell.env" in result.stderr
+        assert "setup-devcontainer" in result.stderr or "template load" in result.stderr
+
+
+def test_code_command_regenerate_shell_env():
+    """Test --regenerate-shell-env creates shell.env and launches IDE."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create .devcontainer directory
+        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
+        os.makedirs(devcontainer_dir)
+
+        # Create environment JSON
+        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
+        with open(env_file, "w") as f:
+            json.dump(
+                {
+                    "template_name": "test",
+                    "template_path": "/templates/test.json",
+                    "cli_version": "2.0.0",
+                    "containerEnv": {"DEVELOPER_NAME": "tester", "HOST_PROXY": "false"},
+                },
+                f,
+            )
+
+        # Create a fake IDE command
+        fake_ide_dir = os.path.join(temp_dir, "fake_bin")
+        os.makedirs(fake_ide_dir)
+        fake_code = os.path.join(fake_ide_dir, "code")
+        with open(fake_code, "w") as f:
+            f.write("#!/bin/bash\necho 'fake code launched'\n")
+        os.chmod(fake_code, 0o755)
+
+        env = os.environ.copy()
+        env["PATH"] = fake_ide_dir + ":" + env.get("PATH", "")
+
+        result = subprocess.run(
+            ["cdevcontainer", "code", "--regenerate-shell-env", temp_dir],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        assert result.returncode == 0
+        assert "Regenerated shell.env" in result.stderr
+        assert "launched" in result.stderr
+
+        # Verify shell.env was created
+        shell_env_path = os.path.join(temp_dir, "shell.env")
+        assert os.path.exists(shell_env_path)
+
+        with open(shell_env_path, "r") as f:
+            content = f.read()
+        assert "export DEVELOPER_NAME='tester'" in content
+
+
+def test_code_command_regenerate_requires_json():
+    """Test --regenerate-shell-env fails if JSON is missing."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create .devcontainer directory
+        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
+        os.makedirs(devcontainer_dir)
+
+        # No JSON file
+        result = run_command(["cdevcontainer", "code", "--regenerate-shell-env", temp_dir])
+
+        assert result.returncode != 0
+        assert "devcontainer-environment-variables.json" in result.stderr

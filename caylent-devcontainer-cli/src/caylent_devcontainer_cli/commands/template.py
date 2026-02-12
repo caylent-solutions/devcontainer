@@ -2,12 +2,8 @@
 
 import os
 
-import semver
-
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME
-from caylent_devcontainer_cli.utils.env import get_missing_env_vars
 from caylent_devcontainer_cli.utils.fs import (
     load_json_config,
     resolve_project_root,
@@ -21,29 +17,6 @@ from caylent_devcontainer_cli.utils.template import (
     validate_template,
 )
 from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, confirm_action, exit_cancelled, exit_with_error, log
-
-
-def prompt_for_missing_vars(missing_vars):
-    """Prompt user for missing environment variables."""
-    import questionary
-
-    updated_vars = {}
-    for var_name, default_value in missing_vars.items():
-        log("INFO", f"New environment variable '{var_name}' needs to be added to your template")
-
-        use_default = ask_or_exit(
-            questionary.confirm(f"Use default value '{default_value}' for {var_name}?", default=True)
-        )
-
-        if use_default:
-            updated_vars[var_name] = default_value
-        else:
-            custom_value = ask_or_exit(
-                questionary.text(f"Enter custom value for {var_name}:", default=str(default_value))
-            )
-            updated_vars[var_name] = custom_value
-
-    return updated_vars
 
 
 def register_command(subparsers):
@@ -82,9 +55,6 @@ def register_command(subparsers):
     # 'template upgrade' command
     upgrade_parser = template_subparsers.add_parser("upgrade", help="Upgrade a template to the current CLI version")
     upgrade_parser.add_argument("name", help="Template name to upgrade")
-    upgrade_parser.add_argument(
-        "-f", "--force", action="store_true", help="Force full upgrade with interactive prompts for missing variables"
-    )
     upgrade_parser.set_defaults(func=handle_template_upgrade)
 
 
@@ -154,7 +124,7 @@ def create_new_template(template_name):
 
 def handle_template_upgrade(args):
     """Handle the template upgrade command."""
-    upgrade_template_file(args.name, force=args.force)
+    upgrade_template_file(args.name)
 
 
 def save_template(project_root, template_name):
@@ -280,81 +250,42 @@ def delete_template(template_name):
         log("ERR", f"Failed to delete template: {e}")
 
 
-def upgrade_template_with_missing_vars(template_data):
-    """Upgrade template with interactive prompts for missing variables."""
-    from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
+def upgrade_template_file(template_name):
+    """Upgrade a template to the current CLI version.
 
-    # First do the standard upgrade
-    upgraded_template = upgrade_template(template_data)
-
-    # Check for missing single-line environment variables
-    container_env = upgraded_template.get("containerEnv", {})
-    missing_vars = get_missing_env_vars(container_env)
-
-    if missing_vars:
-        log("INFO", f"Found {len(missing_vars)} missing environment variables")
-        new_vars = prompt_for_missing_vars(missing_vars)
-
-        # Add the new variables to the container environment
-        container_env.update(new_vars)
-        upgraded_template["containerEnv"] = container_env
-
-        log("OK", f"Added {len(new_vars)} new environment variables to template")
-    else:
-        log("INFO", "No missing environment variables found")
-
-    return upgraded_template
-
-
-def upgrade_template_file(template_name, force=False):
-    """Upgrade a template to the current CLI version."""
+    Reads the template, runs validate_template() to detect and fix all
+    issues (missing keys, invalid values, auth inconsistencies), updates
+    cli_version, and saves. Modifies ONLY the template file — no project
+    files are touched.
+    """
     template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
         exit_with_error(f"Template '{template_name}' not found at {template_path}")
 
-    try:
-        # Read the template file
-        template_data = load_json_config(template_path)
+    template_data = load_json_config(template_path)
 
-        # Check if force upgrade is requested
-        if force:
-            log("INFO", "Force upgrade requested - performing full upgrade with missing variable detection")
-            upgraded_template = upgrade_template_with_missing_vars(template_data)
-        else:
-            # Check if upgrade is needed
-            if "cli_version" in template_data:
-                template_version = template_data["cli_version"]
-                current_version = __version__
+    # Already at current version — no changes needed
+    if template_data.get("cli_version") == __version__:
+        log("INFO", f"Template '{template_name}' is already at CLI v{__version__}. No changes needed.")
+        return
 
-                try:
-                    # Parse versions using semver
-                    template_semver = semver.VersionInfo.parse(template_version)
-                    current_semver = semver.VersionInfo.parse(current_version)
+    # validate_template() handles all issues:
+    # - Rejects v1.x templates with migration error
+    # - Prompts for missing base keys
+    # - Validates constraint values
+    # - Checks auth consistency
+    # - Detects conflicts
+    template_data = validate_template(template_data)
 
-                    if template_semver.major == current_semver.major and template_semver.minor == current_semver.minor:
-                        # Even if the major and minor versions match, ensure the cli_version is updated
-                        template_data["cli_version"] = __version__
-                        write_json_file(template_path, template_data)
-                        log(
-                            "INFO",
-                            f"Template '{template_name}' version updated from {template_version} to {__version__}",
-                        )
-                        return
-                except ValueError:
-                    # If version parsing fails, proceed with upgrade
-                    pass
+    # Update cli_version to current
+    template_data["cli_version"] = __version__
 
-            # Upgrade the template
-            upgraded_template = upgrade_template(template_data)
+    # Save updated template
+    write_json_file(template_path, template_data)
 
-        # Write back to the template file
-        write_json_file(template_path, upgraded_template)
-
-        log(
-            "OK",
-            f"Template '{template_name}' upgraded from version "
-            f"{template_data.get('cli_version', 'unknown')} to {__version__}",
-        )
-    except Exception as e:
-        exit_with_error(f"Failed to upgrade template: {e}")
+    log(
+        "OK",
+        f"Template '{template_name}' upgraded to CLI v{__version__}. "
+        "Projects using this template will be updated on next `cdevcontainer code` run.",
+    )

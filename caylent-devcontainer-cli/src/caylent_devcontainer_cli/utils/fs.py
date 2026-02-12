@@ -111,40 +111,28 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
         exit_with_error(f"Failed to write to {output_file}: {e}")
 
 
-def write_project_files(
+def write_shell_env(
     project_root: str,
-    template_data: Dict[str, Any],
+    container_env: Dict[str, Any],
+    cli_version: str,
     template_name: str,
     template_path: str,
 ) -> None:
-    """Generate all project configuration files from template data.
+    """Generate shell.env from environment data.
 
-    This is the single function that produces project files. It always generates
-    devcontainer-environment-variables.json and shell.env together, and
-    conditionally writes aws-profile-map.json and ssh-private-key.
+    Produces shell.env with metadata comment header, sorted exports,
+    static container values, and proxy variables if HOST_PROXY=true.
+
+    This function is called by write_project_files() and also by the
+    code command's --regenerate-shell-env flag.
 
     Args:
         project_root: Path to the project root directory.
-        template_data: Template data dict containing containerEnv and optional aws_profile_map.
-        template_name: Name of the template (for metadata).
-        template_path: Path to the template file (for metadata).
+        container_env: Dict of environment variable key-value pairs.
+        cli_version: CLI version string for the metadata header.
+        template_name: Template name for the metadata header.
+        template_path: Template path for the metadata header.
     """
-    container_env = template_data.get("containerEnv", {})
-    cli_version = template_data.get("cli_version", __version__)
-
-    # --- 1. Write devcontainer-environment-variables.json ---
-    sorted_env = dict(sorted(container_env.items()))
-    env_json_data = {
-        "template_name": template_name,
-        "template_path": template_path,
-        "cli_version": cli_version,
-        "containerEnv": sorted_env,
-    }
-    env_json_path = os.path.join(project_root, ENV_VARS_FILENAME)
-    write_json_file(env_json_path, env_json_data)
-    log("OK", f"Environment variables saved to {env_json_path}")
-
-    # --- 2. Generate shell.env ---
     timestamp = datetime.now(timezone.utc).isoformat()
     project_folder = os.path.basename(os.path.abspath(project_root))
 
@@ -203,6 +191,43 @@ def write_project_files(
         log("OK", f"Shell environment saved to {shell_env_path}")
     except Exception as e:
         exit_with_error(f"Failed to write {shell_env_path}: {e}")
+
+
+def write_project_files(
+    project_root: str,
+    template_data: Dict[str, Any],
+    template_name: str,
+    template_path: str,
+) -> None:
+    """Generate all project configuration files from template data.
+
+    This is the single function that produces project files. It always generates
+    devcontainer-environment-variables.json and shell.env together, and
+    conditionally writes aws-profile-map.json and ssh-private-key.
+
+    Args:
+        project_root: Path to the project root directory.
+        template_data: Template data dict containing containerEnv and optional aws_profile_map.
+        template_name: Name of the template (for metadata).
+        template_path: Path to the template file (for metadata).
+    """
+    container_env = template_data.get("containerEnv", {})
+    cli_version = template_data.get("cli_version", __version__)
+
+    # --- 1. Write devcontainer-environment-variables.json ---
+    sorted_env = dict(sorted(container_env.items()))
+    env_json_data = {
+        "template_name": template_name,
+        "template_path": template_path,
+        "cli_version": cli_version,
+        "containerEnv": sorted_env,
+    }
+    env_json_path = os.path.join(project_root, ENV_VARS_FILENAME)
+    write_json_file(env_json_path, env_json_data)
+    log("OK", f"Environment variables saved to {env_json_path}")
+
+    # --- 2. Generate shell.env ---
+    write_shell_env(project_root, container_env, cli_version, template_name, template_path)
 
     # --- 3. Write aws-profile-map.json if AWS enabled ---
     if container_env.get("AWS_CONFIG_ENABLED") == "true" and template_data.get("aws_profile_map"):

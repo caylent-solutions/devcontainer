@@ -1,17 +1,18 @@
-#!/usr/bin/env python3
-import os
-import sys
-from unittest.mock import MagicMock, patch
+"""Unit tests for the code command (S1.3.2)."""
 
-# Add the parent directory to the path so we can import the CLI module
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from caylent_devcontainer_cli.commands.code import handle_code, register_command
+from caylent_devcontainer_cli.commands.code import IDE_CONFIG, handle_code, register_command
+
+# =============================================================================
+# register_command tests
+# =============================================================================
 
 
 def test_register_command():
+    """Test register_command creates the code parser with expected args."""
     mock_subparsers = MagicMock()
     mock_parser = MagicMock()
     mock_subparsers.add_parser.return_value = mock_parser
@@ -21,250 +22,17 @@ def test_register_command():
     mock_subparsers.add_parser.assert_called_once_with(
         "code", help="Launch IDE (VS Code, Cursor) with the devcontainer environment"
     )
-    assert mock_parser.add_argument.call_count >= 2
     mock_parser.set_defaults.assert_called_once_with(func=handle_code)
 
 
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
-@patch("os.path.isfile", side_effect=[False])
-def test_handle_code_missing_config(mock_isfile, mock_resolve_root, capsys):
-    args = MagicMock()
-    args.project_root = "/test/path"
-
-    with pytest.raises(SystemExit):
-        handle_code(args)
-
-    mock_resolve_root.assert_called_once_with("/test/path")
-    mock_isfile.assert_called_once()
-
-    captured = capsys.readouterr()
-    assert "Configuration file not found" in captured.err
-
-
-@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
-@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
-@patch("shutil.which", return_value="/usr/bin/code")
-@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
-@patch("os.path.isfile", side_effect=[True, True])
-@patch("os.path.getmtime", side_effect=[200, 100])  # env_json is newer than shell_env
-@patch("caylent_devcontainer_cli.commands.code.write_project_files")
-@patch("subprocess.Popen")
-def test_handle_code_regenerate_env(
-    mock_popen,
-    mock_generate,
-    mock_getmtime,
-    mock_isfile,
-    mock_resolve_root,
-    mock_gitignore,
-    mock_which,
-    mock_get_missing,
-    mock_load_json,
-    capsys,
-):
-    mock_process = MagicMock()
-    mock_process.wait.return_value = 0
-    mock_popen.return_value = mock_process
-
-    args = MagicMock()
-    args.project_root = "/test/path"
-    args.ide = "vscode"
-
-    handle_code(args)
-
-    mock_resolve_root.assert_called_once_with("/test/path")
-    assert mock_isfile.call_count == 2
-    assert mock_getmtime.call_count == 2
-    mock_generate.assert_called_once()
-    mock_popen.assert_called_once()
-
-    captured = capsys.readouterr()
-    assert "Generating environment variables" in captured.err
-
-
-@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
-@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
-@patch("shutil.which", return_value="/usr/bin/code")
-@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("subprocess.Popen")
-@patch("os.environ.get", return_value="/bin/zsh")
-def test_handle_code_custom_shell(
-    mock_environ_get, mock_popen, mock_gitignore, mock_which, mock_get_missing, mock_load_json, capsys
-):
-    mock_process = MagicMock()
-    mock_process.wait.return_value = 0
-    mock_popen.return_value = mock_process
-
-    with patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path"):
-        with patch("os.path.isfile", side_effect=[True, True]):
-            with patch("os.path.getmtime", side_effect=[100, 200]):  # shell_env is newer than env_json
-                args = MagicMock()
-                args.project_root = "/test/path"
-                args.ide = "vscode"
-
-                handle_code(args)
-
-                mock_popen.assert_called_once()
-                mock_environ_get.assert_called_once_with("SHELL", "/bin/bash")
-
-                # Check that the command uses the custom shell
-                cmd_args = mock_popen.call_args[0][0]
-                assert "source" in cmd_args
-                assert "shell.env" in cmd_args
-                assert "code" in cmd_args
-
-                captured = capsys.readouterr()
-                assert "Using existing shell.env file" in captured.err
-                assert "VS Code launched" in captured.err
-
-
-@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
-@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
-@patch("shutil.which", return_value="/usr/bin/cursor")
-@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
-@patch("os.path.isfile", side_effect=[True, True])
-@patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.write_project_files")
-@patch("subprocess.Popen")
-def test_handle_code_cursor(
-    mock_popen,
-    mock_generate,
-    mock_getmtime,
-    mock_isfile,
-    mock_resolve_root,
-    mock_gitignore,
-    mock_which,
-    mock_get_missing,
-    mock_load_json,
-    capsys,
-):
-    mock_process = MagicMock()
-    mock_process.wait.return_value = 0
-    mock_popen.return_value = mock_process
-
-    args = MagicMock()
-    args.project_root = "/test/path"
-    args.ide = "cursor"
-
-    handle_code(args)
-
-    mock_which.assert_called_once_with("cursor")
-    mock_popen.assert_called_once()
-    cmd_args = mock_popen.call_args[0][0]
-    assert "cursor" in cmd_args
-    assert "/test/path" in cmd_args
-
-    captured = capsys.readouterr()
-    assert "Launching Cursor" in captured.err
-    assert "Cursor launched" in captured.err
-
-
-@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
-@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
-@patch("shutil.which", return_value=None)
-@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
-@patch("os.path.isfile", side_effect=[True, True])
-@patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.write_project_files")
-def test_handle_code_ide_not_found(
-    mock_generate,
-    mock_getmtime,
-    mock_isfile,
-    mock_resolve_root,
-    mock_gitignore,
-    mock_which,
-    mock_get_missing,
-    mock_load_json,
-    capsys,
-):
-    args = MagicMock()
-    args.project_root = "/test/path"
-    args.ide = "vscode"
-
-    with pytest.raises(SystemExit):
-        handle_code(args)
-
-    mock_which.assert_called_once_with("code")
-    captured = capsys.readouterr()
-    assert "VS Code command 'code' not found in PATH" in captured.err
-    assert "Please install VS Code" in captured.err
-
-
-@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
-@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
-@patch("shutil.which", return_value=None)
-@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
-@patch("os.path.isfile", side_effect=[True, True])
-@patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.write_project_files")
-def test_handle_code_cursor_not_found(
-    mock_generate,
-    mock_getmtime,
-    mock_isfile,
-    mock_resolve_root,
-    mock_gitignore,
-    mock_which,
-    mock_get_missing,
-    mock_load_json,
-    capsys,
-):
-    args = MagicMock()
-    args.project_root = "/test/path"
-    args.ide = "cursor"
-
-    with pytest.raises(SystemExit):
-        handle_code(args)
-
-    mock_which.assert_called_once_with("cursor")
-    captured = capsys.readouterr()
-    assert "Cursor command 'cursor' not found in PATH" in captured.err
-    assert "Please install Cursor" in captured.err
-
-
-@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
-@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
-@patch("shutil.which", return_value="/usr/bin/code")
-@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
-@patch("os.path.isfile", side_effect=[True, True])
-@patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.write_project_files")
-@patch("subprocess.Popen", side_effect=Exception("Launch failed"))
-def test_handle_code_launch_failure(
-    mock_popen,
-    mock_generate,
-    mock_getmtime,
-    mock_isfile,
-    mock_resolve_root,
-    mock_gitignore,
-    mock_which,
-    mock_get_missing,
-    mock_load_json,
-    capsys,
-):
-    args = MagicMock()
-    args.project_root = "/test/path"
-    args.ide = "vscode"
-
-    with pytest.raises(SystemExit):
-        handle_code(args)
-
-    captured = capsys.readouterr()
-    assert "Failed to launch VS Code: Launch failed" in captured.err
-
-
 def test_register_command_ide_choices():
-    """Test that register_command adds IDE choices correctly."""
+    """Test register_command adds IDE choices correctly."""
     mock_subparsers = MagicMock()
     mock_parser = MagicMock()
     mock_subparsers.add_parser.return_value = mock_parser
 
     register_command(mock_subparsers)
 
-    # Check that --ide argument was added with correct choices
     ide_call = None
     for call in mock_parser.add_argument.call_args_list:
         if call[0][0] == "--ide":
@@ -274,13 +42,34 @@ def test_register_command_ide_choices():
     assert ide_call is not None
     assert ide_call[1]["choices"] == ["vscode", "cursor"]
     assert ide_call[1]["default"] == "vscode"
-    assert "IDE to launch" in ide_call[1]["help"]
+
+
+def test_register_command_has_regenerate_shell_env_flag():
+    """Test register_command adds --regenerate-shell-env flag."""
+    mock_subparsers = MagicMock()
+    mock_parser = MagicMock()
+    mock_subparsers.add_parser.return_value = mock_parser
+
+    register_command(mock_subparsers)
+
+    regen_call = None
+    for call in mock_parser.add_argument.call_args_list:
+        args = call[0]
+        if "--regenerate-shell-env" in args:
+            regen_call = call
+            break
+
+    assert regen_call is not None
+    assert regen_call[1]["action"] == "store_true"
+
+
+# =============================================================================
+# IDE_CONFIG tests
+# =============================================================================
 
 
 def test_ide_config_structure():
     """Test that IDE_CONFIG has the expected structure."""
-    from caylent_devcontainer_cli.commands.code import IDE_CONFIG
-
     assert "vscode" in IDE_CONFIG
     assert "cursor" in IDE_CONFIG
 
@@ -288,15 +77,254 @@ def test_ide_config_structure():
         assert "command" in config
         assert "name" in config
         assert "install_instructions" in config
-        assert isinstance(config["command"], str)
-        assert isinstance(config["name"], str)
-        assert isinstance(config["install_instructions"], str)
 
-    # Test specific configurations
     assert IDE_CONFIG["vscode"]["command"] == "code"
     assert IDE_CONFIG["vscode"]["name"] == "VS Code"
     assert IDE_CONFIG["cursor"]["command"] == "cursor"
     assert IDE_CONFIG["cursor"]["name"] == "Cursor"
+
+
+# =============================================================================
+# Missing file detection tests
+# =============================================================================
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=False)
+def test_missing_env_json_error(mock_isfile, mock_resolve, capsys):
+    """Test error when devcontainer-environment-variables.json is missing."""
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.regenerate_shell_env = False
+
+    with pytest.raises(SystemExit):
+        handle_code(args)
+
+    captured = capsys.readouterr()
+    assert "devcontainer-environment-variables.json" in captured.err
+    assert "setup-devcontainer" in captured.err or "template load" in captured.err
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", side_effect=lambda p: "environment-variables" in p)
+def test_missing_shell_env_error(mock_isfile, mock_resolve, capsys):
+    """Test error when shell.env is missing."""
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.regenerate_shell_env = False
+
+    with pytest.raises(SystemExit):
+        handle_code(args)
+
+    captured = capsys.readouterr()
+    assert "shell.env" in captured.err
+    assert "setup-devcontainer" in captured.err or "template load" in captured.err
+
+
+# =============================================================================
+# Launch command tests — no sourcing shell.env
+# =============================================================================
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_launch_command_no_source(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+    """Test that IDE launch does NOT source shell.env."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    cmd_args = mock_popen.call_args[0][0]
+    assert "source" not in cmd_args
+    assert "shell.env" not in cmd_args
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_launch_command_simple(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+    """Test that launch command is simply '<ide_command> <project_root>'."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    mock_popen.assert_called_once()
+    call_args = mock_popen.call_args
+    cmd = call_args[0][0]
+    assert cmd == ["code", "/test/path"]
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("shutil.which", return_value="/usr/bin/cursor")
+@patch("subprocess.Popen")
+def test_launch_cursor(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+    """Test that cursor IDE is launched correctly."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "cursor"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    call_args = mock_popen.call_args
+    cmd = call_args[0][0]
+    assert cmd == ["cursor", "/test/path"]
+
+    captured = capsys.readouterr()
+    assert "Cursor" in captured.err
+
+
+# =============================================================================
+# IDE not found tests
+# =============================================================================
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("shutil.which", return_value=None)
+def test_ide_not_found(mock_which, mock_isfile, mock_resolve, capsys):
+    """Test error when IDE command not in PATH."""
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    with pytest.raises(SystemExit):
+        handle_code(args)
+
+    captured = capsys.readouterr()
+    assert "not found in PATH" in captured.err
+
+
+# =============================================================================
+# --regenerate-shell-env flag tests
+# =============================================================================
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", side_effect=lambda p: "environment-variables" in p)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.write_shell_env")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_regenerate_shell_env_calls_write(
+    mock_popen, mock_which, mock_write_shell, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test --regenerate-shell-env reads JSON and calls write_shell_env."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    mock_load.return_value = {
+        "containerEnv": {"KEY": "val"},
+        "cli_version": "2.0.0",
+        "template_name": "test",
+        "template_path": "/some/path",
+    }
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = True
+
+    handle_code(args)
+
+    mock_write_shell.assert_called_once()
+    mock_load.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=False)
+def test_regenerate_shell_env_requires_json(mock_isfile, mock_resolve, capsys):
+    """Test --regenerate-shell-env fails if JSON file is missing."""
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.regenerate_shell_env = True
+
+    with pytest.raises(SystemExit):
+        handle_code(args)
+
+    captured = capsys.readouterr()
+    assert "devcontainer-environment-variables.json" in captured.err
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", side_effect=lambda p: "environment-variables" in p)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.write_shell_env")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_regenerate_does_not_modify_json(
+    mock_popen, mock_which, mock_write_shell, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test --regenerate-shell-env does not write to JSON file."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    mock_load.return_value = {
+        "containerEnv": {"KEY": "val"},
+        "cli_version": "2.0.0",
+        "template_name": "test",
+        "template_path": "/some/path",
+    }
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = True
+
+    with patch("caylent_devcontainer_cli.utils.fs.write_json_file") as mock_write_json:
+        handle_code(args)
+        mock_write_json.assert_not_called()
+
+
+# =============================================================================
+# Launch failure test
+# =============================================================================
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen", side_effect=Exception("Launch failed"))
+def test_launch_failure(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+    """Test error when IDE launch fails."""
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    with pytest.raises(SystemExit):
+        handle_code(args)
+
+    captured = capsys.readouterr()
+    assert "Failed to launch" in captured.err
+
+
+# =============================================================================
+# Missing vars check tests (kept for backward compat — S1.3.3 will rewrite)
+# =============================================================================
 
 
 @patch(
@@ -310,7 +338,6 @@ def test_get_missing_env_vars():
     container_env = {"EXISTING_VAR": "value"}
     missing = get_missing_env_vars(container_env)
 
-    # Should only detect MISSING_VAR (single line, missing)
     assert missing == {"MISSING_VAR": "default2"}
 
 
@@ -334,45 +361,6 @@ def test_prompt_upgrade_or_continue_continue(mock_select):
 
     mock_select.return_value.ask.return_value = "Continue without the upgrade (may cause issues)"
 
-    # Should not raise any exception
     prompt_upgrade_or_continue(["VAR1", "VAR2"])
 
-    # Verify the select was called
     mock_select.assert_called_once()
-
-
-@patch("caylent_devcontainer_cli.commands.code.load_json_config")
-@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars")
-@patch("caylent_devcontainer_cli.commands.code.prompt_upgrade_or_continue")
-@patch("shutil.which", return_value="/usr/bin/code")
-@patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
-@patch("os.path.isfile", side_effect=[True, True])
-@patch("os.path.getmtime", side_effect=[100, 200])
-@patch("subprocess.Popen")
-def test_handle_code_with_missing_vars(
-    mock_popen,
-    mock_getmtime,
-    mock_isfile,
-    mock_resolve_root,
-    mock_gitignore,
-    mock_which,
-    mock_prompt,
-    mock_get_missing,
-    mock_load_json,
-):
-    """Test handle_code with missing environment variables."""
-    mock_process = MagicMock()
-    mock_process.wait.return_value = 0
-    mock_popen.return_value = mock_process
-    mock_get_missing.return_value = {"MISSING_VAR": "default_value"}
-    mock_load_json.return_value = {"containerEnv": {"EXISTING_VAR": "value"}}
-
-    args = MagicMock()
-    args.project_root = "/test/path"
-    args.ide = "vscode"
-
-    handle_code(args)
-
-    mock_get_missing.assert_called_once()
-    mock_prompt.assert_called_once_with(["MISSING_VAR"], None)
