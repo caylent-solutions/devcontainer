@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.1.1 |
-| **Status** | in-progress |
+| **Status** | in-review |
 | **Parent** | F1.1 — Core DRY Refactoring & Removals |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -88,7 +88,24 @@ SSH_KEY_FILENAME = "ssh-private-key"
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Implemented `write_json_file(path, data)` in `utils/fs.py` with indent=2 and trailing newline
+- Implemented `remove_example_files(target_devcontainer)` in `utils/fs.py`
+- Added 6 file path constants to `utils/constants.py` (ENV_VARS_FILENAME, SHELL_ENV_FILENAME, EXAMPLE_ENV_FILE, EXAMPLE_AWS_FILE, CATALOG_ENTRY_FILENAME, SSH_KEY_FILENAME)
+- Replaced all 9 inline `json.dump` + `f.write("\n")` patterns with `write_json_file()` (5 in setup_interactive.py, 4 in template.py)
+- Replaced all 5 inline `open() + json.load()` patterns with `load_json_config()` (1 in setup_interactive.py, 4 in template.py)
+- Replaced all hardcoded filename strings with constants across setup.py, setup_interactive.py, template.py, code.py, env.py
+- Replaced both duplicate example file removal implementations with `remove_example_files()` (setup.py and setup_interactive.py)
+- Fixed 4 existing tests broken by refactoring (error handling now centralized in shared utilities)
+- Wrote 17 new unit tests (7 for write_json_file, 4 for remove_example_files, 6 for constants)
+- Wrote 8 new functional tests (3 for write_json_file, 2 for remove_example_files, 3 for constants)
+- All 451 tests pass (349 unit + 102 functional), 94% overall coverage, 100% on new code
+- Linting and formatting pass (`make lint && make format`)
+
+**Remaining:**
+- None — all acceptance criteria met, ready for human review
 
 ---
 

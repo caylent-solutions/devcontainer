@@ -524,12 +524,9 @@ def test_load_template_from_file(mock_file, mock_exists):
 
 @patch("os.path.exists", return_value=False)
 def test_load_template_from_file_not_found(mock_exists):
-    with patch("sys.exit") as mock_exit:
-        try:
+    with patch("sys.exit", side_effect=SystemExit(1)):
+        with pytest.raises(SystemExit):
             load_template_from_file("non-existent")
-        except FileNotFoundError:
-            pass  # Expected exception
-        mock_exit.assert_called_once_with(1)
 
 
 @patch("os.path.exists", return_value=False)

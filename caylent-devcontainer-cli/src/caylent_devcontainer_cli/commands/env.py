@@ -2,6 +2,7 @@
 
 import os
 
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, SHELL_ENV_FILENAME
 from caylent_devcontainer_cli.utils.fs import generate_shell_env
 from caylent_devcontainer_cli.utils.ui import log
 
@@ -39,8 +40,8 @@ def handle_env_load(args):
 
 def load_environment(project_root):
     """Load environment variables from shell.env file."""
-    shell_env_path = os.path.join(project_root, "shell.env")
-    env_vars_json = os.path.join(project_root, "devcontainer-environment-variables.json")
+    shell_env_path = os.path.join(project_root, SHELL_ENV_FILENAME)
+    env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
     # Generate shell.env if it doesn't exist
     if not os.path.exists(shell_env_path):

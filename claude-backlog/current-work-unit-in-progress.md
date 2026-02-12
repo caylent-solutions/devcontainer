@@ -2,7 +2,7 @@
 
 ## In Progress
 
-- **Status:** in-progress
+- **Status:** in-review
 - **Work Unit:** S1.1.1 — JSON & File System Utilities
 - **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.1-core-dry-refactoring/S1.1.1-json-fs-utilities/story.md`
 - **Feature:** F1.1 — Core DRY Refactoring & Removals

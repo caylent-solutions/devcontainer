@@ -2,9 +2,44 @@
 
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
+from caylent_devcontainer_cli.utils.constants import EXAMPLE_AWS_FILE, EXAMPLE_ENV_FILE
 from caylent_devcontainer_cli.utils.ui import confirm_action, log
+
+
+def write_json_file(path: str, data: Union[Dict[str, Any], List[Any]]) -> None:
+    """Write data to a JSON file with indent=2 and a trailing newline.
+
+    Args:
+        path: The file path to write to.
+        data: The data to serialize as JSON.
+    """
+    try:
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+    except Exception as e:
+        log("ERR", f"Failed to write JSON file {path}: {e}")
+        import sys
+
+        sys.exit(1)
+
+
+def remove_example_files(target_devcontainer: str) -> None:
+    """Remove example JSON files from a .devcontainer directory.
+
+    Args:
+        target_devcontainer: Path to the .devcontainer directory.
+    """
+    example_files = [
+        os.path.join(target_devcontainer, EXAMPLE_ENV_FILE),
+        os.path.join(target_devcontainer, EXAMPLE_AWS_FILE),
+    ]
+
+    for file_path in example_files:
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
 
 def load_json_config(file_path: str) -> Dict[str, Any]:

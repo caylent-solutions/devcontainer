@@ -10,7 +10,12 @@ import semver
 from questionary import ValidationError, Validator
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
+from caylent_devcontainer_cli.utils.constants import (
+    ENV_VARS_FILENAME,
+    SHELL_ENV_FILENAME,
+    TEMPLATES_DIR,
+)
+from caylent_devcontainer_cli.utils.fs import load_json_config, remove_example_files, write_json_file
 from caylent_devcontainer_cli.utils.ui import log
 
 
@@ -233,8 +238,8 @@ def prompt_env_values() -> Dict[str, Any]:
             "be sure to commit these changes for your protection:\033[0m"
         )
         print(gitignore_header)
-        print("- shell.env \033[35m(contains Git token)\033[0m")
-        print("- devcontainer-environment-variables.json \033[35m(contains Git token)\033[0m")
+        print(f"- {SHELL_ENV_FILENAME} \033[35m(contains Git token)\033[0m")
+        print(f"- {ENV_VARS_FILENAME} \033[35m(contains Git token)\033[0m")
         aws_file_desc = (
             "- .devcontainer/aws-profile-map.json \033[35m(contains aws account id "
             "if you chose to create an AWS config)\033[0m"
@@ -446,9 +451,7 @@ def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
 
     template_path = os.path.join(TEMPLATES_DIR, f"{name}.json")
 
-    with open(template_path, "w") as f:
-        json.dump(template_data, f, indent=2)
-        f.write("\n")  # Add newline at end of file
+    write_json_file(template_path, template_data)
 
     log("OK", f"Template saved to {template_path}")
 
@@ -463,8 +466,7 @@ def load_template_from_file(name: str) -> Dict[str, Any]:
 
         sys.exit(1)
 
-    with open(template_path, "r") as f:
-        template_data = json.load(f)
+    template_data = load_json_config(template_path)
 
     # Check version compatibility
     if "cli_version" in template_data:
@@ -565,27 +567,18 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
     shutil.copytree(source_devcontainer, target_devcontainer)
 
     # Remove example files
-    example_files = [
-        os.path.join(target_devcontainer, "example-container-env-values.json"),
-        os.path.join(target_devcontainer, "example-aws-profile-map.json"),
-    ]
-
-    for file_path in example_files:
-        if os.path.exists(file_path):
-            os.remove(file_path)
+    remove_example_files(target_devcontainer)
 
     # Create environment variables file
-    env_file_path = os.path.join(target_path, "devcontainer-environment-variables.json")
-    with open(env_file_path, "w") as f:
-        # Use containerEnv directly from template or create it if using old format
-        if "containerEnv" in template_data:
-            env_data = template_data
-        else:
-            # Handle old format templates for backward compatibility
-            env_data = {"containerEnv": template_data.get("env_values", {})}
+    env_file_path = os.path.join(target_path, ENV_VARS_FILENAME)
+    # Use containerEnv directly from template or create it if using old format
+    if "containerEnv" in template_data:
+        env_data = template_data
+    else:
+        # Handle old format templates for backward compatibility
+        env_data = {"containerEnv": template_data.get("env_values", {})}
 
-        json.dump(env_data, f, indent=2)
-        f.write("\n")  # Add newline at end of file
+    write_json_file(env_file_path, env_data)
 
     log("OK", f"Environment variables saved to {env_file_path}")
 
@@ -605,9 +598,7 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
 
     if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
         aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
-        with open(aws_map_path, "w") as f:
-            json.dump(template_data["aws_profile_map"], f, indent=2)
-            f.write("\n")  # Add newline at end of file
+        write_json_file(aws_map_path, template_data["aws_profile_map"])
 
         log("OK", f"AWS profile map saved to {aws_map_path}")
 
@@ -617,17 +608,15 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
 def apply_template_without_clone(template_data: Dict[str, Any], target_path: str) -> None:
     """Apply template to target path without overwriting .devcontainer directory."""
     # Create environment variables file
-    env_file_path = os.path.join(target_path, "devcontainer-environment-variables.json")
-    with open(env_file_path, "w") as f:
-        # Use containerEnv directly from template or create it if using old format
-        if "containerEnv" in template_data:
-            env_data = template_data
-        else:
-            # Handle old format templates for backward compatibility
-            env_data = {"containerEnv": template_data.get("env_values", {})}
+    env_file_path = os.path.join(target_path, ENV_VARS_FILENAME)
+    # Use containerEnv directly from template or create it if using old format
+    if "containerEnv" in template_data:
+        env_data = template_data
+    else:
+        # Handle old format templates for backward compatibility
+        env_data = {"containerEnv": template_data.get("env_values", {})}
 
-        json.dump(env_data, f, indent=2)
-        f.write("\n")  # Add newline at end of file
+    write_json_file(env_file_path, env_data)
 
     log("OK", f"Environment variables saved to {env_file_path}")
 
@@ -648,9 +637,7 @@ def apply_template_without_clone(template_data: Dict[str, Any], target_path: str
     if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
         target_devcontainer = os.path.join(target_path, ".devcontainer")
         aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
-        with open(aws_map_path, "w") as f:
-            json.dump(template_data["aws_profile_map"], f, indent=2)
-            f.write("\n")  # Add newline at end of file
+        write_json_file(aws_map_path, template_data["aws_profile_map"])
 
         log("OK", f"AWS profile map saved to {aws_map_path}")
 

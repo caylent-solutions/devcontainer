@@ -5,6 +5,7 @@ import shutil
 import subprocess
 
 from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, EXAMPLE_ENV_FILE, SHELL_ENV_FILENAME
 from caylent_devcontainer_cli.utils.env import is_single_line_env_var
 from caylent_devcontainer_cli.utils.fs import find_project_root, generate_shell_env, load_json_config
 from caylent_devcontainer_cli.utils.ui import COLORS, log
@@ -110,13 +111,13 @@ def handle_code(args):
     project_root = find_project_root(args.project_root)
 
     # Check if devcontainer-environment-variables.json exists
-    env_json = os.path.join(project_root, "devcontainer-environment-variables.json")
-    shell_env = os.path.join(project_root, "shell.env")
+    env_json = os.path.join(project_root, ENV_VARS_FILENAME)
+    shell_env = os.path.join(project_root, SHELL_ENV_FILENAME)
 
     if not os.path.isfile(env_json):
         log("ERR", f"Configuration file not found: {env_json}")
         log("INFO", "Please create this file first:")
-        print("cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json")
+        print(f"cp .devcontainer/{EXAMPLE_ENV_FILE} {ENV_VARS_FILENAME}")
         import sys
 
         sys.exit(1)

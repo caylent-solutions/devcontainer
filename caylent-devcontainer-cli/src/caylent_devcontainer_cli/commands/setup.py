@@ -6,6 +6,13 @@ import subprocess
 import tempfile
 
 from caylent_devcontainer_cli import __version__
+from caylent_devcontainer_cli.utils.constants import (
+    ENV_VARS_FILENAME,
+    EXAMPLE_AWS_FILE,
+    EXAMPLE_ENV_FILE,
+    SHELL_ENV_FILENAME,
+)
+from caylent_devcontainer_cli.utils.fs import remove_example_files
 from caylent_devcontainer_cli.utils.ui import log
 
 # Constants
@@ -160,7 +167,7 @@ def check_and_create_tool_versions(target_path: str, python_version: str) -> Non
 def ensure_gitignore_entries(target_path: str) -> None:
     """Ensure required entries are in .gitignore."""
     gitignore_path = os.path.join(target_path, ".gitignore")
-    required_files = ["shell.env", "devcontainer-environment-variables.json", ".devcontainer/aws-profile-map.json"]
+    required_files = [SHELL_ENV_FILENAME, ENV_VARS_FILENAME, ".devcontainer/aws-profile-map.json"]
 
     log("INFO", "Checking .gitignore for required environment file entries to prevent the commit of your secrets.")
     log("INFO", "Files to check:")
@@ -253,18 +260,7 @@ def copy_devcontainer_files(source_dir: str, target_path: str, keep_examples: bo
 
     # Remove example files if not in manual mode
     if not keep_examples:
-        example_files = [
-            os.path.join(target_devcontainer, "example-container-env-values.json"),
-            os.path.join(target_devcontainer, "example-aws-profile-map.json"),
-        ]
-
-        for file_path in example_files:
-            if os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                except FileNotFoundError:
-                    # This can happen in tests, just continue
-                    pass
+        remove_example_files(target_devcontainer)
 
     log("OK", "Devcontainer files copied successfully.")
 
@@ -273,15 +269,15 @@ def show_manual_instructions(target_path: str) -> None:
     """Show instructions for manual setup."""
     log("OK", "Devcontainer files have been copied to your project.")
     print("\n📋 Next steps:")
-    print("1. Create a devcontainer-environment-variables.json file:")
+    print(f"1. Create a {ENV_VARS_FILENAME} file:")
     print(
-        f"   cp {os.path.join(target_path, '.devcontainer', 'example-container-env-values.json')} "
-        f"{os.path.join(target_path, 'devcontainer-environment-variables.json')}"
+        f"   cp {os.path.join(target_path, '.devcontainer', EXAMPLE_ENV_FILE)} "
+        f"{os.path.join(target_path, ENV_VARS_FILENAME)}"
     )
     print("2. Edit the file with your settings")
     print("3. If using AWS, create an aws-profile-map.json file:")
     print(
-        f"   cp {os.path.join(target_path, '.devcontainer', 'example-aws-profile-map.json')} "
+        f"   cp {os.path.join(target_path, '.devcontainer', EXAMPLE_AWS_FILE)} "
         f"{os.path.join(target_path, '.devcontainer', 'aws-profile-map.json')}"
     )
     print("4. Edit the AWS profile map with your settings")

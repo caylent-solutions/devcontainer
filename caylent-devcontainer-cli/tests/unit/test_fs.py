@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import sys
 from unittest.mock import MagicMock, mock_open, patch
@@ -8,7 +9,22 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 import pytest
 
-from caylent_devcontainer_cli.utils.fs import find_project_root, generate_exports, generate_shell_env, load_json_config
+from caylent_devcontainer_cli.utils.constants import (
+    CATALOG_ENTRY_FILENAME,
+    ENV_VARS_FILENAME,
+    EXAMPLE_AWS_FILE,
+    EXAMPLE_ENV_FILE,
+    SHELL_ENV_FILENAME,
+    SSH_KEY_FILENAME,
+)
+from caylent_devcontainer_cli.utils.fs import (
+    find_project_root,
+    generate_exports,
+    generate_shell_env,
+    load_json_config,
+    remove_example_files,
+    write_json_file,
+)
 
 
 @patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST_VAR": "test_value"}}'))
@@ -187,3 +203,197 @@ def test_find_project_root_with_path():
     with patch("os.path.isdir", return_value=True):
         result = find_project_root("/test/path")
         assert result == "/test/path"
+
+
+# =============================================================================
+# write_json_file tests
+# =============================================================================
+
+
+class TestWriteJsonFile:
+    """Tests for write_json_file utility."""
+
+    def test_writes_json_with_indent_2(self, tmp_path):
+        """Test that write_json_file writes JSON with indent=2."""
+        file_path = str(tmp_path / "output.json")
+        data = {"key": "value", "nested": {"a": 1}}
+
+        write_json_file(file_path, data)
+
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        expected = json.dumps(data, indent=2) + "\n"
+        assert content == expected
+
+    def test_writes_trailing_newline(self, tmp_path):
+        """Test that write_json_file appends a trailing newline."""
+        file_path = str(tmp_path / "output.json")
+        data = {"key": "value"}
+
+        write_json_file(file_path, data)
+
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        assert content.endswith("\n")
+        # Ensure it's exactly one trailing newline (not two)
+        assert not content.endswith("\n\n")
+
+    def test_writes_empty_dict(self, tmp_path):
+        """Test that write_json_file handles an empty dictionary."""
+        file_path = str(tmp_path / "empty.json")
+        data = {}
+
+        write_json_file(file_path, data)
+
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        assert content == "{}\n"
+
+    def test_writes_complex_nested_data(self, tmp_path):
+        """Test that write_json_file handles complex nested structures."""
+        file_path = str(tmp_path / "complex.json")
+        data = {
+            "containerEnv": {
+                "AWS_CONFIG_ENABLED": "true",
+                "DEFAULT_PYTHON_VERSION": "3.12.9",
+            },
+            "cli_version": "2.0.0",
+        }
+
+        write_json_file(file_path, data)
+
+        with open(file_path, "r") as f:
+            loaded = json.load(f)
+
+        assert loaded == data
+
+    def test_overwrites_existing_file(self, tmp_path):
+        """Test that write_json_file overwrites an existing file."""
+        file_path = str(tmp_path / "existing.json")
+
+        # Write initial content
+        write_json_file(file_path, {"old": "data"})
+
+        # Overwrite with new content
+        write_json_file(file_path, {"new": "data"})
+
+        with open(file_path, "r") as f:
+            loaded = json.load(f)
+
+        assert loaded == {"new": "data"}
+
+    def test_write_failure_exits(self, tmp_path):
+        """Test that write_json_file exits on write failure."""
+        # Use a path that doesn't exist (no parent directory)
+        file_path = str(tmp_path / "nonexistent_dir" / "output.json")
+
+        with pytest.raises(SystemExit):
+            write_json_file(file_path, {"key": "value"})
+
+    def test_writes_list_data(self, tmp_path):
+        """Test that write_json_file handles list data."""
+        file_path = str(tmp_path / "list.json")
+        data = [{"name": "item1"}, {"name": "item2"}]
+
+        write_json_file(file_path, data)
+
+        with open(file_path, "r") as f:
+            loaded = json.load(f)
+
+        assert loaded == data
+
+
+# =============================================================================
+# remove_example_files tests
+# =============================================================================
+
+
+class TestRemoveExampleFiles:
+    """Tests for remove_example_files utility."""
+
+    def test_removes_both_example_files(self, tmp_path):
+        """Test that both example files are removed."""
+        devcontainer_dir = tmp_path / ".devcontainer"
+        devcontainer_dir.mkdir()
+
+        example_env = devcontainer_dir / "example-container-env-values.json"
+        example_aws = devcontainer_dir / "example-aws-profile-map.json"
+        example_env.write_text("{}")
+        example_aws.write_text("{}")
+
+        remove_example_files(str(devcontainer_dir))
+
+        assert not example_env.exists()
+        assert not example_aws.exists()
+
+    def test_handles_missing_files_gracefully(self, tmp_path):
+        """Test that no error occurs when example files don't exist."""
+        devcontainer_dir = tmp_path / ".devcontainer"
+        devcontainer_dir.mkdir()
+
+        # Should not raise any exception
+        remove_example_files(str(devcontainer_dir))
+
+    def test_handles_partial_files(self, tmp_path):
+        """Test removal when only one example file exists."""
+        devcontainer_dir = tmp_path / ".devcontainer"
+        devcontainer_dir.mkdir()
+
+        example_env = devcontainer_dir / "example-container-env-values.json"
+        example_env.write_text("{}")
+
+        remove_example_files(str(devcontainer_dir))
+
+        assert not example_env.exists()
+
+    def test_does_not_remove_other_files(self, tmp_path):
+        """Test that non-example files are not removed."""
+        devcontainer_dir = tmp_path / ".devcontainer"
+        devcontainer_dir.mkdir()
+
+        other_file = devcontainer_dir / "devcontainer.json"
+        other_file.write_text("{}")
+
+        example_env = devcontainer_dir / "example-container-env-values.json"
+        example_env.write_text("{}")
+
+        remove_example_files(str(devcontainer_dir))
+
+        assert other_file.exists()
+        assert not example_env.exists()
+
+
+# =============================================================================
+# File path constants tests
+# =============================================================================
+
+
+class TestFilePathConstants:
+    """Tests for file path constants in utils/constants.py."""
+
+    def test_env_vars_filename(self):
+        """Test ENV_VARS_FILENAME constant value."""
+        assert ENV_VARS_FILENAME == "devcontainer-environment-variables.json"
+
+    def test_shell_env_filename(self):
+        """Test SHELL_ENV_FILENAME constant value."""
+        assert SHELL_ENV_FILENAME == "shell.env"
+
+    def test_example_env_file(self):
+        """Test EXAMPLE_ENV_FILE constant value."""
+        assert EXAMPLE_ENV_FILE == "example-container-env-values.json"
+
+    def test_example_aws_file(self):
+        """Test EXAMPLE_AWS_FILE constant value."""
+        assert EXAMPLE_AWS_FILE == "example-aws-profile-map.json"
+
+    def test_catalog_entry_filename(self):
+        """Test CATALOG_ENTRY_FILENAME constant value."""
+        assert CATALOG_ENTRY_FILENAME == "catalog-entry.json"
+
+    def test_ssh_key_filename(self):
+        """Test SSH_KEY_FILENAME constant value."""
+        assert SSH_KEY_FILENAME == "ssh-private-key"

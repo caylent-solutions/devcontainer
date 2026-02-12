@@ -328,10 +328,11 @@ def test_list_templates_with_templates():
 def test_save_template_error():
     with patch("os.path.exists", return_value=True), patch("builtins.open", side_effect=Exception("Test error")), patch(
         "caylent_devcontainer_cli.commands.template.confirm_action", return_value=True
-    ), patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"), patch("sys.exit") as mock_exit:
-
-        save_template("/test/path", "test-template")
-        mock_exit.assert_called_once_with(1)
+    ), patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"), patch(
+        "sys.exit", side_effect=SystemExit(1)
+    ):
+        with pytest.raises(SystemExit):
+            save_template("/test/path", "test-template")
 
 
 def test_load_template_not_found():
@@ -355,10 +356,9 @@ def test_load_template_cancel():
 def test_load_template_error():
     with patch("os.path.exists", return_value=True), patch("builtins.open", side_effect=Exception("Test error")), patch(
         "caylent_devcontainer_cli.commands.template.confirm_action", return_value=True
-    ), patch("sys.exit") as mock_exit:
-
-        load_template("/test/path", "test-template")
-        mock_exit.assert_called_once_with(1)
+    ), patch("sys.exit", side_effect=SystemExit(1)):
+        with pytest.raises(SystemExit):
+            load_template("/test/path", "test-template")
 
 
 # Version-related tests
@@ -622,11 +622,10 @@ def test_upgrade_template_file_no_version():
 def test_upgrade_template_file_exception():
     """Test upgrade_template_file with exception."""
     with patch("os.path.exists", return_value=True), patch("builtins.open", side_effect=Exception("File error")), patch(
-        "sys.exit"
-    ) as mock_exit:
-
-        upgrade_template_file("test-template")
-        mock_exit.assert_called_once_with(1)
+        "sys.exit", side_effect=SystemExit(1)
+    ):
+        with pytest.raises(SystemExit):
+            upgrade_template_file("test-template")
 
 
 def test_save_template_no_env_file():

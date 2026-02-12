@@ -1,6 +1,5 @@
 """Template command for the Caylent Devcontainer CLI."""
 
-import json
 import os
 
 import semver
@@ -8,8 +7,9 @@ import semver
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
 from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
-from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, TEMPLATES_DIR
 from caylent_devcontainer_cli.utils.env import is_single_line_env_var
+from caylent_devcontainer_cli.utils.fs import load_json_config, write_json_file
 from caylent_devcontainer_cli.utils.ui import confirm_action, log
 
 
@@ -155,10 +155,10 @@ def handle_template_upgrade(args):
 def save_template(project_root, template_name):
     """Save current environment as a template."""
     ensure_templates_dir()
-    env_vars_json = os.path.join(project_root, "devcontainer-environment-variables.json")
+    env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
     if not os.path.exists(env_vars_json):
-        log("ERR", f"No devcontainer-environment-variables.json found in {project_root}")
+        log("ERR", f"No {ENV_VARS_FILENAME} found in {project_root}")
         import sys
 
         sys.exit(1)
@@ -181,16 +181,13 @@ def save_template(project_root, template_name):
         log("INFO", f"Saving template from {env_vars_json}")
 
         # Read the environment variables file
-        with open(env_vars_json, "r") as f:
-            env_data = json.load(f)
+        env_data = load_json_config(env_vars_json)
 
         # Add CLI version information
         env_data["cli_version"] = __version__
 
         # Write to template file
-        with open(template_path, "w") as f:
-            json.dump(env_data, f, indent=2)
-            f.write("\n")  # Add newline at end of file
+        write_json_file(template_path, env_data)
 
         log("OK", f"Template saved as: {template_name} at {template_path}")
     except Exception as e:
@@ -210,7 +207,7 @@ def load_template(project_root, template_name):
 
         sys.exit(1)
 
-    env_vars_json = os.path.join(project_root, "devcontainer-environment-variables.json")
+    env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
     # Ask for confirmation before loading
     if os.path.exists(env_vars_json):
@@ -226,8 +223,7 @@ def load_template(project_root, template_name):
 
     try:
         # Read the template file
-        with open(template_path, "r") as f:
-            template_data = json.load(f)
+        template_data = load_json_config(template_path)
 
         # Check version compatibility
         if "cli_version" in template_data:
@@ -283,9 +279,7 @@ def load_template(project_root, template_name):
                 log("WARN", f"Could not parse template version: {template_version}")
 
         # Write to environment variables file
-        with open(env_vars_json, "w") as f:
-            json.dump(template_data, f, indent=2)
-            f.write("\n")  # Add newline at end of file
+        write_json_file(env_vars_json, template_data)
 
         log("OK", f"Template '{template_name}' loaded to {env_vars_json}")
     except Exception as e:
@@ -308,11 +302,10 @@ def list_templates():
             # Try to get version information
             version = "unknown"
             try:
-                with open(template_path, "r") as file:
-                    data = json.load(file)
-                    if "cli_version" in data:
-                        version = data["cli_version"]
-            except Exception:
+                data = load_json_config(template_path)
+                if "cli_version" in data:
+                    version = data["cli_version"]
+            except SystemExit:
                 pass
 
             templates.append((template_name, version))
@@ -387,8 +380,7 @@ def upgrade_template_file(template_name, force=False):
 
     try:
         # Read the template file
-        with open(template_path, "r") as f:
-            template_data = json.load(f)
+        template_data = load_json_config(template_path)
 
         # Check if force upgrade is requested
         if force:
@@ -408,9 +400,7 @@ def upgrade_template_file(template_name, force=False):
                     if template_semver.major == current_semver.major and template_semver.minor == current_semver.minor:
                         # Even if the major and minor versions match, ensure the cli_version is updated
                         template_data["cli_version"] = __version__
-                        with open(template_path, "w") as f:
-                            json.dump(template_data, f, indent=2)
-                            f.write("\n")  # Add newline at end of file
+                        write_json_file(template_path, template_data)
                         log(
                             "INFO",
                             f"Template '{template_name}' version updated from {template_version} to {__version__}",
@@ -424,9 +414,7 @@ def upgrade_template_file(template_name, force=False):
             upgraded_template = upgrade_template(template_data)
 
         # Write back to the template file
-        with open(template_path, "w") as f:
-            json.dump(upgraded_template, f, indent=2)
-            f.write("\n")  # Add newline at end of file
+        write_json_file(template_path, upgraded_template)
 
         log(
             "OK",
