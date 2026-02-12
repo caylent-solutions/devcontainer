@@ -459,6 +459,294 @@ class TestResolveProjectRoot:
 
 
 # =============================================================================
+# write_project_files tests
+# =============================================================================
+
+
+class TestWriteProjectFiles:
+    """Tests for write_project_files utility."""
+
+    def _make_template_data(self, **overrides):
+        """Build minimal template data for testing."""
+        data = {
+            "containerEnv": {
+                "DEVELOPER_NAME": "Test User",
+                "GIT_USER": "testuser",
+                "GIT_USER_EMAIL": "test@example.com",
+                "GIT_TOKEN": "test-token",
+                "GIT_PROVIDER_URL": "github.com",
+                "DEFAULT_GIT_BRANCH": "main",
+                "DEFAULT_PYTHON_VERSION": "3.12.9",
+                "CICD": "false",
+                "AWS_CONFIG_ENABLED": "false",
+                "EXTRA_APT_PACKAGES": "",
+                "PAGER": "cat",
+                "AWS_DEFAULT_OUTPUT": "json",
+            },
+            "cli_version": "2.0.0",
+        }
+        data.update(overrides)
+        return data
+
+    def _setup_project(self, tmp_path):
+        """Create a minimal project structure."""
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        devcontainer_dir = project_root / ".devcontainer"
+        devcontainer_dir.mkdir()
+        return str(project_root)
+
+    def test_generates_env_vars_json(self, tmp_path):
+        """Test that write_project_files creates devcontainer-environment-variables.json."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test-template", "/path/to/template")
+
+        env_file = os.path.join(project_root, "devcontainer-environment-variables.json")
+        assert os.path.isfile(env_file)
+
+        with open(env_file, "r") as f:
+            data = json.load(f)
+
+        assert "containerEnv" in data
+        assert data["containerEnv"]["DEVELOPER_NAME"] == "Test User"
+
+    def test_env_vars_json_has_metadata(self, tmp_path):
+        """Test that env vars JSON includes template_name, template_path, cli_version."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "my-template", "/home/user/.templates/my-template.json")
+
+        env_file = os.path.join(project_root, "devcontainer-environment-variables.json")
+        with open(env_file, "r") as f:
+            data = json.load(f)
+
+        assert data["template_name"] == "my-template"
+        assert data["template_path"] == "/home/user/.templates/my-template.json"
+        assert data["cli_version"] == "2.0.0"
+
+    def test_env_vars_json_sorted_keys(self, tmp_path):
+        """Test that containerEnv keys are sorted alphabetically."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        env_file = os.path.join(project_root, "devcontainer-environment-variables.json")
+        with open(env_file, "r") as f:
+            content = f.read()
+
+        # Parse and check keys are sorted
+        data = json.loads(content)
+        keys = list(data["containerEnv"].keys())
+        assert keys == sorted(keys)
+
+    def test_generates_shell_env(self, tmp_path):
+        """Test that write_project_files creates shell.env."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        shell_env = os.path.join(project_root, "shell.env")
+        assert os.path.isfile(shell_env)
+
+    def test_shell_env_has_metadata_header(self, tmp_path):
+        """Test that shell.env has metadata comment header."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "my-template", "/path/to/tmpl")
+
+        shell_env = os.path.join(project_root, "shell.env")
+        with open(shell_env, "r") as f:
+            content = f.read()
+
+        assert "# Template: my-template" in content
+        assert "# Template Path: /path/to/tmpl" in content
+        assert "# CLI Version: 2.0.0" in content
+        assert "# Generated:" in content
+
+    def test_shell_env_exports_sorted(self, tmp_path):
+        """Test that shell.env export lines are sorted alphabetically."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        shell_env = os.path.join(project_root, "shell.env")
+        with open(shell_env, "r") as f:
+            lines = f.readlines()
+
+        # Extract export lines (skip comments, blank lines, unset, PATH)
+        export_lines = [line.strip() for line in lines if line.startswith("export ") and "PATH=" not in line]
+        export_keys = [line.split("=")[0].replace("export ", "") for line in export_lines]
+        assert export_keys == sorted(export_keys)
+
+    def test_shell_env_static_container_values(self, tmp_path):
+        """Test that shell.env includes static container values."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        shell_env = os.path.join(project_root, "shell.env")
+        with open(shell_env, "r") as f:
+            content = f.read()
+
+        assert "export DEVCONTAINER='true'" in content
+        assert "BASH_ENV=" in content and "shell.env" in content
+        assert "export NO_PROXY='localhost,127.0.0.1,.local'" in content
+        assert "export no_proxy='localhost,127.0.0.1,.local'" in content
+        assert "unset GIT_EDITOR" in content
+        assert ".asdf/shims" in content
+        assert ".localscripts" in content
+
+    def test_shell_env_proxy_vars_when_host_proxy_true(self, tmp_path):
+        """Test that proxy vars are generated when HOST_PROXY=true."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+        template_data["containerEnv"]["HOST_PROXY"] = "true"
+        template_data["containerEnv"]["HOST_PROXY_URL"] = "http://proxy.corp:8080"
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        shell_env = os.path.join(project_root, "shell.env")
+        with open(shell_env, "r") as f:
+            content = f.read()
+
+        assert "export HTTP_PROXY='http://proxy.corp:8080'" in content
+        assert "export HTTPS_PROXY='http://proxy.corp:8080'" in content
+        assert "export http_proxy='http://proxy.corp:8080'" in content
+        assert "export https_proxy='http://proxy.corp:8080'" in content
+
+    def test_shell_env_no_proxy_vars_when_host_proxy_false(self, tmp_path):
+        """Test that proxy vars are NOT generated when HOST_PROXY is not true."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        shell_env = os.path.join(project_root, "shell.env")
+        with open(shell_env, "r") as f:
+            content = f.read()
+
+        assert "HTTP_PROXY=" not in content
+        assert "HTTPS_PROXY=" not in content
+        assert "http_proxy=" not in content
+        assert "https_proxy=" not in content
+
+    def test_writes_aws_profile_map_when_enabled(self, tmp_path):
+        """Test that aws-profile-map.json is written when AWS_CONFIG_ENABLED=true."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+        template_data["containerEnv"]["AWS_CONFIG_ENABLED"] = "true"
+        template_data["aws_profile_map"] = {"default": {"region": "us-east-1"}}
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        aws_file = os.path.join(project_root, ".devcontainer", "aws-profile-map.json")
+        assert os.path.isfile(aws_file)
+
+        with open(aws_file, "r") as f:
+            data = json.load(f)
+        assert data == {"default": {"region": "us-east-1"}}
+
+    def test_no_aws_profile_map_when_disabled(self, tmp_path):
+        """Test that aws-profile-map.json is NOT written when AWS_CONFIG_ENABLED=false."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        aws_file = os.path.join(project_root, ".devcontainer", "aws-profile-map.json")
+        assert not os.path.exists(aws_file)
+
+    def test_writes_ssh_key_placeholder_when_ssh_auth(self, tmp_path):
+        """Test that ssh-private-key is written when GIT_AUTH_METHOD=ssh."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+        template_data["containerEnv"]["GIT_AUTH_METHOD"] = "ssh"
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        ssh_key = os.path.join(project_root, ".devcontainer", "ssh-private-key")
+        assert os.path.isfile(ssh_key)
+
+    def test_no_ssh_key_when_token_auth(self, tmp_path):
+        """Test that ssh-private-key is NOT written when GIT_AUTH_METHOD is not ssh."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        ssh_key = os.path.join(project_root, ".devcontainer", "ssh-private-key")
+        assert not os.path.exists(ssh_key)
+
+    def test_ensures_gitignore_entries(self, tmp_path):
+        """Test that .gitignore is updated with all 4 sensitive file entries."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        gitignore = os.path.join(project_root, ".gitignore")
+        assert os.path.isfile(gitignore)
+
+        with open(gitignore, "r") as f:
+            content = f.read()
+
+        assert "shell.env" in content
+        assert "devcontainer-environment-variables.json" in content
+        assert ".devcontainer/aws-profile-map.json" in content
+        assert ".devcontainer/ssh-private-key" in content
+
+    def test_both_files_always_generated_together(self, tmp_path):
+        """Test that both env vars JSON and shell.env are always generated."""
+        from caylent_devcontainer_cli.utils.fs import write_project_files
+
+        project_root = self._setup_project(tmp_path)
+        template_data = self._make_template_data()
+
+        write_project_files(project_root, template_data, "test", "/path")
+
+        env_file = os.path.join(project_root, "devcontainer-environment-variables.json")
+        shell_env = os.path.join(project_root, "shell.env")
+        assert os.path.isfile(env_file)
+        assert os.path.isfile(shell_env)
+
+
+# =============================================================================
 # CLI_NAME import test
 # =============================================================================
 

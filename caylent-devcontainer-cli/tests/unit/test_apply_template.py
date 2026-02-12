@@ -95,17 +95,12 @@ def test_apply_template_with_example_files():
         },
     }
 
-    devcontainer_json = {"containerEnv": {}}
     with (
         patch("os.path.exists", side_effect=[False, True, True]),
         patch("shutil.copytree"),
         patch("shutil.rmtree"),
-        patch("builtins.open"),
-        patch("json.dump"),
-        patch("json.load", return_value=devcontainer_json),
         patch("os.remove") as mock_remove,
-        patch("os.path.basename", return_value="path"),
-        patch("os.path.abspath", return_value="/target/path"),
+        patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files"),
     ):
         apply_template(template_data, "/target/path", "/source/path")
         assert mock_remove.call_count == 2

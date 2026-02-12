@@ -8,7 +8,12 @@ from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME
 from caylent_devcontainer_cli.utils.env import get_missing_env_vars
-from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_json_file
+from caylent_devcontainer_cli.utils.fs import (
+    load_json_config,
+    resolve_project_root,
+    write_json_file,
+    write_project_files,
+)
 from caylent_devcontainer_cli.utils.template import (
     ensure_templates_dir,
     get_template_names,
@@ -234,10 +239,8 @@ def load_template(project_root, template_name):
                 # If version parsing fails, just continue with the template as is
                 log("WARN", f"Could not parse template version: {template_version}")
 
-        # Write to environment variables file
-        write_json_file(env_vars_json, template_data)
-
-        log("OK", f"Template '{template_name}' loaded to {env_vars_json}")
+        # Generate all project files (env vars JSON, shell.env, gitignore, etc.)
+        write_project_files(project_root, template_data, template_name, template_path)
     except Exception as e:
         exit_with_error(f"Failed to load template: {e}")
 

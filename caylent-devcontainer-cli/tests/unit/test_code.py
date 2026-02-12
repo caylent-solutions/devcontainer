@@ -48,7 +48,7 @@ def test_handle_code_missing_config(mock_isfile, mock_resolve_root, capsys):
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])  # env_json is newer than shell_env
-@patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
 @patch("subprocess.Popen")
 def test_handle_code_regenerate_env(
     mock_popen,
@@ -125,7 +125,7 @@ def test_handle_code_custom_shell(
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
 @patch("subprocess.Popen")
 def test_handle_code_cursor(
     mock_popen,
@@ -167,7 +167,7 @@ def test_handle_code_cursor(
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
 def test_handle_code_ide_not_found(
     mock_generate,
     mock_getmtime,
@@ -199,7 +199,7 @@ def test_handle_code_ide_not_found(
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
 def test_handle_code_cursor_not_found(
     mock_generate,
     mock_getmtime,
@@ -231,7 +231,7 @@ def test_handle_code_cursor_not_found(
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
-@patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
 @patch("subprocess.Popen", side_effect=Exception("Launch failed"))
 def test_handle_code_launch_failure(
     mock_popen,

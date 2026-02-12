@@ -96,23 +96,22 @@ def test_save_template():
 
 def test_load_template():
     mock_template_data = {"key": "value"}
-    mock_file = MagicMock()
 
     with (
-        patch("builtins.open", mock_file),
         patch("os.path.exists", return_value=True),
+        patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
-        patch("json.dump") as mock_dump,
         patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
 
         load_template("/test/path", "test-template")
 
-        # Verify json.dump was called with the template data
-        mock_dump.assert_called_once()
-        # First arg is the data dict, second arg is the file object
-        loaded_data = mock_dump.call_args[0][0]
-        assert loaded_data == mock_template_data
+        # Verify write_project_files was called with the template data
+        mock_write_files.assert_called_once()
+        call_args = mock_write_files.call_args
+        assert call_args[0][0] == "/test/path"
+        assert call_args[0][1] == mock_template_data
 
 
 @patch("os.listdir", return_value=["template1.json", "template2.json", "not-a-template.txt"])
@@ -785,7 +784,7 @@ def test_load_template_create_new_env_file():
         patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
         patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
         patch("json.load", return_value=template_data),
-        patch("json.dump"),
+        patch("caylent_devcontainer_cli.commands.template.write_project_files"),
     ):
 
         load_template("/test/path", "test-template")

@@ -527,16 +527,10 @@ def test_load_template_from_file_not_found(mock_exists):
             load_template_from_file("non-existent")
 
 
+@patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
 @patch("os.path.exists", return_value=False)
 @patch("shutil.copytree")
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.load", return_value={"containerEnv": {}})
-@patch("json.dump")
-@patch("os.path.basename", return_value="target")
-@patch("os.path.abspath", return_value="/target")
-def test_apply_template_without_aws(
-    mock_abspath, mock_basename, mock_json_dump, mock_json_load, mock_file, mock_copytree, mock_exists
-):
+def test_apply_template_without_aws(mock_copytree, mock_exists, mock_write_files):
     template_data = {
         "env_values": {"AWS_CONFIG_ENABLED": "false", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {},
@@ -546,19 +540,13 @@ def test_apply_template_without_aws(
         apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
-    assert mock_file.call_count == 1  # env file write
+    mock_write_files.assert_called_once()
 
 
+@patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
 @patch("os.path.exists", return_value=False)
 @patch("shutil.copytree")
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.load", return_value={"containerEnv": {}})
-@patch("json.dump")
-@patch("os.path.basename", return_value="target")
-@patch("os.path.abspath", return_value="/target")
-def test_apply_template_with_aws(
-    mock_abspath, mock_basename, mock_json_dump, mock_json_load, mock_file, mock_copytree, mock_exists
-):
+def test_apply_template_with_aws(mock_copytree, mock_exists, mock_write_files):
     template_data = {
         "env_values": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
@@ -568,7 +556,7 @@ def test_apply_template_with_aws(
         apply_template(template_data, "/target", "/source")
 
     mock_copytree.assert_called_once()
-    assert mock_file.call_count == 2  # env file write + AWS file write
+    mock_write_files.assert_called_once()
 
 
 # Tests from test_setup_interactive_more.py
@@ -1053,11 +1041,12 @@ def test_ensure_gitignore_entries_create_new(mock_file, mock_exists, capsys):
     assert "shell.env" in written_content
     assert "devcontainer-environment-variables.json" in written_content
     assert ".devcontainer/aws-profile-map.json" in written_content
+    assert ".devcontainer/ssh-private-key" in written_content
 
     captured = capsys.readouterr()
     assert "Checking .gitignore for required environment file entries" in captured.err
     assert ".gitignore file does not exist, will create it" in captured.err
-    assert "Created .gitignore with 3 new entries" in captured.err
+    assert "Created .gitignore with 4 new entries" in captured.err
 
 
 @patch("os.path.exists", return_value=True)
@@ -1070,15 +1059,18 @@ def test_ensure_gitignore_entries_partial_update(mock_file, mock_exists, capsys)
     assert mock_file.call_count == 2
 
     captured = capsys.readouterr()
-    assert "Missing 2 entries in .gitignore" in captured.err
-    assert "Updated .gitignore with 2 new entries" in captured.err
+    assert "Missing 3 entries in .gitignore" in captured.err
+    assert "Updated .gitignore with 3 new entries" in captured.err
 
 
 @patch("os.path.exists", return_value=True)
 @patch(
     "builtins.open",
     new_callable=mock_open,
-    read_data="shell.env\ndevcontainer-environment-variables.json\n.devcontainer/aws-profile-map.json\n",
+    read_data=(
+        "shell.env\ndevcontainer-environment-variables.json\n"
+        ".devcontainer/aws-profile-map.json\n.devcontainer/ssh-private-key\n"
+    ),
 )
 def test_ensure_gitignore_entries_all_present(mock_file, mock_exists, capsys):
     """Test when all required entries are already present."""
@@ -1140,8 +1132,8 @@ def test_interactive_setup_without_clone_keyboard_interrupt(mock_prompt):
 
 
 # Tests for apply_template_without_clone function
-@patch("builtins.open", new_callable=mock_open)
-def test_apply_template_without_clone_containerenv(mock_file):
+@patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
+def test_apply_template_without_clone_containerenv(mock_write_files):
     """Test apply template without clone using containerEnv format."""
     from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
 
@@ -1153,18 +1145,14 @@ def test_apply_template_without_clone_containerenv(mock_file):
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
         apply_template_without_clone(template_data, "/target")
 
-    # Check that environment file was written
-    mock_file.assert_called_with("/target/devcontainer-environment-variables.json", "w")
-    written_data = json.loads(
-        "".join(call.args[0] for call in mock_file().write.call_args_list if call.args[0] != "\n")
-    )
-
-    assert written_data["containerEnv"]["TEST_VAR"] == "test_value"
-    assert written_data["containerEnv"]["AWS_CONFIG_ENABLED"] == "false"
+    mock_write_files.assert_called_once()
+    call_args = mock_write_files.call_args
+    assert call_args[0][0] == "/target"
+    assert call_args[0][1] == template_data
 
 
-@patch("builtins.open", new_callable=mock_open)
-def test_apply_template_without_clone_env_values(mock_file):
+@patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
+def test_apply_template_without_clone_env_values(mock_write_files):
     """Test apply template without clone using old env_values format."""
     from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
 
@@ -1176,18 +1164,14 @@ def test_apply_template_without_clone_env_values(mock_file):
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
         apply_template_without_clone(template_data, "/target")
 
-    # Check that environment file was written with converted format
-    mock_file.assert_called_with("/target/devcontainer-environment-variables.json", "w")
-    written_data = json.loads(
-        "".join(call.args[0] for call in mock_file().write.call_args_list if call.args[0] != "\n")
-    )
-
-    assert written_data["containerEnv"]["TEST_VAR"] == "test_value"
-    assert written_data["containerEnv"]["AWS_CONFIG_ENABLED"] == "false"
+    mock_write_files.assert_called_once()
+    call_args = mock_write_files.call_args
+    assert call_args[0][0] == "/target"
+    assert call_args[0][1] == template_data
 
 
-@patch("builtins.open", new_callable=mock_open)
-def test_apply_template_without_clone_with_aws(mock_file):
+@patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
+def test_apply_template_without_clone_with_aws(mock_write_files):
     """Test apply template without clone with AWS configuration."""
     from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
 
@@ -1199,17 +1183,14 @@ def test_apply_template_without_clone_with_aws(mock_file):
     with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
         apply_template_without_clone(template_data, "/target")
 
-    # Should be called twice - once for env file, once for AWS file
-    assert mock_file.call_count == 2
-
-    # Check calls
-    calls = mock_file.call_args_list
-    assert calls[0][0] == ("/target/devcontainer-environment-variables.json", "w")
-    assert calls[1][0] == ("/target/.devcontainer/aws-profile-map.json", "w")
+    mock_write_files.assert_called_once()
+    call_args = mock_write_files.call_args
+    assert call_args[0][0] == "/target"
+    assert call_args[0][1] == template_data
 
 
-@patch("builtins.open", new_callable=mock_open)
-def test_apply_template_without_clone_no_aws(mock_file):
+@patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files")
+def test_apply_template_without_clone_no_aws(mock_write_files):
     """Test apply template without clone without AWS configuration."""
     from caylent_devcontainer_cli.commands.setup_interactive import apply_template_without_clone
 
@@ -1217,8 +1198,10 @@ def test_apply_template_without_clone_no_aws(mock_file):
 
     apply_template_without_clone(template_data, "/target")
 
-    # Should only be called once for env file
-    mock_file.assert_called_once_with("/target/devcontainer-environment-variables.json", "w")
+    mock_write_files.assert_called_once()
+    call_args = mock_write_files.call_args
+    assert call_args[0][0] == "/target"
+    assert call_args[0][1] == template_data
 
 
 # Tests for check_and_create_tool_versions function

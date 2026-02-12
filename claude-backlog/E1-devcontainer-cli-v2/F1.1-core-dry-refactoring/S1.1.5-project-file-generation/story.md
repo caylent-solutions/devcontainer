@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.1.5 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.1 — Core DRY Refactoring & Removals |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -100,26 +100,53 @@ The function must ensure the following entries exist in the project's `.gitignor
 
 ## Acceptance Criteria
 
-- [ ] `write_project_files()` implemented in `utils/fs.py`
-- [ ] Generates `devcontainer-environment-variables.json` with metadata and sorted containerEnv keys
-- [ ] Generates `shell.env` with metadata comment header and sorted exports
-- [ ] Writes `aws-profile-map.json` when `AWS_CONFIG_ENABLED=true`
-- [ ] Writes `ssh-private-key` when `GIT_AUTH_METHOD=ssh`
-- [ ] Ensures .gitignore entries for all 4 sensitive files
-- [ ] Static container values generated correctly in `shell.env`
-- [ ] Proxy variables generated when `HOST_PROXY=true`
-- [ ] Both files always generated together (never one without the other)
-- [ ] All commands that produce project files call `write_project_files()`
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] `write_project_files()` implemented in `utils/fs.py`
+- [x] Generates `devcontainer-environment-variables.json` with metadata and sorted containerEnv keys
+- [x] Generates `shell.env` with metadata comment header and sorted exports
+- [x] Writes `aws-profile-map.json` when `AWS_CONFIG_ENABLED=true`
+- [x] Writes `ssh-private-key` when `GIT_AUTH_METHOD=ssh`
+- [x] Ensures .gitignore entries for all 4 sensitive files
+- [x] Static container values generated correctly in `shell.env`
+- [x] Proxy variables generated when `HOST_PROXY=true`
+- [x] Both files always generated together (never one without the other)
+- [x] All commands that produce project files call `write_project_files()`
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Implemented `write_project_files()` in `utils/fs.py` with all 5 responsibilities:
+  1. Writes `devcontainer-environment-variables.json` with metadata and sorted keys
+  2. Generates `shell.env` with metadata header, sorted exports, static container values, proxy vars
+  3. Writes `aws-profile-map.json` when AWS enabled
+  4. Writes `ssh-private-key` placeholder when GIT_AUTH_METHOD=ssh
+  5. Ensures .gitignore entries for all 4 sensitive files
+- Added private `_ensure_gitignore_entries()` helper in fs.py
+- Wrote 15 unit tests in `test_fs.py` (TDD red-green cycle)
+- Refactored all 4 callers to use `write_project_files()`:
+  - `setup_interactive.py`: `apply_template()` and `apply_template_without_clone()`
+  - `template.py`: `load_template()`
+  - `code.py`: `handle_code()` (replaces `generate_shell_env()` call)
+- Updated `ensure_gitignore_entries()` in `setup.py` to include `.devcontainer/ssh-private-key`
+- Fixed 18 test regressions from the refactoring:
+  - Updated code command tests to mock `write_project_files` instead of `generate_shell_env`
+  - Updated apply_template tests to mock `write_project_files` instead of low-level file ops
+  - Updated ensure_gitignore tests for 4 entries (was 3, added ssh-private-key)
+  - Updated template load tests to mock `write_project_files`
+- Wrote 14 functional tests in `test_write_project_files.py`
+- Fixed lint issues (ambiguous variable name, line length)
+- All 411 unit tests pass, 139 functional tests pass
+- fs.py at 92% coverage, overall 95%
+- Full quality gate passes: `make test && make lint && make pre-commit-check`
+
+**Remaining:** None — all acceptance criteria met.
 
 ---
 

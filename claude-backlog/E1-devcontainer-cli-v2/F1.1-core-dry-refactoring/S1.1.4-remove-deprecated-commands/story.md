@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.1.4 |
-| **Status** | in-review |
+| **Status** | complete |
 | **Parent** | F1.1 — Core DRY Refactoring & Removals |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 

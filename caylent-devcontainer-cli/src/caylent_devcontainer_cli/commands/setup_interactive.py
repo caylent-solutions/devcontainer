@@ -14,7 +14,12 @@ from caylent_devcontainer_cli.utils.constants import (
     ENV_VARS_FILENAME,
     SHELL_ENV_FILENAME,
 )
-from caylent_devcontainer_cli.utils.fs import load_json_config, remove_example_files, write_json_file
+from caylent_devcontainer_cli.utils.fs import (
+    load_json_config,
+    remove_example_files,
+    write_json_file,
+    write_project_files,
+)
 from caylent_devcontainer_cli.utils.template import (
     ensure_templates_dir,
     get_template_names,
@@ -467,76 +472,41 @@ def apply_template(template_data: Dict[str, Any], target_path: str, source_dir: 
     # Remove example files
     remove_example_files(target_devcontainer)
 
-    # Create environment variables file
-    env_file_path = os.path.join(target_path, ENV_VARS_FILENAME)
-    # Use containerEnv directly from template or create it if using old format
-    if "containerEnv" in template_data:
-        env_data = template_data
-    else:
-        # Handle old format templates for backward compatibility
-        env_data = {"containerEnv": template_data.get("env_values", {})}
+    # Resolve template name from data or use "unknown"
+    template_name = template_data.get("template_name", "unknown")
+    template_path = template_data.get("template_path", "")
 
-    write_json_file(env_file_path, env_data)
-
-    log("OK", f"Environment variables saved to {env_file_path}")
+    # Generate all project files (env vars JSON, shell.env, aws map, ssh key, gitignore)
+    write_project_files(target_path, template_data, template_name, template_path)
 
     # Check and create .tool-versions file
     container_env = template_data.get("containerEnv", {})
-    env_values = template_data.get("env_values", {})
-    python_version = container_env.get("DEFAULT_PYTHON_VERSION") or env_values.get("DEFAULT_PYTHON_VERSION")
+    python_version = container_env.get("DEFAULT_PYTHON_VERSION")
 
     if python_version:
         from caylent_devcontainer_cli.commands.setup import check_and_create_tool_versions
 
         check_and_create_tool_versions(target_path, python_version)
-
-    # Create AWS profile map if needed
-    # Check both containerEnv and env_values for backward compatibility
-    aws_config_enabled = container_env.get("AWS_CONFIG_ENABLED", env_values.get("AWS_CONFIG_ENABLED", "false"))
-
-    if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
-        aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
-        write_json_file(aws_map_path, template_data["aws_profile_map"])
-
-        log("OK", f"AWS profile map saved to {aws_map_path}")
 
     log("OK", "Template applied successfully")
 
 
 def apply_template_without_clone(template_data: Dict[str, Any], target_path: str) -> None:
     """Apply template to target path without overwriting .devcontainer directory."""
-    # Create environment variables file
-    env_file_path = os.path.join(target_path, ENV_VARS_FILENAME)
-    # Use containerEnv directly from template or create it if using old format
-    if "containerEnv" in template_data:
-        env_data = template_data
-    else:
-        # Handle old format templates for backward compatibility
-        env_data = {"containerEnv": template_data.get("env_values", {})}
+    # Resolve template name from data or use "unknown"
+    template_name = template_data.get("template_name", "unknown")
+    template_path_str = template_data.get("template_path", "")
 
-    write_json_file(env_file_path, env_data)
-
-    log("OK", f"Environment variables saved to {env_file_path}")
+    # Generate all project files (env vars JSON, shell.env, aws map, ssh key, gitignore)
+    write_project_files(target_path, template_data, template_name, template_path_str)
 
     # Check and create .tool-versions file
     container_env = template_data.get("containerEnv", {})
-    env_values = template_data.get("env_values", {})
-    python_version = container_env.get("DEFAULT_PYTHON_VERSION") or env_values.get("DEFAULT_PYTHON_VERSION")
+    python_version = container_env.get("DEFAULT_PYTHON_VERSION")
 
     if python_version:
         from caylent_devcontainer_cli.commands.setup import check_and_create_tool_versions
 
         check_and_create_tool_versions(target_path, python_version)
-
-    # Create AWS profile map if needed
-    # Check both containerEnv and env_values for backward compatibility
-    aws_config_enabled = container_env.get("AWS_CONFIG_ENABLED", env_values.get("AWS_CONFIG_ENABLED", "false"))
-
-    if aws_config_enabled == "true" and template_data.get("aws_profile_map"):
-        target_devcontainer = os.path.join(target_path, ".devcontainer")
-        aws_map_path = os.path.join(target_devcontainer, "aws-profile-map.json")
-        write_json_file(aws_map_path, template_data["aws_profile_map"])
-
-        log("OK", f"AWS profile map saved to {aws_map_path}")
 
     log("OK", "Template applied successfully (existing .devcontainer preserved)")

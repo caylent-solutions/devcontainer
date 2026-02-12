@@ -155,7 +155,12 @@ def check_and_create_tool_versions(target_path: str, python_version: str) -> Non
 def ensure_gitignore_entries(target_path: str) -> None:
     """Ensure required entries are in .gitignore."""
     gitignore_path = os.path.join(target_path, ".gitignore")
-    required_files = [SHELL_ENV_FILENAME, ENV_VARS_FILENAME, ".devcontainer/aws-profile-map.json"]
+    required_files = [
+        SHELL_ENV_FILENAME,
+        ENV_VARS_FILENAME,
+        ".devcontainer/aws-profile-map.json",
+        ".devcontainer/ssh-private-key",
+    ]
 
     log("INFO", "Checking .gitignore for required environment file entries to prevent the commit of your secrets.")
     log("INFO", "Files to check:")

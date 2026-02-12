@@ -151,7 +151,7 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])  # Make env_json newer than shell_env
-@patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
 @patch("subprocess.Popen")
 def test_handle_code(
     mock_popen,

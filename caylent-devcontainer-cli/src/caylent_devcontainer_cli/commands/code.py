@@ -6,7 +6,7 @@ import subprocess
 
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, EXAMPLE_ENV_FILE, SHELL_ENV_FILENAME
 from caylent_devcontainer_cli.utils.env import get_missing_env_vars
-from caylent_devcontainer_cli.utils.fs import generate_shell_env, load_json_config, resolve_project_root
+from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_project_files
 from caylent_devcontainer_cli.utils.ui import COLORS, exit_cancelled, exit_with_error, log
 
 
@@ -118,17 +118,18 @@ def handle_code(args):
         # If config loading fails, the error was already logged, just re-raise
         raise
 
-    # Generate shell.env if needed
+    # Regenerate project files if shell.env is missing or stale
     if not os.path.isfile(shell_env) or os.path.getmtime(env_json) > os.path.getmtime(shell_env):
         log("INFO", "Generating environment variables...")
-        generate_shell_env(env_json, shell_env)
+        template_name = config_data.get("template_name", "unknown")
+        template_path = config_data.get("template_path", "")
+        write_project_files(project_root, config_data, template_name, template_path)
     else:
         log("INFO", "Using existing shell.env file")
+        # Ensure .gitignore entries even when not regenerating
+        from caylent_devcontainer_cli.commands.setup import ensure_gitignore_entries
 
-    # Ensure .gitignore entries
-    from caylent_devcontainer_cli.commands.setup import ensure_gitignore_entries
-
-    ensure_gitignore_entries(project_root)
+        ensure_gitignore_entries(project_root)
 
     # Get IDE configuration
     ide_config = IDE_CONFIG[args.ide]
