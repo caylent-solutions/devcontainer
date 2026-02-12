@@ -5,21 +5,16 @@ import os
 import semver
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
 from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
-from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, TEMPLATES_DIR
-from caylent_devcontainer_cli.utils.env import is_single_line_env_var
-from caylent_devcontainer_cli.utils.fs import load_json_config, write_json_file
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME
+from caylent_devcontainer_cli.utils.env import get_missing_env_vars
+from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_json_file
+from caylent_devcontainer_cli.utils.template import (
+    ensure_templates_dir,
+    get_template_names,
+    get_template_path,
+)
 from caylent_devcontainer_cli.utils.ui import confirm_action, log
-
-
-def get_missing_single_line_vars(container_env):
-    """Get missing single-line environment variables from EXAMPLE_ENV_VALUES."""
-    missing_vars = {}
-    for key, value in EXAMPLE_ENV_VALUES.items():
-        if key not in container_env and is_single_line_env_var(value):
-            missing_vars[key] = value
-    return missing_vars
 
 
 def prompt_for_missing_vars(missing_vars):
@@ -91,20 +86,15 @@ def register_command(subparsers):
     upgrade_parser.set_defaults(func=handle_template_upgrade)
 
 
-def ensure_templates_dir():
-    """Ensure templates directory exists."""
-    os.makedirs(TEMPLATES_DIR, exist_ok=True)
-
-
 def handle_template_save(args):
     """Handle the template save command."""
-    project_root = args.project_root or os.getcwd()
+    project_root = resolve_project_root(args.project_root)
     save_template(project_root, args.name)
 
 
 def handle_template_load(args):
     """Handle the template load command."""
-    project_root = args.project_root or os.getcwd()
+    project_root = resolve_project_root(args.project_root)
     load_template(project_root, args.name)
 
 
@@ -130,7 +120,7 @@ def create_new_template(template_name):
 
     ensure_templates_dir()
 
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     # Check if template already exists
     if os.path.exists(template_path):
@@ -163,7 +153,7 @@ def save_template(project_root, template_name):
 
         sys.exit(1)
 
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     # Ask for confirmation before saving
     if os.path.exists(template_path):
@@ -199,7 +189,7 @@ def save_template(project_root, template_name):
 
 def load_template(project_root, template_name):
     """Load a template into the current project."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
         log("ERR", f"Template '{template_name}' not found at {template_path}")
@@ -292,40 +282,39 @@ def load_template(project_root, template_name):
 def list_templates():
     """List available templates."""
     ensure_templates_dir()
-    templates = []
+    template_names = get_template_names()
 
-    for f in os.listdir(TEMPLATES_DIR):
-        if f.endswith(".json"):
-            template_name = f.replace(".json", "")
-            template_path = os.path.join(TEMPLATES_DIR, f)
-
-            # Try to get version information
-            version = "unknown"
-            try:
-                data = load_json_config(template_path)
-                if "cli_version" in data:
-                    version = data["cli_version"]
-            except SystemExit:
-                pass
-
-            templates.append((template_name, version))
-
-    if not templates:
+    if not template_names:
         from caylent_devcontainer_cli.utils.ui import COLORS
 
         print(f"{COLORS['YELLOW']}No templates found. Create one with 'template save <n>'{COLORS['RESET']}")
         return
 
+    templates = []
+    for name in template_names:
+        template_path = get_template_path(name)
+
+        # Try to get version information
+        version = "unknown"
+        try:
+            data = load_json_config(template_path)
+            if "cli_version" in data:
+                version = data["cli_version"]
+        except SystemExit:
+            pass
+
+        templates.append((name, version))
+
     from caylent_devcontainer_cli.utils.ui import COLORS
 
     print(f"{COLORS['CYAN']}Available templates:{COLORS['RESET']}")
-    for template_name, version in sorted(templates):
+    for template_name, version in templates:
         print(f"  - {COLORS['GREEN']}{template_name}{COLORS['RESET']} (created with CLI version {version})")
 
 
 def delete_template(template_name):
     """Delete a template."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
         log("ERR", f"Template '{template_name}' not found at {template_path}")
@@ -351,7 +340,7 @@ def upgrade_template_with_missing_vars(template_data):
 
     # Check for missing single-line environment variables
     container_env = upgraded_template.get("containerEnv", {})
-    missing_vars = get_missing_single_line_vars(container_env)
+    missing_vars = get_missing_env_vars(container_env)
 
     if missing_vars:
         log("INFO", f"Found {len(missing_vars)} missing environment variables")
@@ -370,7 +359,7 @@ def upgrade_template_with_missing_vars(template_data):
 
 def upgrade_template_file(template_name, force=False):
     """Upgrade a template to the current CLI version."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
         log("ERR", f"Template '{template_name}' not found at {template_path}")

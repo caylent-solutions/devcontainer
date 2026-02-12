@@ -74,6 +74,9 @@ def test_invalid_command():
 def test_template_load_nonexistent():
     """Test loading a nonexistent template."""
     with tempfile.TemporaryDirectory() as temp_dir:
+        # Create .devcontainer dir so resolve_project_root passes
+        os.makedirs(os.path.join(temp_dir, ".devcontainer"))
+
         # Run the template load command with a nonexistent template
         result = run_command(["cdevcontainer", "template", "load", "nonexistent-template"], cwd=temp_dir)
 

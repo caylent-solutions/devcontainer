@@ -25,26 +25,27 @@ def test_register_command():
     mock_parser.set_defaults.assert_called_once_with(func=handle_code)
 
 
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[False])
-def test_handle_code_missing_config(mock_isfile, mock_find_project_root, capsys):
+def test_handle_code_missing_config(mock_isfile, mock_resolve_root, capsys):
     args = MagicMock()
     args.project_root = "/test/path"
 
     with pytest.raises(SystemExit):
         handle_code(args)
 
-    mock_find_project_root.assert_called_once_with("/test/path")
+    mock_resolve_root.assert_called_once_with("/test/path")
     mock_isfile.assert_called_once()
 
     captured = capsys.readouterr()
     assert "Configuration file not found" in captured.err
 
 
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars", return_value=[])
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])  # env_json is newer than shell_env
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
@@ -54,10 +55,11 @@ def test_handle_code_regenerate_env(
     mock_generate,
     mock_getmtime,
     mock_isfile,
-    mock_find_project_root,
+    mock_resolve_root,
     mock_gitignore,
     mock_which,
-    mock_check_missing,
+    mock_get_missing,
+    mock_load_json,
     capsys,
 ):
     mock_process = MagicMock()
@@ -70,7 +72,7 @@ def test_handle_code_regenerate_env(
 
     handle_code(args)
 
-    mock_find_project_root.assert_called_once_with("/test/path")
+    mock_resolve_root.assert_called_once_with("/test/path")
     assert mock_isfile.call_count == 2
     assert mock_getmtime.call_count == 2
     mock_generate.assert_called_once()
@@ -80,17 +82,20 @@ def test_handle_code_regenerate_env(
     assert "Generating environment variables" in captured.err
 
 
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars", return_value=[])
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
 @patch("subprocess.Popen")
 @patch("os.environ.get", return_value="/bin/zsh")
-def test_handle_code_custom_shell(mock_environ_get, mock_popen, mock_gitignore, mock_which, mock_check_missing, capsys):
+def test_handle_code_custom_shell(
+    mock_environ_get, mock_popen, mock_gitignore, mock_which, mock_get_missing, mock_load_json, capsys
+):
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process
 
-    with patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path"):
+    with patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path"):
         with patch("os.path.isfile", side_effect=[True, True]):
             with patch("os.path.getmtime", side_effect=[100, 200]):  # shell_env is newer than env_json
                 args = MagicMock()
@@ -113,10 +118,11 @@ def test_handle_code_custom_shell(mock_environ_get, mock_popen, mock_gitignore, 
                 assert "VS Code launched" in captured.err
 
 
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars", return_value=[])
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
 @patch("shutil.which", return_value="/usr/bin/cursor")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
@@ -126,10 +132,11 @@ def test_handle_code_cursor(
     mock_generate,
     mock_getmtime,
     mock_isfile,
-    mock_find_project_root,
+    mock_resolve_root,
     mock_gitignore,
     mock_which,
-    mock_check_missing,
+    mock_get_missing,
+    mock_load_json,
     capsys,
 ):
     mock_process = MagicMock()
@@ -153,10 +160,11 @@ def test_handle_code_cursor(
     assert "Cursor launched" in captured.err
 
 
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars", return_value=[])
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
 @patch("shutil.which", return_value=None)
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
@@ -164,10 +172,11 @@ def test_handle_code_ide_not_found(
     mock_generate,
     mock_getmtime,
     mock_isfile,
-    mock_find_project_root,
+    mock_resolve_root,
     mock_gitignore,
     mock_which,
-    mock_check_missing,
+    mock_get_missing,
+    mock_load_json,
     capsys,
 ):
     args = MagicMock()
@@ -183,10 +192,11 @@ def test_handle_code_ide_not_found(
     assert "Please install VS Code" in captured.err
 
 
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars", return_value=[])
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
 @patch("shutil.which", return_value=None)
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
@@ -194,10 +204,11 @@ def test_handle_code_cursor_not_found(
     mock_generate,
     mock_getmtime,
     mock_isfile,
-    mock_find_project_root,
+    mock_resolve_root,
     mock_gitignore,
     mock_which,
-    mock_check_missing,
+    mock_get_missing,
+    mock_load_json,
     capsys,
 ):
     args = MagicMock()
@@ -213,10 +224,11 @@ def test_handle_code_cursor_not_found(
     assert "Please install Cursor" in captured.err
 
 
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars", return_value=[])
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
@@ -226,10 +238,11 @@ def test_handle_code_launch_failure(
     mock_generate,
     mock_getmtime,
     mock_isfile,
-    mock_find_project_root,
+    mock_resolve_root,
     mock_gitignore,
     mock_which,
-    mock_check_missing,
+    mock_get_missing,
+    mock_load_json,
     capsys,
 ):
     args = MagicMock()
@@ -287,27 +300,18 @@ def test_ide_config_structure():
 
 
 @patch(
-    "caylent_devcontainer_cli.commands.code.EXAMPLE_ENV_VALUES",
+    "caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES",
     {"EXISTING_VAR": "default1", "MISSING_VAR": "default2", "COMPLEX_VAR": {"key": "value"}},
 )
-def test_check_missing_env_vars():
+def test_get_missing_env_vars():
     """Test checking for missing environment variables."""
-    import json
-    import tempfile
+    from caylent_devcontainer_cli.utils.env import get_missing_env_vars
 
-    from caylent_devcontainer_cli.commands.code import check_missing_env_vars
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        config_data = {"containerEnv": {"EXISTING_VAR": "value"}}
-        json.dump(config_data, f)
-        f.flush()
-
-        missing = check_missing_env_vars(f.name)
-
-        os.unlink(f.name)
+    container_env = {"EXISTING_VAR": "value"}
+    missing = get_missing_env_vars(container_env)
 
     # Should only detect MISSING_VAR (single line, missing)
-    assert missing == ["MISSING_VAR"]
+    assert missing == {"MISSING_VAR": "default2"}
 
 
 @patch("questionary.select")
@@ -338,11 +342,11 @@ def test_prompt_upgrade_or_continue_continue(mock_select):
 
 
 @patch("caylent_devcontainer_cli.commands.code.load_json_config")
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars")
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars")
 @patch("caylent_devcontainer_cli.commands.code.prompt_upgrade_or_continue")
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[100, 200])
 @patch("subprocess.Popen")
@@ -350,18 +354,18 @@ def test_handle_code_with_missing_vars(
     mock_popen,
     mock_getmtime,
     mock_isfile,
-    mock_find_project_root,
+    mock_resolve_root,
     mock_gitignore,
     mock_which,
     mock_prompt,
-    mock_check_missing,
+    mock_get_missing,
     mock_load_json,
 ):
     """Test handle_code with missing environment variables."""
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process
-    mock_check_missing.return_value = ["MISSING_VAR"]
+    mock_get_missing.return_value = {"MISSING_VAR": "default_value"}
     mock_load_json.return_value = {"containerEnv": {"EXISTING_VAR": "value"}}
 
     args = MagicMock()
@@ -370,5 +374,5 @@ def test_handle_code_with_missing_vars(
 
     handle_code(args)
 
-    mock_check_missing.assert_called_once()
+    mock_get_missing.assert_called_once()
     mock_prompt.assert_called_once_with(["MISSING_VAR"], None)

@@ -13,7 +13,6 @@ from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.template import (
     create_new_template,
     delete_template,
-    ensure_templates_dir,
     handle_template_create,
     handle_template_delete,
     handle_template_list,
@@ -26,17 +25,20 @@ from caylent_devcontainer_cli.commands.template import (
     upgrade_template_file,
 )
 from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
+from caylent_devcontainer_cli.utils.template import ensure_templates_dir
 
 
 # Basic functionality tests
 def test_ensure_templates_dir():
-    with patch("os.makedirs") as mock_makedirs:
+    with patch("caylent_devcontainer_cli.utils.template.os.makedirs") as mock_makedirs:
         ensure_templates_dir()
         mock_makedirs.assert_called_once_with(TEMPLATES_DIR, exist_ok=True)
 
 
 def test_handle_template_save():
-    with patch("caylent_devcontainer_cli.commands.template.save_template") as mock_save:
+    with patch("caylent_devcontainer_cli.commands.template.save_template") as mock_save, patch(
+        "caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/test/path"
+    ):
         args = MagicMock()
         args.project_root = "/test/path"
         args.name = "test-template"
@@ -47,7 +49,9 @@ def test_handle_template_save():
 
 
 def test_handle_template_load():
-    with patch("caylent_devcontainer_cli.commands.template.load_template") as mock_load:
+    with patch("caylent_devcontainer_cli.commands.template.load_template") as mock_load, patch(
+        "caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/test/path"
+    ):
         args = MagicMock()
         args.project_root = "/test/path"
         args.name = "test-template"
@@ -197,7 +201,7 @@ def test_delete_template():
     with patch("os.path.exists", return_value=True), patch("os.remove") as mock_remove, patch(
         "caylent_devcontainer_cli.commands.template.confirm_action", return_value=True
     ), patch("caylent_devcontainer_cli.utils.ui.log"), patch(
-        "caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", "/templates"
+        "caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"
     ):
         delete_template(template_name)
 
@@ -211,7 +215,7 @@ def test_delete_template_not_found():
 
     with patch("os.path.exists", return_value=False), patch("os.remove") as mock_remove, patch(
         "caylent_devcontainer_cli.utils.ui.log"
-    ), patch("caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", "/templates"):
+    ), patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"):
         delete_template(template_name)
 
         # Check that os.remove was not called
@@ -225,7 +229,7 @@ def test_delete_template_cancel():
     with patch("os.path.exists", return_value=True), patch("os.remove") as mock_remove, patch(
         "caylent_devcontainer_cli.commands.template.confirm_action", return_value=False
     ), patch("caylent_devcontainer_cli.utils.ui.log"), patch(
-        "caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", "/templates"
+        "caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"
     ):
         delete_template(template_name)
 
@@ -248,7 +252,7 @@ def test_upgrade_template_file():
     ), patch(
         "caylent_devcontainer_cli.utils.ui.log"
     ), patch(
-        "caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", "/templates"
+        "caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"
     ):
         upgrade_template_file(template_name)
 
@@ -259,7 +263,7 @@ def test_upgrade_template_file_not_found():
 
     with patch("os.path.exists", return_value=False), patch("caylent_devcontainer_cli.utils.ui.log"), patch(
         "sys.exit", side_effect=SystemExit(1)
-    ), patch("caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", "/templates"):
+    ), patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"):
         with pytest.raises(SystemExit):
             upgrade_template_file(template_name)
 
@@ -272,7 +276,7 @@ def test_handle_template_save_no_project_root():
     args.name = "test-template"
 
     with patch("caylent_devcontainer_cli.commands.template.save_template") as mock_save, patch(
-        "os.getcwd", return_value="/current/dir"
+        "caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/current/dir"
     ):
         handle_template_save(args)
         mock_save.assert_called_once_with("/current/dir", "test-template")
@@ -285,7 +289,7 @@ def test_handle_template_load_no_project_root():
     args.name = "test-template"
 
     with patch("caylent_devcontainer_cli.commands.template.load_template") as mock_load, patch(
-        "os.getcwd", return_value="/current/dir"
+        "caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/current/dir"
     ):
         handle_template_load(args)
         mock_load.assert_called_once_with("/current/dir", "test-template")
@@ -293,8 +297,8 @@ def test_handle_template_load_no_project_root():
 
 def test_ensure_templates_dir_creates_dir():
     """Test ensure_templates_dir creates directory if it doesn't exist."""
-    with patch("os.makedirs") as mock_makedirs, patch(
-        "caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", "/test/templates"
+    with patch("caylent_devcontainer_cli.utils.template.os.makedirs") as mock_makedirs, patch(
+        "caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/test/templates"
     ):
         ensure_templates_dir()
         mock_makedirs.assert_called_once_with("/test/templates", exist_ok=True)
@@ -488,17 +492,15 @@ def test_upgrade_template_file_version_check():
 # Additional tests for missing coverage
 
 
-def test_get_missing_single_line_vars():
-    """Test get_missing_single_line_vars function."""
-    from caylent_devcontainer_cli.commands.template import get_missing_single_line_vars
+def test_get_missing_env_vars():
+    """Test get_missing_env_vars function."""
+    from caylent_devcontainer_cli.utils.env import get_missing_env_vars
 
     container_env = {"EXISTING_VAR": "value"}
     example_values = {"EXISTING_VAR": "existing", "MISSING_VAR": "default_value", "COMPLEX_VAR": {"nested": "object"}}
 
-    with patch("caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES", example_values), patch(
-        "caylent_devcontainer_cli.utils.env.is_single_line_env_var", side_effect=lambda x: isinstance(x, str)
-    ):
-        result = get_missing_single_line_vars(container_env)
+    with patch("caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES", example_values):
+        result = get_missing_env_vars(container_env)
         assert "MISSING_VAR" in result
         assert "EXISTING_VAR" not in result
         assert "COMPLEX_VAR" not in result
@@ -535,9 +537,7 @@ def test_upgrade_template_with_missing_vars():
 
     with patch(
         "caylent_devcontainer_cli.commands.setup_interactive.upgrade_template", return_value=upgraded_template
-    ), patch(
-        "caylent_devcontainer_cli.commands.template.get_missing_single_line_vars", return_value=missing_vars
-    ), patch(
+    ), patch("caylent_devcontainer_cli.commands.template.get_missing_env_vars", return_value=missing_vars), patch(
         "caylent_devcontainer_cli.commands.template.prompt_for_missing_vars", return_value=missing_vars
     ):
 
@@ -556,7 +556,7 @@ def test_upgrade_template_with_no_missing_vars():
 
     with patch(
         "caylent_devcontainer_cli.commands.setup_interactive.upgrade_template", return_value=upgraded_template
-    ), patch("caylent_devcontainer_cli.commands.template.get_missing_single_line_vars", return_value={}):
+    ), patch("caylent_devcontainer_cli.commands.template.get_missing_env_vars", return_value={}):
 
         result = upgrade_template_with_missing_vars(template_data)
 

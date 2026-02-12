@@ -123,8 +123,28 @@ def generate_shell_env(json_file: str, output_file: str, no_export: bool = False
 
 
 def find_project_root(path: str) -> str:
-    """Find the project root directory."""
-    # If path is not provided, use current directory
+    """Find the project root directory.
+
+    Deprecated: Use resolve_project_root() instead.
+    """
+    return resolve_project_root(path)
+
+
+def resolve_project_root(path: str = None) -> str:
+    """Resolve and validate the project root directory.
+
+    Defaults to os.getcwd() when path is None or empty.
+    Validates that a .devcontainer/ directory exists in the resolved path.
+
+    Args:
+        path: Optional path to resolve. Defaults to current working directory.
+
+    Returns:
+        The resolved project root path.
+
+    Raises:
+        SystemExit: If the resolved path does not contain a .devcontainer directory.
+    """
     if not path:
         path = os.getcwd()
 

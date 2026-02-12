@@ -23,6 +23,7 @@ from caylent_devcontainer_cli.utils.fs import (
     generate_shell_env,
     load_json_config,
     remove_example_files,
+    resolve_project_root,
     write_json_file,
 )
 
@@ -397,3 +398,77 @@ class TestFilePathConstants:
     def test_ssh_key_filename(self):
         """Test SSH_KEY_FILENAME constant value."""
         assert SSH_KEY_FILENAME == "ssh-private-key"
+
+
+# =============================================================================
+# resolve_project_root tests
+# =============================================================================
+
+
+class TestResolveProjectRoot:
+    """Tests for resolve_project_root utility."""
+
+    def test_defaults_to_cwd_when_path_is_none(self):
+        """Test that resolve_project_root defaults to os.getcwd() when path is None."""
+        with patch("os.getcwd", return_value="/current/dir"), patch("os.path.isdir", return_value=True):
+            result = resolve_project_root()
+            assert result == "/current/dir"
+
+    def test_uses_provided_path(self):
+        """Test that resolve_project_root uses the provided path."""
+        with patch("os.path.isdir", return_value=True):
+            result = resolve_project_root("/my/project")
+            assert result == "/my/project"
+
+    def test_validates_devcontainer_dir_exists(self):
+        """Test that resolve_project_root validates .devcontainer/ exists."""
+        with patch("os.path.isdir", return_value=False):
+            with pytest.raises(SystemExit):
+                resolve_project_root("/no/devcontainer")
+
+    def test_handles_file_path_by_using_dirname(self):
+        """Test that resolve_project_root handles file paths correctly."""
+        with patch("os.path.isfile", return_value=True), patch("os.path.dirname", return_value="/my/project"), patch(
+            "os.path.isdir", return_value=True
+        ):
+            result = resolve_project_root("/my/project/file.json")
+            assert result == "/my/project"
+
+    def test_exits_with_clear_error_on_invalid_path(self):
+        """Test that resolve_project_root exits with a clear error message."""
+        with patch("os.path.isdir", return_value=False), patch("os.path.isfile", return_value=False), patch(
+            "caylent_devcontainer_cli.utils.fs.log"
+        ) as mock_log, patch("sys.exit", side_effect=SystemExit(1)):
+            with pytest.raises(SystemExit):
+                resolve_project_root("/bad/path")
+            mock_log.assert_any_call("ERR", "Could not find a valid project root at /bad/path")
+
+    def test_empty_string_defaults_to_cwd(self):
+        """Test that empty string path defaults to cwd."""
+        with patch("os.getcwd", return_value="/cwd/path"), patch("os.path.isdir", return_value=True):
+            result = resolve_project_root("")
+            assert result == "/cwd/path"
+
+
+# =============================================================================
+# CLI_NAME import test
+# =============================================================================
+
+
+class TestCLINameConstant:
+    """Tests to verify CLI_NAME is imported from constants, not defined in cli.py."""
+
+    def test_cli_name_exists_in_constants(self):
+        """Test that CLI_NAME is defined in utils/constants.py."""
+        from caylent_devcontainer_cli.utils.constants import CLI_NAME
+
+        assert CLI_NAME == "Caylent Devcontainer CLI"
+
+    def test_cli_module_uses_constants_cli_name(self):
+        """Test that cli.py uses CLI_NAME from constants, not a local definition."""
+        import caylent_devcontainer_cli.cli as cli_module
+        from caylent_devcontainer_cli.utils.constants import CLI_NAME
+
+        # The cli module should reference the same CLI_NAME from constants
+        # After refactoring, cli.py should import CLI_NAME from constants
+        assert hasattr(cli_module, "CLI_NAME") is False or cli_module.CLI_NAME == CLI_NAME

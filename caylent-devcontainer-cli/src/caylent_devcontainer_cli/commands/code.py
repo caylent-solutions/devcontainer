@@ -4,24 +4,10 @@ import os
 import shutil
 import subprocess
 
-from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, EXAMPLE_ENV_FILE, SHELL_ENV_FILENAME
-from caylent_devcontainer_cli.utils.env import is_single_line_env_var
-from caylent_devcontainer_cli.utils.fs import find_project_root, generate_shell_env, load_json_config
+from caylent_devcontainer_cli.utils.env import get_missing_env_vars
+from caylent_devcontainer_cli.utils.fs import generate_shell_env, load_json_config, resolve_project_root
 from caylent_devcontainer_cli.utils.ui import COLORS, log
-
-
-def check_missing_env_vars(env_json_path):
-    """Check for missing single-line environment variables."""
-    config_data = load_json_config(env_json_path)
-    container_env = config_data.get("containerEnv", {})
-
-    missing_vars = []
-    for key, value in EXAMPLE_ENV_VALUES.items():
-        if key not in container_env and is_single_line_env_var(value):
-            missing_vars.append(key)
-
-    return missing_vars
 
 
 def prompt_upgrade_or_continue(missing_vars, template_name=None):
@@ -108,7 +94,7 @@ def register_command(subparsers):
 
 def handle_code(args):
     """Handle the code command."""
-    project_root = find_project_root(args.project_root)
+    project_root = resolve_project_root(args.project_root)
 
     # Check if devcontainer-environment-variables.json exists
     env_json = os.path.join(project_root, ENV_VARS_FILENAME)
@@ -124,17 +110,17 @@ def handle_code(args):
 
     # Check for missing environment variables
     try:
-        missing_vars = check_missing_env_vars(env_json)
+        config_data = load_json_config(env_json)
+        container_env = config_data.get("containerEnv", {})
+        missing_vars = get_missing_env_vars(container_env)
         if missing_vars:
-            # Try to determine if this came from a template
-            config_data = load_json_config(env_json)
             template_name = None
             if "cli_version" in config_data:
                 # This might be from a template, but we can't determine the name
                 # So we'll just show the generic upgrade command
                 pass
 
-            prompt_upgrade_or_continue(missing_vars, template_name)
+            prompt_upgrade_or_continue(list(missing_vars.keys()), template_name)
     except SystemExit:
         # If config loading fails, the error was already logged, just re-raise
         raise

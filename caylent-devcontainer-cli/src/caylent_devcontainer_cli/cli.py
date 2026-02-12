@@ -5,9 +5,7 @@ import sys
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands import code, env, install, setup, template
-
-# Constants
-CLI_NAME = "Caylent Devcontainer CLI"
+from caylent_devcontainer_cli.utils.constants import CLI_NAME
 
 
 def main():

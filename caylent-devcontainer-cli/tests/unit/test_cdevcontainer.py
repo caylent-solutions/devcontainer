@@ -183,10 +183,11 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 
 
 # Test the handle_code function
-@patch("caylent_devcontainer_cli.commands.code.check_missing_env_vars", return_value=[])
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.get_missing_env_vars", return_value={})
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.setup.ensure_gitignore_entries")
-@patch("caylent_devcontainer_cli.commands.code.find_project_root", return_value="/test/path")
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=[True, True])
 @patch("os.path.getmtime", side_effect=[200, 100])  # Make env_json newer than shell_env
 @patch("caylent_devcontainer_cli.commands.code.generate_shell_env")
@@ -196,10 +197,11 @@ def test_handle_code(
     mock_generate,
     mock_getmtime,
     mock_isfile,
-    mock_find_project_root,
+    mock_resolve_root,
     mock_gitignore,
     mock_which,
-    mock_check_missing,
+    mock_get_missing,
+    mock_load_json,
     capsys,
 ):
     mock_process = MagicMock()
@@ -212,6 +214,6 @@ def test_handle_code(
 
     handle_code(args)
 
-    mock_find_project_root.assert_called_once_with("/test/path")
+    mock_resolve_root.assert_called_once_with("/test/path")
     mock_generate.assert_called_once()
     mock_popen.assert_called_once()

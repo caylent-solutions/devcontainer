@@ -13,9 +13,13 @@ from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
     ENV_VARS_FILENAME,
     SHELL_ENV_FILENAME,
-    TEMPLATES_DIR,
 )
 from caylent_devcontainer_cli.utils.fs import load_json_config, remove_example_files, write_json_file
+from caylent_devcontainer_cli.utils.template import (
+    ensure_templates_dir,
+    get_template_names,
+    get_template_path,
+)
 from caylent_devcontainer_cli.utils.ui import log
 
 
@@ -36,16 +40,8 @@ class JsonValidator(Validator):
 
 def list_templates() -> List[str]:
     """List available templates."""
-    if not os.path.exists(TEMPLATES_DIR):
-        os.makedirs(TEMPLATES_DIR, exist_ok=True)
-        return []
-
-    templates = []
-    for file in os.listdir(TEMPLATES_DIR):
-        if file.endswith(".json"):
-            templates.append(file.replace(".json", ""))
-
-    return templates
+    ensure_templates_dir()
+    return get_template_names()
 
 
 def prompt_use_template() -> bool:
@@ -441,15 +437,14 @@ def create_template_interactive() -> Dict[str, Any]:
 
 def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
     """Save template to file."""
-    if not os.path.exists(TEMPLATES_DIR):
-        os.makedirs(TEMPLATES_DIR, exist_ok=True)
+    ensure_templates_dir()
 
     # Only update version information if no git_ref is present
     # When git_ref is present, cli_version should match the git reference
     if "git_ref" not in template_data:
         template_data["cli_version"] = __version__
 
-    template_path = os.path.join(TEMPLATES_DIR, f"{name}.json")
+    template_path = get_template_path(name)
 
     write_json_file(template_path, template_data)
 
@@ -458,7 +453,7 @@ def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
 
 def load_template_from_file(name: str) -> Dict[str, Any]:
     """Load template from file."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{name}.json")
+    template_path = get_template_path(name)
 
     if not os.path.exists(template_path):
         log("ERR", f"Template {name} not found")

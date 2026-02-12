@@ -24,7 +24,9 @@ def test_handle_env_export():
 
 
 def test_handle_env_load():
-    with patch("caylent_devcontainer_cli.commands.env.load_environment") as mock_load:
+    with patch("caylent_devcontainer_cli.commands.env.load_environment") as mock_load, patch(
+        "caylent_devcontainer_cli.commands.env.resolve_project_root", return_value="/test/path"
+    ):
         args = MagicMock()
         args.project_root = "/test/path"
 

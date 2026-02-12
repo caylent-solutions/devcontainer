@@ -1411,15 +1411,15 @@ def test_is_single_line_env_var():
 
 
 @patch(
-    "caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES",
+    "caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES",
     {"VAR1": "value1", "VAR2": "value2", "VAR3": {"complex": "object"}, "VAR4": "multiline\nvalue"},
 )
-def test_get_missing_single_line_vars():
+def test_get_missing_env_vars():
     """Test getting missing single line variables."""
-    from caylent_devcontainer_cli.commands.template import get_missing_single_line_vars
+    from caylent_devcontainer_cli.utils.env import get_missing_env_vars
 
     container_env = {"VAR1": "existing_value"}
-    missing = get_missing_single_line_vars(container_env)
+    missing = get_missing_env_vars(container_env)
 
     # Should only include VAR2 (single line, missing)
     assert missing == {"VAR2": "value2"}
@@ -1441,7 +1441,7 @@ def test_prompt_for_missing_vars_use_defaults(mock_text, mock_confirm):
 
 
 @patch("caylent_devcontainer_cli.commands.setup_interactive.upgrade_template")
-@patch("caylent_devcontainer_cli.commands.template.get_missing_single_line_vars")
+@patch("caylent_devcontainer_cli.commands.template.get_missing_env_vars")
 @patch("caylent_devcontainer_cli.commands.template.prompt_for_missing_vars")
 def test_upgrade_template_with_missing_vars(mock_prompt, mock_get_missing, mock_upgrade):
     """Test upgrading template with missing variables."""

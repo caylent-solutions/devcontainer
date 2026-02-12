@@ -25,7 +25,7 @@ class TestTemplateUpgradeForce:
             shutil.rmtree(self.temp_dir)
 
     @patch(
-        "caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES",
+        "caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES",
         {"EXISTING_VAR": "existing_default", "NEW_VAR": "new_default", "COMPLEX_VAR": {"key": "value"}},
     )
     @patch("questionary.confirm")
@@ -52,7 +52,7 @@ class TestTemplateUpgradeForce:
         args = Args()
 
         # Run the upgrade
-        with patch("caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", self.temp_dir):
+        with patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", self.temp_dir):
             handle_template_upgrade(args)
 
         # Verify the template was updated
@@ -66,7 +66,7 @@ class TestTemplateUpgradeForce:
         assert "COMPLEX_VAR" not in updated_template["containerEnv"]
 
     @patch(
-        "caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES",
+        "caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES",
         {"EXISTING_VAR": "existing_default", "NEW_VAR": "new_default"},
     )
     @patch("questionary.confirm")
@@ -94,7 +94,7 @@ class TestTemplateUpgradeForce:
         args = Args()
 
         # Run the upgrade
-        with patch("caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", self.temp_dir):
+        with patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", self.temp_dir):
             handle_template_upgrade(args)
 
         # Verify the template was updated with custom value
@@ -103,7 +103,7 @@ class TestTemplateUpgradeForce:
 
         assert updated_template["containerEnv"]["NEW_VAR"] == "custom_value"
 
-    @patch("caylent_devcontainer_cli.commands.template.EXAMPLE_ENV_VALUES", {"EXISTING_VAR": "existing_default"})
+    @patch("caylent_devcontainer_cli.utils.env.EXAMPLE_ENV_VALUES", {"EXISTING_VAR": "existing_default"})
     def test_force_upgrade_no_missing_vars(self):
         """Test force upgrade when no variables are missing."""
 
@@ -123,7 +123,7 @@ class TestTemplateUpgradeForce:
         args = Args()
 
         # Run the upgrade
-        with patch("caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", self.temp_dir):
+        with patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", self.temp_dir):
             handle_template_upgrade(args)
 
         # Verify the template was updated (version should be current)
@@ -153,7 +153,7 @@ class TestTemplateUpgradeForce:
         args = Args()
 
         # Run the upgrade
-        with patch("caylent_devcontainer_cli.commands.template.TEMPLATES_DIR", self.temp_dir):
+        with patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", self.temp_dir):
             handle_template_upgrade(args)
 
         # Verify the template was updated but no new vars added

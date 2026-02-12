@@ -3,7 +3,7 @@
 import os
 
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, SHELL_ENV_FILENAME
-from caylent_devcontainer_cli.utils.fs import generate_shell_env
+from caylent_devcontainer_cli.utils.fs import generate_shell_env, resolve_project_root
 from caylent_devcontainer_cli.utils.ui import log
 
 
@@ -34,7 +34,7 @@ def handle_env_export(args):
 
 def handle_env_load(args):
     """Handle the env load command."""
-    project_root = args.project_root or os.getcwd()
+    project_root = resolve_project_root(args.project_root)
     load_environment(project_root)
 
 
