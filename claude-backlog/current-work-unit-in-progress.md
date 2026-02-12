@@ -3,15 +3,14 @@
 ## In Progress
 
 - **Status:** in-review
-- **Work Unit:** S1.3.1 — Universal UI Requirements
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.1-universal-ui-requirements/story.md`
-- **Feature:** F1.3 — Command Rewrites
+- **Work Unit:** S1.2.2 — Template Create Command
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.2-template-system/S1.2.2-template-create-command/story.md`
+- **Feature:** F1.2 — Template System
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
 
-1. S1.2.2 — Template Create Command → `claude-backlog/E1-devcontainer-cli-v2/F1.2-template-system/S1.2.2-template-create-command/story.md`
-2. S1.2.3 — Template Load Command → `claude-backlog/E1-devcontainer-cli-v2/F1.2-template-system/S1.2.3-template-load-command/story.md`
+1. S1.2.3 — Template Load Command → `claude-backlog/E1-devcontainer-cli-v2/F1.2-template-system/S1.2.3-template-load-command/story.md`
 3. S1.2.4 — Template Upgrade Command → `claude-backlog/E1-devcontainer-cli-v2/F1.2-template-system/S1.2.4-template-upgrade-command/story.md`
 5. S1.3.2 — Code Command Rewrite → `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.2-code-command-rewrite/story.md`
 6. S1.3.3 — Code Command Validation → `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.3-code-command-validation/story.md`
@@ -43,3 +42,4 @@
 5. S1.1.5 — Project File Generation (2026-02-12)
 6. S1.1.6 — Template Application Consolidation (2026-02-12)
 7. S1.2.1 — Template Validation System (2026-02-12)
+8. S1.3.1 — Universal UI Requirements (2026-02-12)

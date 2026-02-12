@@ -1,7 +1,9 @@
 """UI utilities for the Caylent Devcontainer CLI."""
 
+import os
 import subprocess
 import sys
+import tempfile
 from typing import Any, Callable, Optional
 
 import questionary
@@ -152,6 +154,90 @@ def prompt_with_confirmation(
         confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
         if confirmed:
             return answer
+
+
+def validate_ssh_key_file(key_path: str) -> tuple:
+    """Validate an SSH private key file.
+
+    Checks:
+    1. File exists and is readable
+    2. Normalizes line endings (strips \\r, ensures trailing newline)
+    3. Format check: starts with -----BEGIN and contains -----END
+    4. Real key validation via ssh-keygen -y -f <keyfile>
+
+    Args:
+        key_path: Path to the SSH private key file.
+
+    Returns:
+        A tuple of (success: bool, message: str).
+        On success: (True, fingerprint string)
+        On failure: (False, error description)
+    """
+    # Check file exists
+    if not os.path.exists(key_path):
+        return (False, f"File does not exist: {key_path}")
+
+    # Check file is readable
+    if not os.access(key_path, os.R_OK):
+        return (False, f"File is not readable: {key_path}")
+
+    # Read and normalize line endings
+    try:
+        with open(key_path, "r") as f:
+            content = f.read()
+    except PermissionError:
+        return (False, f"Permission denied reading file: {key_path}")
+
+    # Normalize: strip \r, ensure trailing newline
+    content = content.replace("\r", "")
+    if not content.endswith("\n"):
+        content += "\n"
+
+    # Format check
+    if "-----BEGIN" not in content:
+        return (False, "Invalid key format: file must start with -----BEGIN marker")
+    if "-----END" not in content:
+        return (False, "Invalid key format: file must contain -----END marker")
+
+    # Write normalized content to a temp file for ssh-keygen validation
+    with tempfile.NamedTemporaryFile(mode="w", suffix="_key", delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        os.chmod(tmp_path, 0o600)
+
+        # Real key validation via ssh-keygen -y -f (extract public key)
+        result = subprocess.run(
+            ["ssh-keygen", "-y", "-f", tmp_path],
+            capture_output=True,
+            text=True,
+            input="",
+        )
+
+        if result.returncode != 0:
+            stderr = result.stderr.strip().lower()
+            if "passphrase" in stderr or "incorrect" in stderr or "bad" in stderr:
+                return (
+                    False,
+                    "SSH key requires a passphrase. Please use a key without a "
+                    "passphrase or remove the passphrase with: "
+                    "ssh-keygen -p -f <keyfile>",
+                )
+            return (False, f"Invalid SSH key: {result.stderr.strip()}")
+
+        # Get fingerprint
+        fp_result = subprocess.run(
+            ["ssh-keygen", "-l", "-f", tmp_path],
+            capture_output=True,
+            text=True,
+        )
+        if fp_result.returncode != 0:
+            return (False, f"Could not read key fingerprint: {fp_result.stderr.strip()}")
+
+        return (True, fp_result.stdout.strip())
+    finally:
+        os.unlink(tmp_path)
 
 
 def confirm_action(message):

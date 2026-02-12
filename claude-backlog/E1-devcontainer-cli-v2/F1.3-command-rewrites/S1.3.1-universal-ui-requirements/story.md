@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.3.1 |
-| **Status** | in-review |
+| **Status** | complete |
 | **Parent** | F1.3 — Command Rewrites |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 

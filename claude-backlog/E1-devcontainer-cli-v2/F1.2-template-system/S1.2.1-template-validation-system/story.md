@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.2.1 |
-| **Status** | in-review |
+| **Status** | complete |
 | **Parent** | F1.2 — Template System |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 

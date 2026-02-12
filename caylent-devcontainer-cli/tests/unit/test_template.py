@@ -177,14 +177,17 @@ def test_create_new_template(mock_exists, mock_ensure_dir, mock_create_interacti
     mock_save.assert_called_once_with({"containerEnv": {"TEST": "value"}, "cli_version": "1.0.0"}, "test-template")
 
 
-@patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=False)
 @patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
 @patch("os.path.exists", return_value=True)
-def test_create_new_template_exists_cancel(mock_exists, mock_ensure_dir, mock_confirm):
+def test_create_new_template_exists_cancel(mock_exists, mock_ensure_dir):
     """Test creating template when it exists and user cancels."""
-    create_new_template("existing-template")
+    mock_confirm = MagicMock()
+    mock_confirm.ask.return_value = False
 
-    mock_confirm.assert_called_once_with("Template 'existing-template' already exists. Overwrite?")
+    with patch("questionary.confirm", return_value=mock_confirm):
+        with pytest.raises(SystemExit):
+            create_new_template("existing-template")
+
     mock_ensure_dir.assert_called_once()
 
 
@@ -764,10 +767,12 @@ def test_list_templates_json_exception():
 def test_create_new_template_overwrite():
     """Test create_new_template with overwrite confirmation."""
     template_data = {"containerEnv": {"TEST": "value"}, "cli_version": "1.0.0"}
+    mock_confirm = MagicMock()
+    mock_confirm.ask.return_value = True
 
     with (
         patch("os.path.exists", return_value=True),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch("questionary.confirm", return_value=mock_confirm),
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
         patch(
             "caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive",

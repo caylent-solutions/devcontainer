@@ -464,29 +464,59 @@ def test_prompt_aws_profile_map(mock_select, mock_text, mock_confirm):
     mock_text.assert_called_once()
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_env_values")
 @patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_aws_profile_map")
-def test_create_template_interactive_with_aws(mock_aws, mock_env):
-    mock_env.return_value = {"AWS_CONFIG_ENABLED": "true"}
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_custom_env_vars")
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_with_confirmation")
+def test_create_template_interactive_with_aws(mock_pwc, mock_custom, mock_aws):
+    # Mock the 17-step prompt_with_confirmation calls for token auth + AWS enabled
+    mock_pwc.side_effect = [
+        "true",  # 1. AWS_CONFIG_ENABLED
+        "main",  # 2. DEFAULT_GIT_BRANCH
+        "3.12.9",  # 3. DEFAULT_PYTHON_VERSION
+        "Dev Name",  # 4. DEVELOPER_NAME
+        "github.com",  # 5. GIT_PROVIDER_URL
+        "token",  # 6. GIT_AUTH_METHOD
+        "user",  # 7. GIT_USER
+        "e@e.com",  # 8. GIT_USER_EMAIL
+        "tok123",  # 9. GIT_TOKEN
+        "",  # 11. EXTRA_APT_PACKAGES
+        "cat",  # 12. PAGER
+        "json",  # 13. AWS_DEFAULT_OUTPUT
+        "false",  # 14. HOST_PROXY
+    ]
+    mock_custom.return_value = {}
     mock_aws.return_value = {"default": {"region": "us-west-2"}}
 
     result = create_template_interactive()
 
-    assert result["containerEnv"] == {"AWS_CONFIG_ENABLED": "true"}
+    assert result["containerEnv"]["AWS_CONFIG_ENABLED"] == "true"
     assert result["aws_profile_map"] == {"default": {"region": "us-west-2"}}
-    mock_env.assert_called_once()
     mock_aws.assert_called_once()
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_env_values")
-def test_create_template_interactive_without_aws(mock_env):
-    mock_env.return_value = {"AWS_CONFIG_ENABLED": "false"}
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_custom_env_vars")
+@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_with_confirmation")
+def test_create_template_interactive_without_aws(mock_pwc, mock_custom):
+    mock_pwc.side_effect = [
+        "false",  # 1. AWS_CONFIG_ENABLED
+        "main",  # 2. DEFAULT_GIT_BRANCH
+        "3.12.9",  # 3. DEFAULT_PYTHON_VERSION
+        "Dev Name",  # 4. DEVELOPER_NAME
+        "github.com",  # 5. GIT_PROVIDER_URL
+        "token",  # 6. GIT_AUTH_METHOD
+        "user",  # 7. GIT_USER
+        "e@e.com",  # 8. GIT_USER_EMAIL
+        "tok123",  # 9. GIT_TOKEN
+        "",  # 11. EXTRA_APT_PACKAGES
+        "cat",  # 12. PAGER
+        "false",  # 14. HOST_PROXY
+    ]
+    mock_custom.return_value = {}
 
     result = create_template_interactive()
 
-    assert result["containerEnv"] == {"AWS_CONFIG_ENABLED": "false"}
+    assert result["containerEnv"]["AWS_CONFIG_ENABLED"] == "false"
     assert result["aws_profile_map"] == {}
-    mock_env.assert_called_once()
 
 
 @patch("os.path.exists", return_value=False)
@@ -504,6 +534,9 @@ def test_save_template_to_file(mock_file, mock_makedirs, mock_exists):
     mock_file.assert_called_once()
     # json.dump() makes multiple write calls, so we just check that write was called
     assert mock_file().write.call_count > 0
+    # Metadata should be added
+    assert template_data["template_name"] == "test-template"
+    assert "template_path" in template_data
 
 
 @patch("os.path.exists", return_value=True)

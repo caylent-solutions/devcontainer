@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.2.2 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.2 — Template System |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -84,24 +84,41 @@ All prompts use the universal input confirmation pattern (display value, "Is thi
 
 ## Acceptance Criteria
 
-- [ ] Full 17-step interactive creation flow implemented
-- [ ] All input constraints enforced (select fields, text fields, password fields)
-- [ ] Universal input confirmation pattern on every prompt
-- [ ] SSH key validation with all checks (exists, format, ssh-keygen, fingerprint)
-- [ ] Host proxy configuration with URL validation
-- [ ] Custom environment variable loop with conflict detection against KNOWN_KEYS
-- [ ] Template saved with all metadata (template_name, template_path, cli_version)
-- [ ] AWS profile map flow working when AWS enabled
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Full 17-step interactive creation flow implemented
+- [x] All input constraints enforced (select fields, text fields, password fields)
+- [x] Universal input confirmation pattern on every prompt
+- [x] SSH key validation with all checks (exists, format, ssh-keygen, fingerprint)
+- [x] Host proxy configuration with URL validation
+- [x] Custom environment variable loop with conflict detection against KNOWN_KEYS
+- [x] Template saved with all metadata (template_name, template_path, cli_version)
+- [x] AWS profile map flow working when AWS enabled
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this story is in-queue)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Added `KNOWN_KEYS` frozenset to `utils/constants.py` — all 14 known environment variable keys
+- Added `validate_ssh_key_file()` to `utils/ui.py` — full SSH key validation (exists, readable, format, ssh-keygen, passphrase detection, fingerprint)
+- Rewrote `create_template_interactive()` in `commands/setup_interactive.py` — full 17-step flow using `prompt_with_confirmation` on every prompt
+- Added `prompt_ssh_key()` to `commands/setup_interactive.py` — SSH key prompting with validation loop and fingerprint confirmation
+- Added `prompt_custom_env_vars()` to `commands/setup_interactive.py` — free-form loop with conflict detection against KNOWN_KEYS and already-entered keys
+- Updated `save_template_to_file()` to add `template_name` and `template_path` metadata
+- Updated `create_new_template()` in `commands/template.py` — uses `questionary.confirm` for overwrite check, passes through to 17-step flow
+- Fixed regressions in test_setup.py (2 tests), test_template.py (2 tests) — updated mocks for new creation flow
+- Wrote 26 unit tests in `tests/unit/test_template_create.py`
+- Wrote 20 functional tests in `tests/functional/test_template_create.py`
+- Coverage: setup_interactive.py 99%, template.py 97%, ui.py 94%
+- Quality gate: 705 tests pass (3 skipped), lint clean, pre-commit clean
+
+**Remaining:**
+- None — all acceptance criteria met
 
 ---
 

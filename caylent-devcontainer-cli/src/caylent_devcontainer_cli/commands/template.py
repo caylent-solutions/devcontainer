@@ -117,7 +117,13 @@ def handle_template_create(args):
 
 
 def create_new_template(template_name):
-    """Create a new template interactively."""
+    """Create a new template interactively.
+
+    Runs the full 17-step interactive creation flow and saves the
+    template with metadata (template_name, template_path, cli_version).
+    """
+    import questionary
+
     from caylent_devcontainer_cli.commands.setup_interactive import create_template_interactive, save_template_to_file
 
     ensure_templates_dir()
@@ -126,14 +132,21 @@ def create_new_template(template_name):
 
     # Check if template already exists
     if os.path.exists(template_path):
-        if not confirm_action(f"Template '{template_name}' already exists. Overwrite?"):
-            log("INFO", "Template creation cancelled")
-            return
+        overwrite = ask_or_exit(
+            questionary.confirm(
+                f"Template '{template_name}' already exists. Overwrite?",
+                default=False,
+            )
+        )
+        if not overwrite:
+            exit_cancelled("Template creation cancelled")
 
     log("INFO", f"Creating new template '{template_name}'")
 
-    # Use current CLI version
+    # Run the full interactive creation flow
     template_data = create_template_interactive()
+
+    # Save with metadata (template_name, template_path added by save_template_to_file)
     save_template_to_file(template_data, template_name)
 
     log("OK", f"Template '{template_name}' created successfully")

@@ -31,3 +31,24 @@ VALID_KEY_VALUES = {
 # Keys whose values are validated only under certain conditions
 # GIT_PROVIDER_URL: hostname only — no protocol prefix, must contain at least one dot
 # HOST_PROXY_URL: must start with http:// or https:// — only validated when HOST_PROXY=true
+
+# All known environment variable keys (used for conflict detection in custom env var loop)
+# This is the union of EXAMPLE_ENV_VALUES keys — defined here to avoid circular imports.
+KNOWN_KEYS = frozenset(
+    {
+        "AWS_CONFIG_ENABLED",
+        "AWS_DEFAULT_OUTPUT",
+        "DEFAULT_GIT_BRANCH",
+        "DEFAULT_PYTHON_VERSION",
+        "DEVELOPER_NAME",
+        "EXTRA_APT_PACKAGES",
+        "GIT_AUTH_METHOD",
+        "GIT_PROVIDER_URL",
+        "GIT_TOKEN",
+        "GIT_USER",
+        "GIT_USER_EMAIL",
+        "HOST_PROXY",
+        "HOST_PROXY_URL",
+        "PAGER",
+    }
+)

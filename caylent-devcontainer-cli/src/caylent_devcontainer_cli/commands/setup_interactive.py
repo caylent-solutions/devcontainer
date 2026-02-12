@@ -11,6 +11,7 @@ from questionary import ValidationError, Validator
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
     ENV_VARS_FILENAME,
+    KNOWN_KEYS,
     SHELL_ENV_FILENAME,
 )
 from caylent_devcontainer_cli.utils.fs import (
@@ -23,7 +24,15 @@ from caylent_devcontainer_cli.utils.template import (
     get_template_names,
     get_template_path,
 )
-from caylent_devcontainer_cli.utils.ui import ask_or_exit, exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.ui import (
+    ask_or_exit,
+    exit_cancelled,
+    exit_with_error,
+    log,
+    mask_password,
+    prompt_with_confirmation,
+    validate_ssh_key_file,
+)
 
 
 class JsonValidator(Validator):
@@ -329,38 +338,332 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
         return json.loads(aws_profile_map_json)
 
 
-def create_template_interactive() -> Dict[str, Any]:
-    """Create a template interactively."""
-    template = {}
+def prompt_ssh_key() -> str:
+    """Prompt for SSH private key file path, validate, and return key content.
 
-    # Environment values
+    Implements the full SSH key input validation flow:
+    1. Prompt for file path
+    2. Validate file (exists, readable, format, ssh-keygen)
+    3. Display fingerprint and ask for confirmation
+    4. Read and normalize key content
+
+    Returns:
+        The normalized SSH private key content.
+
+    Raises:
+        SystemExit: If the user cancels at any point.
+    """
+    while True:
+        key_path = ask_or_exit(questionary.text("Enter the path to your SSH private key file:"))
+
+        success, message = validate_ssh_key_file(key_path)
+        if not success:
+            log("ERR", message)
+            continue
+
+        # Display fingerprint and confirm
+        log("INFO", f"SSH key fingerprint: {message}")
+        confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
+        if not confirmed:
+            continue
+
+        # Read and normalize key content
+        with open(key_path, "r") as f:
+            content = f.read()
+        content = content.replace("\r", "")
+        if not content.endswith("\n"):
+            content += "\n"
+
+        return content
+
+
+def prompt_custom_env_vars(known_keys: set) -> Dict[str, str]:
+    """Prompt for additional custom environment variables.
+
+    Implements the free-form loop with conflict detection:
+    1. Ask if user wants to add custom variables
+    2. Prompt for key name (validate against known_keys and already-entered keys)
+    3. Prompt for value
+    4. Display and confirm
+    5. Ask to add another
+
+    Args:
+        known_keys: Set of known/built-in key names to check for conflicts.
+
+    Returns:
+        Dict of custom variable name-value pairs.
+
+    Raises:
+        SystemExit: If the user cancels at any point.
+    """
+    if not ask_or_exit(questionary.confirm("Add custom environment variables?", default=False)):
+        return {}
+
+    custom_vars: Dict[str, str] = {}
+    entered_keys: set = set()
+
+    while True:
+        # Prompt for key name with conflict detection
+        while True:
+            key = ask_or_exit(
+                questionary.text(
+                    "Enter variable name:",
+                    validate=lambda t: len(t.strip()) > 0 or "Variable name must not be empty",
+                )
+            )
+
+            if key in known_keys:
+                log("WARN", f"The key '{key}' already exists (built-in key). Please enter a different key name.")
+                continue
+            if key in entered_keys:
+                log("WARN", f"The key '{key}' already exists (already entered). Please enter a different key name.")
+                continue
+            break
+
+        # Prompt for value (no constraints)
+        value = ask_or_exit(questionary.text(f"Enter value for {key}:"))
+
+        # Display and confirm
+        log("INFO", f"Custom variable: {key} = {value}")
+        confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
+        if confirmed:
+            custom_vars[key] = value
+            entered_keys.add(key)
+
+        # Add another?
+        if not ask_or_exit(questionary.confirm("Add another custom variable?", default=False)):
+            break
+
+    return custom_vars
+
+
+def create_template_interactive() -> Dict[str, Any]:
+    """Create a template interactively using the full 17-step flow.
+
+    All prompts use the universal input confirmation pattern
+    (display value, "Is this correct?", re-prompt if no).
+
+    Steps:
+    1. AWS config enabled (select)
+    2. Default Git branch (text)
+    3. Default Python version (text)
+    4. Developer name (text)
+    5. Git provider URL (text, hostname only)
+    6. Git authentication method (select)
+    7. Git username (text)
+    8. Git email (text)
+    9. Git token (password) — only if token method
+    10. SSH private key path — only if SSH method
+    11. Extra APT packages (text)
+    12. Pager (select)
+    13. AWS output format (select) — only if AWS enabled
+    14. Host proxy (select)
+    15. Host proxy URL (text) — only if host proxy true
+    16. Custom environment variables (loop)
+    17. AWS profile map — only if AWS enabled
+
+    Returns:
+        Complete template dict with containerEnv, aws_profile_map,
+        cli_version, and optionally ssh_private_key.
+    """
+    env_values: Dict[str, Any] = {}
+    template: Dict[str, Any] = {}
+
     log("INFO", "Configuring environment variables...")
-    env_values = prompt_env_values()
+
+    # Step 1: AWS config enabled
+    aws_config = prompt_with_confirmation(
+        lambda: questionary.select(
+            "Enable AWS configuration?",
+            choices=["true", "false"],
+            default="true",
+        )
+    )
+    env_values["AWS_CONFIG_ENABLED"] = aws_config
+
+    # Step 2: Default Git branch
+    git_branch = prompt_with_confirmation(
+        lambda: questionary.text(
+            "Default Git branch:",
+            default="main",
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        )
+    )
+    env_values["DEFAULT_GIT_BRANCH"] = git_branch
+
+    # Step 3: Default Python version
+    python_version = prompt_with_confirmation(
+        lambda: questionary.text(
+            "Default Python version:",
+            default="3.12.9",
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        )
+    )
+    env_values["DEFAULT_PYTHON_VERSION"] = python_version
+
+    # Step 4: Developer name
+    dev_name = prompt_with_confirmation(
+        lambda: questionary.text(
+            "Developer name:",
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        )
+    )
+    env_values["DEVELOPER_NAME"] = dev_name
+
+    # Step 5: Git provider URL (hostname only, no protocol, must contain dot)
+    git_provider = prompt_with_confirmation(
+        lambda: questionary.text(
+            "Git provider URL (hostname only, e.g., github.com):",
+            default="github.com",
+            validate=lambda t: (
+                (len(t.strip()) > 0 and "." in t and not t.startswith("http://") and not t.startswith("https://"))
+                or "Must be hostname only (no protocol prefix) with at least one dot"
+            ),
+        )
+    )
+    env_values["GIT_PROVIDER_URL"] = git_provider
+
+    # Step 6: Git authentication method
+    auth_method = prompt_with_confirmation(
+        lambda: questionary.select(
+            "Git authentication method:",
+            choices=["token", "ssh"],
+            default="token",
+        )
+    )
+    env_values["GIT_AUTH_METHOD"] = auth_method
+
+    # Step 7: Git username
+    git_user = prompt_with_confirmation(
+        lambda: questionary.text(
+            "Git username:",
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        )
+    )
+    env_values["GIT_USER"] = git_user
+
+    # Step 8: Git email
+    git_email = prompt_with_confirmation(
+        lambda: questionary.text(
+            "Git email:",
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        )
+    )
+    env_values["GIT_USER_EMAIL"] = git_email
+
+    # Step 9: Git token (only if token method)
+    if auth_method == "token":
+        git_token = prompt_with_confirmation(
+            lambda: questionary.password(
+                "Git token (personal access token):",
+                validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+            ),
+            display_fn=mask_password,
+        )
+        env_values["GIT_TOKEN"] = git_token
+
+    # Step 10: SSH private key (only if SSH method)
+    if auth_method == "ssh":
+        log("INFO", "Configuring SSH key authentication...")
+        ssh_key_content = prompt_ssh_key()
+        template["ssh_private_key"] = ssh_key_content
+
+    # Step 11: Extra APT packages
+    extra_packages = prompt_with_confirmation(
+        lambda: questionary.text(
+            "Extra APT packages (space-separated, leave empty for none):",
+            default="",
+        )
+    )
+    env_values["EXTRA_APT_PACKAGES"] = extra_packages
+
+    # Step 12: Pager
+    pager = prompt_with_confirmation(
+        lambda: questionary.select(
+            "Select default pager:",
+            choices=["cat", "less", "more", "most"],
+            default="cat",
+        )
+    )
+    env_values["PAGER"] = pager
+
+    # Step 13: AWS output format (only if AWS enabled)
+    if aws_config == "true":
+        aws_output = prompt_with_confirmation(
+            lambda: questionary.select(
+                "Select default AWS CLI output format:",
+                choices=["json", "table", "text", "yaml"],
+                default="json",
+            )
+        )
+        env_values["AWS_DEFAULT_OUTPUT"] = aws_output
+
+    # Step 14: Host proxy
+    host_proxy = prompt_with_confirmation(
+        lambda: questionary.select(
+            "Enable host proxy?",
+            choices=["true", "false"],
+            default="false",
+        )
+    )
+    env_values["HOST_PROXY"] = host_proxy
+
+    # Step 15: Host proxy URL (only if host proxy true)
+    if host_proxy == "true":
+        proxy_url = prompt_with_confirmation(
+            lambda: questionary.text(
+                "Host proxy URL (e.g., http://host.docker.internal:3128):",
+                validate=lambda t: (
+                    (t.startswith("http://") or t.startswith("https://")) or "Must start with http:// or https://"
+                ),
+            )
+        )
+        env_values["HOST_PROXY_URL"] = proxy_url
+    else:
+        env_values["HOST_PROXY_URL"] = ""
+
+    # Step 16: Custom environment variables
+    log("INFO", "You can add additional custom environment variables.")
+    custom_vars = prompt_custom_env_vars(KNOWN_KEYS)
+    env_values.update(custom_vars)
+
     template["containerEnv"] = env_values
 
-    # AWS profile map
-    if env_values["AWS_CONFIG_ENABLED"] == "true":
+    # Step 17: AWS profile map (only if AWS enabled)
+    if aws_config == "true":
         log("INFO", "Configuring AWS profiles...")
         template["aws_profile_map"] = prompt_aws_profile_map()
     else:
         template["aws_profile_map"] = {}
 
-    # Add version information (will be set by save_template_to_file)
+    # Add CLI version
     template["cli_version"] = __version__
 
     return template
 
 
 def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
-    """Save template to file."""
+    """Save template to file with metadata.
+
+    Adds template_name, template_path, and cli_version metadata
+    before writing the template JSON file.
+
+    Args:
+        template_data: The template data dict to save.
+        name: The template name.
+    """
     ensure_templates_dir()
+
+    template_path = get_template_path(name)
+
+    # Add metadata
+    template_data["template_name"] = name
+    template_data["template_path"] = template_path
 
     # Only update version information if no git_ref is present
     # When git_ref is present, cli_version should match the git reference
     if "git_ref" not in template_data:
         template_data["cli_version"] = __version__
-
-    template_path = get_template_path(name)
 
     write_json_file(template_path, template_data)
 
