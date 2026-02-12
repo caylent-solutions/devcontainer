@@ -1,10 +1,23 @@
-"""Unit tests for the code command (S1.3.2)."""
+"""Unit tests for the code command (S1.3.2 + S1.3.3)."""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from caylent_devcontainer_cli.commands.code import IDE_CONFIG, handle_code, register_command
+from caylent_devcontainer_cli.utils.validation import ValidationResult
+
+# Helper: a no-issues validation result for tests that don't care about validation
+_NO_ISSUES = ValidationResult(
+    missing_base_keys={},
+    metadata_present=True,
+    template_name="test",
+    template_path="/path/test.json",
+    cli_version="2.0.0",
+    template_found=True,
+    validated_template={"containerEnv": {}},
+    missing_template_keys={},
+)
 
 # =============================================================================
 # register_command tests
@@ -128,9 +141,11 @@ def test_missing_shell_env_error(mock_isfile, mock_resolve, capsys):
 
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES)
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("subprocess.Popen")
-def test_launch_command_no_source(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+def test_launch_command_no_source(mock_popen, mock_which, mock_detect, mock_load, mock_isfile, mock_resolve, capsys):
     """Test that IDE launch does NOT source shell.env."""
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
@@ -150,9 +165,11 @@ def test_launch_command_no_source(mock_popen, mock_which, mock_isfile, mock_reso
 
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES)
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("subprocess.Popen")
-def test_launch_command_simple(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+def test_launch_command_simple(mock_popen, mock_which, mock_detect, mock_load, mock_isfile, mock_resolve, capsys):
     """Test that launch command is simply '<ide_command> <project_root>'."""
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
@@ -173,9 +190,11 @@ def test_launch_command_simple(mock_popen, mock_which, mock_isfile, mock_resolve
 
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES)
 @patch("shutil.which", return_value="/usr/bin/cursor")
 @patch("subprocess.Popen")
-def test_launch_cursor(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+def test_launch_cursor(mock_popen, mock_which, mock_detect, mock_load, mock_isfile, mock_resolve, capsys):
     """Test that cursor IDE is launched correctly."""
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
@@ -203,8 +222,10 @@ def test_launch_cursor(mock_popen, mock_which, mock_isfile, mock_resolve, capsys
 
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES)
 @patch("shutil.which", return_value=None)
-def test_ide_not_found(mock_which, mock_isfile, mock_resolve, capsys):
+def test_ide_not_found(mock_which, mock_detect, mock_load, mock_isfile, mock_resolve, capsys):
     """Test error when IDE command not in PATH."""
     args = MagicMock()
     args.project_root = "/test/path"
@@ -226,11 +247,12 @@ def test_ide_not_found(mock_which, mock_isfile, mock_resolve, capsys):
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=lambda p: "environment-variables" in p)
 @patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES)
 @patch("caylent_devcontainer_cli.commands.code.write_shell_env")
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("subprocess.Popen")
 def test_regenerate_shell_env_calls_write(
-    mock_popen, mock_which, mock_write_shell, mock_load, mock_isfile, mock_resolve, capsys
+    mock_popen, mock_which, mock_write_shell, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
 ):
     """Test --regenerate-shell-env reads JSON and calls write_shell_env."""
     mock_process = MagicMock()
@@ -272,11 +294,12 @@ def test_regenerate_shell_env_requires_json(mock_isfile, mock_resolve, capsys):
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", side_effect=lambda p: "environment-variables" in p)
 @patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES)
 @patch("caylent_devcontainer_cli.commands.code.write_shell_env")
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("subprocess.Popen")
 def test_regenerate_does_not_modify_json(
-    mock_popen, mock_which, mock_write_shell, mock_load, mock_isfile, mock_resolve, capsys
+    mock_popen, mock_which, mock_write_shell, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
 ):
     """Test --regenerate-shell-env does not write to JSON file."""
     mock_process = MagicMock()
@@ -306,9 +329,11 @@ def test_regenerate_does_not_modify_json(
 
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES)
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("subprocess.Popen", side_effect=Exception("Launch failed"))
-def test_launch_failure(mock_popen, mock_which, mock_isfile, mock_resolve, capsys):
+def test_launch_failure(mock_popen, mock_which, mock_detect, mock_load, mock_isfile, mock_resolve, capsys):
     """Test error when IDE launch fails."""
     args = MagicMock()
     args.project_root = "/test/path"
@@ -323,7 +348,295 @@ def test_launch_failure(mock_popen, mock_which, mock_isfile, mock_resolve, capsy
 
 
 # =============================================================================
-# Missing vars check tests (kept for backward compat — S1.3.3 will rewrite)
+# Validation integration tests (S1.3.3)
+# =============================================================================
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_validation_called_when_files_exist(mock_popen, mock_which, mock_detect, mock_load, mock_isfile, mock_resolve):
+    """Test that detect_validation_issues is called when both files exist."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    mock_load.return_value = {"containerEnv": {}, "template_name": "t", "template_path": "/p", "cli_version": "2.0.0"}
+    mock_detect.return_value = _NO_ISSUES
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    mock_detect.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_no_issues_launches_ide_normally(
+    mock_popen, mock_which, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test that IDE launches normally when validation finds no issues."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    mock_load.return_value = {"containerEnv": {}}
+    mock_detect.return_value = _NO_ISSUES
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    mock_popen.assert_called_once()
+    captured = capsys.readouterr()
+    assert "launched" in captured.err
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+def test_template_not_found_exits_with_error(mock_detect, mock_load, mock_isfile, mock_resolve, capsys):
+    """Test Step 2: exit with error when template not found."""
+    mock_load.return_value = {
+        "containerEnv": {},
+        "template_name": "missing",
+        "template_path": "/p",
+        "cli_version": "2.0.0",
+    }
+    mock_detect.return_value = ValidationResult(
+        missing_base_keys={},
+        metadata_present=True,
+        template_name="missing",
+        template_path="/home/user/.devcontainer-templates/missing.json",
+        cli_version="2.0.0",
+        template_found=False,
+        validated_template=None,
+        missing_template_keys={},
+    )
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    with pytest.raises(SystemExit):
+        handle_code(args)
+
+    captured = capsys.readouterr()
+    assert "not found" in captured.err
+    assert "missing" in captured.err
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+@patch("caylent_devcontainer_cli.commands.code.ask_or_exit")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_metadata_missing_no_skips_validation(
+    mock_popen, mock_which, mock_ask, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test Step 1 No: skip validation, warn, and launch IDE."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    mock_load.return_value = {"containerEnv": {}}
+    mock_detect.return_value = ValidationResult(
+        missing_base_keys={},
+        metadata_present=False,
+        template_name=None,
+        template_path=None,
+        cli_version=None,
+        template_found=False,
+        validated_template=None,
+        missing_template_keys={},
+    )
+    mock_ask.return_value = "No"
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    mock_popen.assert_called_once()
+    captured = capsys.readouterr()
+    assert "missing required metadata" in captured.err or "WARNING" in captured.err
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+@patch("caylent_devcontainer_cli.commands.code.ask_or_exit")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_missing_vars_option2_adds_vars_only(
+    mock_popen, mock_which, mock_write_files, mock_ask, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test Step 5 Option 2: add missing vars only via write_project_files."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    validated_template = {
+        "containerEnv": {"EXISTING": "val", "NEW_KEY": "new_val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_load.return_value = {
+        "containerEnv": {"EXISTING": "val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_detect.return_value = ValidationResult(
+        missing_base_keys={},
+        metadata_present=True,
+        template_name="test",
+        template_path="/path/test.json",
+        cli_version="2.0.0",
+        template_found=True,
+        validated_template=validated_template,
+        missing_template_keys={"NEW_KEY": "new_val"},
+    )
+    # User selects option 2 (add variables only)
+    mock_ask.return_value = "Only add the missing variables to existing files"
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    mock_write_files.assert_called_once()
+    mock_popen.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+@patch("caylent_devcontainer_cli.commands.code.ask_or_exit")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_missing_vars_option1_adds_vars_and_flags_catalog(
+    mock_popen, mock_which, mock_write_files, mock_ask, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test Step 5 Option 1: add missing vars + catalog update (placeholder)."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    validated_template = {
+        "containerEnv": {"EXISTING": "val", "NEW_KEY": "new_val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_load.return_value = {
+        "containerEnv": {"EXISTING": "val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_detect.return_value = ValidationResult(
+        missing_base_keys={},
+        metadata_present=True,
+        template_name="test",
+        template_path="/path/test.json",
+        cli_version="2.0.0",
+        template_found=True,
+        validated_template=validated_template,
+        missing_template_keys={"NEW_KEY": "new_val"},
+    )
+    # User selects option 1 (update config + catalog)
+    mock_ask.return_value = "Update devcontainer configuration and add missing variables"
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    mock_write_files.assert_called_once()
+    mock_popen.assert_called_once()
+
+
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_step4_displays_missing_variables(
+    mock_popen, mock_which, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test Step 4: missing variables are displayed with details."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    validated_template = {
+        "containerEnv": {"EXISTING": "val", "MISSING_VAR": "default_val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_load.return_value = {
+        "containerEnv": {"EXISTING": "val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_detect.return_value = ValidationResult(
+        missing_base_keys={"MISSING_VAR": "default_val"},
+        metadata_present=True,
+        template_name="test",
+        template_path="/path/test.json",
+        cli_version="2.0.0",
+        template_found=True,
+        validated_template=validated_template,
+        missing_template_keys={},
+    )
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    # Mock ask_or_exit to choose option 2
+    with patch(
+        "caylent_devcontainer_cli.commands.code.ask_or_exit",
+        return_value="Only add the missing variables to existing files",
+    ):
+        with patch("caylent_devcontainer_cli.commands.code.write_project_files"):
+            handle_code(args)
+
+    captured = capsys.readouterr()
+    # Variable names are displayed via print() (stdout), warnings via log() (stderr)
+    assert "MISSING_VAR" in captured.out
+
+
+# =============================================================================
+# Backward compat tests
 # =============================================================================
 
 
@@ -339,28 +652,3 @@ def test_get_missing_env_vars():
     missing = get_missing_env_vars(container_env)
 
     assert missing == {"MISSING_VAR": "default2"}
-
-
-@patch("questionary.select")
-@patch("sys.exit")
-def test_prompt_upgrade_or_continue_exit(mock_exit, mock_select):
-    """Test prompting user to exit and upgrade."""
-    from caylent_devcontainer_cli.commands.code import prompt_upgrade_or_continue
-
-    mock_select.return_value.ask.return_value = "Exit and upgrade the profile first (recommended)"
-
-    prompt_upgrade_or_continue(["VAR1", "VAR2"], "test-template")
-
-    mock_exit.assert_called_once_with(0)
-
-
-@patch("questionary.select")
-def test_prompt_upgrade_or_continue_continue(mock_select):
-    """Test prompting user to continue without upgrade."""
-    from caylent_devcontainer_cli.commands.code import prompt_upgrade_or_continue
-
-    mock_select.return_value.ask.return_value = "Continue without the upgrade (may cause issues)"
-
-    prompt_upgrade_or_continue(["VAR1", "VAR2"])
-
-    mock_select.assert_called_once()

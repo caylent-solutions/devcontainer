@@ -14,6 +14,19 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from caylent_devcontainer_cli.commands.code import handle_code
+from caylent_devcontainer_cli.utils.validation import ValidationResult
+
+# Helper: a no-issues validation result for tests that don't care about validation
+_NO_ISSUES = ValidationResult(
+    missing_base_keys={},
+    metadata_present=True,
+    template_name="test",
+    template_path="/path/test.json",
+    cli_version="2.0.0",
+    template_found=True,
+    validated_template={"containerEnv": {}},
+    missing_template_keys={},
+)
 
 # =============================================================================
 # File detection tests
@@ -56,6 +69,7 @@ def test_code_command_launches_with_both_files():
             f.write("export EXISTING_VAR=value\n")
 
         with (
+            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):
@@ -86,6 +100,7 @@ def test_code_command_launches_without_sourcing():
             f.write("export TEST=value\n")
 
         with (
+            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):
@@ -139,26 +154,20 @@ def test_handle_code_source_does_not_call_getmtime():
     assert "getmtime" not in source, "handle_code must not use getmtime for staleness checks"
 
 
-def test_code_module_does_not_import_write_project_files():
-    """Verify code.py does not import write_project_files."""
+def test_code_module_imports_write_project_files_for_validation():
+    """Verify code.py imports write_project_files for validation Step 5."""
     import caylent_devcontainer_cli.commands.code as code_module
 
-    source = inspect.getsource(code_module)
-    assert "from caylent_devcontainer_cli.utils.fs import" in source
-    # write_project_files must NOT appear in imports
-    import_lines = [line for line in source.splitlines() if line.strip().startswith(("from ", "import "))]
-    for line in import_lines:
-        assert "write_project_files" not in line, "code.py must not import write_project_files"
+    # Check module namespace — handles both single-line and multi-line import formats
+    assert hasattr(code_module, "write_project_files"), "code.py must import write_project_files for validation Step 5"
 
 
 def test_code_module_imports_write_shell_env():
     """Verify code.py imports write_shell_env for --regenerate-shell-env."""
     import caylent_devcontainer_cli.commands.code as code_module
 
-    source = inspect.getsource(code_module)
-    import_lines = [line for line in source.splitlines() if line.strip().startswith(("from ", "import "))]
-    found = any("write_shell_env" in line for line in import_lines)
-    assert found, "code.py must import write_shell_env"
+    # Check module namespace — handles both single-line and multi-line import formats
+    assert hasattr(code_module, "write_shell_env"), "code.py must import write_shell_env"
 
 
 # =============================================================================
@@ -195,6 +204,7 @@ def test_regenerate_shell_env_creates_shell_env_from_json():
         assert not os.path.exists(shell_env_path)
 
         with (
+            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):
@@ -254,6 +264,7 @@ def test_regenerate_shell_env_with_proxy_vars():
             )
 
         with (
+            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):

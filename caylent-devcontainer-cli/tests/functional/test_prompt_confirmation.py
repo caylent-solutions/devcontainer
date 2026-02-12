@@ -163,12 +163,18 @@ class TestAskOrExitStandardization:
             assert ".ask()" not in source, f"{func_name} still uses .ask() directly"
 
     def test_code_command_uses_ask_or_exit(self):
-        """code.py prompt function uses ask_or_exit, not .ask()."""
+        """code.py validation prompt functions use ask_or_exit, not .ask()."""
         import inspect
 
         from caylent_devcontainer_cli.commands import code
 
-        source = inspect.getsource(code.prompt_upgrade_or_continue)
+        # Check _handle_missing_metadata (replaced prompt_upgrade_or_continue)
+        source = inspect.getsource(code._handle_missing_metadata)
+        assert ".ask()" not in source
+        assert "ask_or_exit" in source
+
+        # Check _handle_missing_variables (Step 5 prompt)
+        source = inspect.getsource(code._handle_missing_variables)
         assert ".ask()" not in source
         assert "ask_or_exit" in source
 

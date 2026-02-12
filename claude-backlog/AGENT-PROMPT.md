@@ -99,6 +99,27 @@ This runs:
 - If a hook, linter, or security check fails — **fix the root cause**, do not bypass it
 - If you believe a finding is a false positive, ask the human — never suppress it yourself
 
+### Complete Replacement of Superseded Code
+
+**When replacing old functionality with new functionality, all consumers must be updated in the same change.**
+
+When a function, class, or pattern is replaced by a new implementation:
+
+1. **Before writing new code** — search the entire codebase for every call site, import, test, mock target, and documentation reference to the old code
+2. **Plan the full set of files** that need updating before you start
+3. **Update all consumers** — every caller, test, and reference must be migrated to the new implementation in the same story/commit
+4. **Remove the old code** — delete the superseded function/class entirely; do not leave dead code behind
+5. **Update all tests** — tests for the old function must be replaced with tests for the new function; never patch tests to work around removed code
+6. **Verify no orphaned references** — run a final grep to confirm zero remaining references to the old function name
+
+**Anti-patterns to avoid:**
+- Mocking/patching tests to work around removed functions instead of updating them
+- Leaving old imports that cause ImportError at collection time
+- Keeping "backward compatibility" tests for deleted code
+- Fixing tests file-by-file reactively instead of proactively finding all references upfront
+
+**Before merge:** Run the review prompt at `claude-backlog/REVIEW-SUPERSEDED-CODE.md` to catch any incomplete replacements across the branch.
+
 ### Update the Log
 
 After each work iteration, update the **Log** section of the work unit file:

@@ -2,7 +2,6 @@
 
 from unittest.mock import patch
 
-from caylent_devcontainer_cli.commands.code import prompt_upgrade_or_continue
 from caylent_devcontainer_cli.utils.env import get_missing_env_vars, is_single_line_env_var
 
 
@@ -71,23 +70,5 @@ class TestCodeCommandMissingVars:
         # Should only detect MISSING_VAR (single line, missing)
         assert missing == {"MISSING_VAR": "default2"}
 
-    @patch("questionary.select")
-    @patch("sys.exit")
-    def test_prompt_upgrade_or_continue_exit(self, mock_exit, mock_select):
-        """Test prompting user to exit and upgrade."""
-        mock_select.return_value.ask.return_value = "Exit and upgrade the profile first (recommended)"
-
-        prompt_upgrade_or_continue(["VAR1", "VAR2"], "test-template")
-
-        mock_exit.assert_called_once_with(0)
-
-    @patch("questionary.select")
-    def test_prompt_upgrade_or_continue_continue(self, mock_select):
-        """Test prompting user to continue without upgrade."""
-        mock_select.return_value.ask.return_value = "Continue without the upgrade (may cause issues)"
-
-        # Should not raise any exception
-        prompt_upgrade_or_continue(["VAR1", "VAR2"])
-
-        # Verify the select was called
-        mock_select.assert_called_once()
+    # prompt_upgrade_or_continue tests removed — function replaced by
+    # _handle_missing_variables() in S1.3.3 validation rewrite

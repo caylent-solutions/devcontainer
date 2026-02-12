@@ -147,14 +147,30 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
 @patch("subprocess.Popen")
 def test_handle_code(
     mock_popen,
+    mock_detect_validation,
+    mock_load,
     mock_isfile,
     mock_resolve_root,
     mock_which,
     capsys,
 ):
+    from caylent_devcontainer_cli.utils.validation import ValidationResult
+
+    mock_detect_validation.return_value = ValidationResult(
+        missing_base_keys={},
+        metadata_present=True,
+        template_name="test",
+        template_path="/path/test.json",
+        cli_version="2.0.0",
+        template_found=True,
+        validated_template={"containerEnv": {}},
+        missing_template_keys={},
+    )
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process

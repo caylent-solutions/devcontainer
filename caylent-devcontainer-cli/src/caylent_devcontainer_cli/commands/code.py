@@ -4,62 +4,22 @@ import os
 import shutil
 import subprocess
 
+import questionary
+
 from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, SHELL_ENV_FILENAME
-from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_shell_env
-from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.fs import (
+    load_json_config,
+    resolve_project_root,
+    write_project_files,
+    write_shell_env,
+)
+from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, exit_with_error, log
+from caylent_devcontainer_cli.utils.validation import detect_validation_issues
 
 _GENERATE_HINT = (
     "Run `cdevcontainer setup-devcontainer <path>` or "
     "`cdevcontainer template load <name> -p <path>` to generate project files"
 )
-
-
-def prompt_upgrade_or_continue(missing_vars, template_name=None):
-    """Prompt user about missing variables and upgrade options."""
-    import questionary
-
-    # Display colorful warning
-    print(f"\n{COLORS['RED']}⚠️  WARNING: Missing Environment Variables{COLORS['RESET']}")
-    print(f"{COLORS['YELLOW']}Your profile is missing the following required variables:{COLORS['RESET']}")
-    for var in missing_vars:
-        print(f"  - {COLORS['CYAN']}{var}{COLORS['RESET']}")
-
-    print(f"\n{COLORS['BLUE']}To fix this issue:{COLORS['RESET']}")
-    if template_name:
-        print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade {template_name}{COLORS['RESET']} "
-            "# To upgrade the template"
-        )
-        print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root . {template_name}{COLORS['RESET']} "
-            "# To load the upgraded template into the project"
-        )
-    else:
-        print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template upgrade <template-name>{COLORS['RESET']} "
-            "# To upgrade the template"
-        )
-        print(
-            f"Run: {COLORS['GREEN']}cdevcontainer template load --project-root <project-root> "
-            f"<template-name>{COLORS['RESET']} # To load the upgraded template into the project"
-        )
-
-    choice = ask_or_exit(
-        questionary.select(
-            "What would you like to do?",
-            choices=[
-                "Exit and upgrade the profile first (recommended)",
-                "Continue without the upgrade (may cause issues)",
-            ],
-            default="Exit and upgrade the profile first (recommended)",
-        )
-    )
-
-    if "Exit" in choice:
-        exit_cancelled("Please upgrade your profile and try again")
-    else:
-        log("WARN", "Continuing without upgrade - some features may not work correctly")
-
 
 # IDE configuration
 IDE_CONFIG = {
@@ -108,6 +68,9 @@ def handle_code(args):
     Environment variables are sourced inside the devcontainer by the
     postCreateCommand — not before IDE launch.  The launch command is
     simply ``<ide_command> <project_root>``.
+
+    After file existence checks, runs two-stage validation (Steps 0-5)
+    to detect and resolve missing environment variables.
     """
     project_root = resolve_project_root(args.project_root)
 
@@ -135,8 +98,133 @@ def handle_code(args):
         if not os.path.isfile(shell_env):
             exit_with_error(f"{SHELL_ENV_FILENAME} not found at {shell_env}. {_GENERATE_HINT}")
 
-    # Get IDE configuration
-    ide_config = IDE_CONFIG[args.ide]
+        config_data = load_json_config(env_json)
+
+    # --- Validation Steps 0-5 ---
+    result = detect_validation_issues(project_root, config_data)
+
+    # Step 1 response: metadata missing
+    if not result.metadata_present:
+        skip_validation = _handle_missing_metadata()
+        if skip_validation:
+            # User chose "No" — launch IDE without changes
+            _launch_ide(args.ide, project_root)
+            return
+
+    # Step 2 response: template not found
+    if result.metadata_present and not result.template_found:
+        exit_with_error(
+            f"Developer template '{result.template_name}' not found at "
+            f"'{result.template_path}'. To fix this, either recreate the template with "
+            "`cdevcontainer template create <name>` or regenerate project files with "
+            "`cdevcontainer setup-devcontainer <path>`"
+        )
+
+    # Steps 4-5: handle missing variables
+    if result.all_missing_keys:
+        _handle_missing_variables(project_root, config_data, result)
+
+    # Launch IDE
+    _launch_ide(args.ide, project_root)
+
+
+def _handle_missing_metadata():
+    """Handle Step 1: missing metadata response.
+
+    Returns:
+        True if user chose to skip (No), False if user chose to regenerate (Yes).
+    """
+    log("WARN", "Project files are missing required metadata and must be regenerated.")
+
+    choice = ask_or_exit(
+        questionary.select(
+            "Would you like to select a template to regenerate project files?",
+            choices=[
+                "Yes — select or create a template to regenerate files",
+                "No — launch IDE without changes (may cause issues)",
+            ],
+            default="Yes — select or create a template to regenerate files",
+        )
+    )
+
+    if "No" in choice:
+        log("WARN", "Continuing without regeneration — the environment may not work correctly")
+        return True
+
+    # User chose Yes — this flow will be fully implemented in S1.5.2
+    # For now, log guidance and continue
+    log("INFO", "To regenerate project files, run: cdevcontainer template load <name> -p <path>")
+    return True
+
+
+def _handle_missing_variables(project_root, config_data, result):
+    """Handle Steps 4-5: display and resolve missing variables.
+
+    Args:
+        project_root: Path to the project root directory.
+        config_data: Loaded JSON config data.
+        result: ValidationResult with detected issues.
+    """
+    all_missing = result.all_missing_keys
+
+    # Step 4: Display missing variables
+    log("WARN", "Missing environment variables detected")
+    print(f"\n{COLORS['RED']}Missing variables may cause the environment to be improperly built.{COLORS['RESET']}")
+    print(f"{COLORS['RED']}The devcontainer may not function correctly.{COLORS['RESET']}\n")
+
+    for key, value in sorted(all_missing.items()):
+        source = "base keys" if key in result.missing_base_keys else "template"
+        print(f"  {COLORS['CYAN']}{key}{COLORS['RESET']} = {COLORS['GREEN']}{value}{COLORS['RESET']}  ({source})")
+
+    print()
+
+    # Step 5: User confirmation
+    log("INFO", "Missing variables indicate the devcontainer configuration may need to be upgraded.")
+
+    choice = ask_or_exit(
+        questionary.select(
+            "What would you like to do?",
+            choices=[
+                "Update devcontainer configuration and add missing variables",
+                "Only add the missing variables to existing files",
+            ],
+            default="Update devcontainer configuration and add missing variables",
+        )
+    )
+
+    # Merge missing variables into the template data for write_project_files
+    template_data = result.validated_template
+    if template_data is None:
+        # Fallback: use config_data with missing keys merged in
+        template_data = dict(config_data)
+        container_env = dict(template_data.get("containerEnv", {}))
+        container_env.update(all_missing)
+        template_data["containerEnv"] = container_env
+
+    template_name = result.template_name or config_data.get("template_name", "unknown")
+    template_path = result.template_path or config_data.get("template_path", "")
+
+    if "Update devcontainer" in choice:
+        # Option 1: Add missing vars + catalog update
+        write_project_files(project_root, template_data, template_name, template_path)
+        log("OK", "Project files updated with missing variables")
+
+        # Catalog pipeline integration (S1.5.2 will implement this)
+        log("INFO", "To update .devcontainer/ files, run: cdevcontainer setup-devcontainer <path>")
+    else:
+        # Option 2: Add missing vars only, do not modify .devcontainer/
+        write_project_files(project_root, template_data, template_name, template_path)
+        log("OK", "Missing variables added to project files")
+
+
+def _launch_ide(ide_key, project_root):
+    """Check for IDE command and launch it.
+
+    Args:
+        ide_key: Key into IDE_CONFIG (e.g., "vscode", "cursor").
+        project_root: Path to the project root directory.
+    """
+    ide_config = IDE_CONFIG[ide_key]
     ide_command = ide_config["command"]
     ide_name = ide_config["name"]
 
@@ -145,7 +233,7 @@ def handle_code(args):
         log("INFO", ide_config["install_instructions"])
         exit_with_error(f"{ide_name} command '{ide_command}' not found in PATH")
 
-    # Launch IDE — env vars are sourced inside the devcontainer, not here
+    # Launch IDE
     log("INFO", f"Launching {ide_name}...")
 
     try:

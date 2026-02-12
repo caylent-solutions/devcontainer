@@ -128,6 +128,36 @@ All failures must:
 - Independent implementations with similar structure but different concerns
 - When abstraction would increase complexity more than it reduces duplication
 
+### Complete Replacement of Superseded Code
+
+**When replacing old functionality with new functionality, all consumers must be updated in the same change.**
+
+When a function, class, or pattern is replaced by a new implementation:
+
+1. **Find all references** — search the entire codebase for every call site, import, test, and documentation reference to the old code
+2. **Update all consumers** — every caller, test, and reference must be migrated to the new implementation in the same story/commit
+3. **Remove the old code** — delete the superseded function/class entirely; do not leave dead code behind
+4. **Update all tests** — tests for the old function must be replaced with tests for the new function; never patch tests to work around removed code
+5. **Verify no orphaned references** — run a final grep to confirm zero remaining references to the old function name
+
+**This applies to:**
+- Replaced utility functions (e.g., old validation replaced by new shared validation)
+- Renamed or restructured APIs
+- Deprecated patterns superseded by new patterns
+- Refactored test helpers and fixtures
+
+**Anti-patterns to avoid:**
+- Mocking/patching tests to work around removed functions instead of updating them
+- Leaving old imports that cause ImportError at collection time
+- Keeping "backward compatibility" tests for deleted code
+- Fixing tests file-by-file reactively instead of proactively finding all references upfront
+
+**Required approach:**
+- Before writing the new implementation, search for all references to the old code
+- Plan the full set of files that need updating
+- After writing the new code, update ALL consumers in one pass
+- Run the full test suite to verify zero breakage
+
 ### 12-Factor App Principles
 
 **All code must adhere to the 12-factor app methodology:**

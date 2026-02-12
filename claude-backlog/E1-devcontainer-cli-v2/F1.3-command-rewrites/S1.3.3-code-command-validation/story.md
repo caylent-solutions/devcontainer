@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.3.3 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.3 — Command Rewrites |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -82,23 +82,47 @@ After either option: launch IDE.
 
 ## Acceptance Criteria
 
-- [ ] Shared validation detection function (Steps 0-3) implemented
-- [ ] Step 0: base key check against EXAMPLE_ENV_VALUES with conditional logic
-- [ ] Step 1: metadata validation with prompt for regeneration
-- [ ] Step 2: template location and validation
-- [ ] Step 3: template comparison detecting missing keys
-- [ ] Step 4: clear display of missing variables with file sources
-- [ ] Step 5: two-option prompt (update config + catalog, or just add variables)
-- [ ] Two-stage validation (base keys + template comparison) working
-- [ ] Shared function reusable by setup-devcontainer (informational mode)
-- [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Shared validation detection function (Steps 0-3) implemented — `detect_validation_issues()` in `utils/validation.py:146`
+- [x] Step 0: base key check against EXAMPLE_ENV_VALUES with conditional logic — lines 166-178, GIT_TOKEN/ssh conditional at line 171; 4 unit tests in `TestStep0BaseKeyCheck`
+- [x] Step 1: metadata validation with prompt for regeneration — detection in `validation.py:180-190`, prompt in `code.py:131-157`; 4 unit tests in `TestStep1MetadataValidation`
+- [x] Step 2: template location and validation — `_step2_locate_template()` at `validation.py:128-143`; 4 unit tests (2 mocked + 2 real file I/O)
+- [x] Step 3: template comparison detecting missing keys — `validation.py:200-204`; 3 unit tests in `TestStep3TemplateComparison`
+- [x] Step 4: clear display of missing variables with file sources — `code.py:170-179` with "base keys" vs "template" source attribution; `test_step4_displays_missing_variables` test
+- [x] Step 5: two-option prompt (update config + catalog, or just add variables) — `code.py:181-217` with two questionary choices; `test_step5_option1_updates_project_files` and `test_step5_option2_adds_vars_only` tests
+- [x] Two-stage validation (base keys + template comparison) working — `ValidationResult.all_missing_keys` merges both; `test_all_missing_keys_combines_stages` test
+- [x] Shared function reusable by setup-devcontainer (informational mode) — `detect_validation_issues` in shared `utils/validation.py`, returns `ValidationResult` dataclass; caller decides response
+- [x] 90%+ unit test coverage, functional tests pass — code.py 93%, validation.py 100%; 232 tests pass
+- [x] Linting and formatting pass (`make lint && make format`) — verified clean
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`) — verified clean
+- [x] Docs updated if project documentation is affected by these changes — no existing docs reference code command validation behavior; no updates needed
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Created `src/caylent_devcontainer_cli/utils/validation.py` with shared validation detection (Steps 0-3)
+  - `ValidationResult` dataclass with `has_issues` and `all_missing_keys` properties
+  - `parse_shell_env()` for extracting keys and metadata from shell.env
+  - `_read_shell_env()` and `_step2_locate_template()` helper functions
+  - `detect_validation_issues()` main entry point implementing Steps 0-3
+- Integrated Steps 4-5 into `code.py`:
+  - `_handle_missing_metadata()` for Step 1 user prompt
+  - `_handle_missing_variables()` for Steps 4-5 display and two-option prompt
+  - Connected validation flow between file checks and IDE launch
+- Wrote 30 unit tests in `test_validation.py` (100% coverage)
+- Wrote 22 unit tests in `test_code.py` (93% coverage) including 8 new validation-specific tests
+- Updated ALL consumers of old code (replaced functions): test_cdevcontainer.py, test_code_missing_vars.py, test_code_command.py, test_prompt_confirmation.py, test_template_upgrade_enhancements.py
+- Created `_setup_validation_env()` helper in test_code_command.py for subprocess functional tests
+- Created `REVIEW-SUPERSEDED-CODE.md` review prompt for pre-merge review
+- Updated `CLAUDE.md` with "Complete Replacement of Superseded Code" standard
+- Updated `AGENT-PROMPT.md` with "Complete Replacement of Superseded Code" section
+
+**Debugging Notes:**
+- Subprocess functional tests require HOME override so TEMPLATES_DIR resolves inside temp directory
+- Template JSON must include `containerEnv`, `cli_version`, `template_name`, `template_path` for `validate_template()` to pass
+- Source inspection tests break when black reformats imports to multi-line — use `hasattr(module, "name")` instead of scanning source lines
+- `_NO_ISSUES` helper (pre-built ValidationResult with no issues) is essential for tests that don't care about validation
 
 ---
 

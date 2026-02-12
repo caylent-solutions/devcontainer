@@ -5,6 +5,84 @@ import os
 import subprocess
 import tempfile
 
+# All EXAMPLE_ENV_VALUES keys — used to create test data that passes validation
+_FULL_CONTAINER_ENV = {
+    "AWS_CONFIG_ENABLED": "true",
+    "AWS_DEFAULT_OUTPUT": "json",
+    "DEFAULT_GIT_BRANCH": "main",
+    "DEFAULT_PYTHON_VERSION": "3.12.9",
+    "DEVELOPER_NAME": "test",
+    "EXTRA_APT_PACKAGES": "",
+    "GIT_AUTH_METHOD": "token",
+    "GIT_PROVIDER_URL": "github.com",
+    "GIT_TOKEN": "test",
+    "GIT_USER": "test",
+    "GIT_USER_EMAIL": "test@example.com",
+    "HOST_PROXY": "false",
+    "HOST_PROXY_URL": "",
+    "PAGER": "cat",
+}
+
+
+def _setup_validation_env(temp_dir, container_env, template_name="test"):
+    """Set up test data that passes validation cleanly.
+
+    Creates:
+    - JSON config with metadata + containerEnv
+    - shell.env with all containerEnv keys exported
+    - Template file at <temp_dir>/.devcontainer-templates/<name>.json
+    - .devcontainer directory
+
+    Returns:
+        Tuple of (env_file_path, env_overrides_dict).
+    """
+    # Create .devcontainer directory
+    devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
+    os.makedirs(devcontainer_dir, exist_ok=True)
+
+    # Create template directory and file (HOME will be overridden to temp_dir)
+    templates_dir = os.path.join(temp_dir, ".devcontainer-templates")
+    os.makedirs(templates_dir, exist_ok=True)
+    template_file = os.path.join(templates_dir, f"{template_name}.json")
+    template_path = template_file
+    with open(template_file, "w") as f:
+        json.dump(
+            {
+                "containerEnv": container_env,
+                "cli_version": "2.0.0",
+                "template_name": template_name,
+                "template_path": template_path,
+            },
+            f,
+        )
+
+    # Create JSON config with metadata
+    env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
+    with open(env_file, "w") as f:
+        json.dump(
+            {
+                "template_name": template_name,
+                "template_path": template_path,
+                "cli_version": "2.0.0",
+                "containerEnv": container_env,
+            },
+            f,
+        )
+
+    # Create shell.env with all keys exported
+    shell_env_path = os.path.join(temp_dir, "shell.env")
+    with open(shell_env_path, "w") as f:
+        f.write(f"# Template: {template_name}\n")
+        f.write(f"# Template Path: {template_path}\n")
+        f.write("# CLI Version: 2.0.0\n")
+        for key, value in sorted(container_env.items()):
+            f.write(f"export {key}='{value}'\n")
+
+    # Override HOME so TEMPLATES_DIR resolves inside temp_dir
+    env_overrides = {"HOME": temp_dir}
+
+    return env_file, env_overrides
+
 
 def run_command(cmd, cwd=None, input_text=None):
     """Run a command and return the output."""
@@ -49,44 +127,9 @@ def test_code_command_missing_config():
 def test_code_command_ide_not_found():
     """Test code command when IDE is not installed."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create .devcontainer directory
-        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
-        os.makedirs(devcontainer_dir)
-
-        # Create environment file with required variables
-        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
-        with open(env_file, "w") as f:
-            json.dump(
-                {
-                    "containerEnv": {
-                        "AWS_CONFIG_ENABLED": "true",
-                        "AWS_DEFAULT_OUTPUT": "json",
-                        "DEFAULT_GIT_BRANCH": "main",
-                        "DEFAULT_PYTHON_VERSION": "3.12.9",
-                        "DEVELOPER_NAME": "test",
-                        "EXTRA_APT_PACKAGES": "",
-                        "GIT_AUTH_METHOD": "token",
-                        "GIT_PROVIDER_URL": "github.com",
-                        "GIT_TOKEN": "test",
-                        "GIT_USER": "test",
-                        "GIT_USER_EMAIL": "test@example.com",
-                        "HOST_PROXY": "false",
-                        "HOST_PROXY_URL": "",
-                        "PAGER": "cat",
-                        "TEST": "value",
-                    }
-                },
-                f,
-            )
-
-        # Create shell.env to skip generation step
-        shell_env = os.path.join(temp_dir, "shell.env")
-        with open(shell_env, "w") as f:
-            f.write("export TEST=value\n")
+        _, env_overrides = _setup_validation_env(temp_dir, _FULL_CONTAINER_ENV)
 
         # Create a directory with only cdevcontainer and python3 — no IDE commands.
-        # The cdevcontainer shebang is #!/usr/bin/env python3, so python3 must
-        # be discoverable in PATH for the script to execute.
         import shutil
         import sys
 
@@ -101,6 +144,7 @@ def test_code_command_ide_not_found():
 
         env = os.environ.copy()
         env["PATH"] = isolated_dir + ":" + python_dir
+        env.update(env_overrides)
 
         result = subprocess.run(
             ["cdevcontainer", "code", "--ide", "vscode", temp_dir],
@@ -117,44 +161,9 @@ def test_code_command_ide_not_found():
 def test_code_command_default_ide():
     """Test that code command defaults to vscode."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create .devcontainer directory
-        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
-        os.makedirs(devcontainer_dir)
-
-        # Create environment file with required variables
-        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
-        with open(env_file, "w") as f:
-            json.dump(
-                {
-                    "containerEnv": {
-                        "AWS_CONFIG_ENABLED": "true",
-                        "AWS_DEFAULT_OUTPUT": "json",
-                        "DEFAULT_GIT_BRANCH": "main",
-                        "DEFAULT_PYTHON_VERSION": "3.12.9",
-                        "DEVELOPER_NAME": "test",
-                        "EXTRA_APT_PACKAGES": "",
-                        "GIT_AUTH_METHOD": "token",
-                        "GIT_PROVIDER_URL": "github.com",
-                        "GIT_TOKEN": "test",
-                        "GIT_USER": "test",
-                        "GIT_USER_EMAIL": "test@example.com",
-                        "HOST_PROXY": "false",
-                        "HOST_PROXY_URL": "",
-                        "PAGER": "cat",
-                        "TEST": "value",
-                    }
-                },
-                f,
-            )
-
-        # Create shell.env to skip generation step
-        shell_env = os.path.join(temp_dir, "shell.env")
-        with open(shell_env, "w") as f:
-            f.write("export TEST=value\n")
+        _, env_overrides = _setup_validation_env(temp_dir, _FULL_CONTAINER_ENV)
 
         # Create a directory with only cdevcontainer and python3 — no IDE commands.
-        # The cdevcontainer shebang is #!/usr/bin/env python3, so python3 must
-        # be discoverable in PATH for the script to execute.
         import shutil
         import sys
 
@@ -169,6 +178,7 @@ def test_code_command_default_ide():
 
         env = os.environ.copy()
         env["PATH"] = isolated_dir + ":" + python_dir
+        env.update(env_overrides)
 
         result = subprocess.run(
             ["cdevcontainer", "code", temp_dir],
@@ -185,40 +195,7 @@ def test_code_command_default_ide():
 def test_code_command_cursor_ide():
     """Test code command with cursor IDE."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create .devcontainer directory
-        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
-        os.makedirs(devcontainer_dir)
-
-        # Create environment file with required variables
-        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
-        with open(env_file, "w") as f:
-            json.dump(
-                {
-                    "containerEnv": {
-                        "AWS_CONFIG_ENABLED": "true",
-                        "AWS_DEFAULT_OUTPUT": "json",
-                        "DEFAULT_GIT_BRANCH": "main",
-                        "DEFAULT_PYTHON_VERSION": "3.12.9",
-                        "DEVELOPER_NAME": "test",
-                        "EXTRA_APT_PACKAGES": "",
-                        "GIT_AUTH_METHOD": "token",
-                        "GIT_PROVIDER_URL": "github.com",
-                        "GIT_TOKEN": "test",
-                        "GIT_USER": "test",
-                        "GIT_USER_EMAIL": "test@example.com",
-                        "HOST_PROXY": "false",
-                        "HOST_PROXY_URL": "",
-                        "PAGER": "cat",
-                        "TEST": "value",
-                    }
-                },
-                f,
-            )
-
-        # Create shell.env to skip generation step
-        shell_env = os.path.join(temp_dir, "shell.env")
-        with open(shell_env, "w") as f:
-            f.write("export TEST=value\n")
+        _, env_overrides = _setup_validation_env(temp_dir, _FULL_CONTAINER_ENV)
 
         # Create empty directory and put it first in PATH
         empty_dir = os.path.join(temp_dir, "empty")
@@ -226,6 +203,7 @@ def test_code_command_cursor_ide():
 
         env = os.environ.copy()
         env["PATH"] = empty_dir + ":" + env.get("PATH", "")
+        env.update(env_overrides)
 
         result = subprocess.run(
             ["cdevcontainer", "code", "--ide", "cursor", temp_dir],
@@ -242,19 +220,7 @@ def test_code_command_cursor_ide():
 def test_code_command_launches_ide():
     """Test that code command launches the IDE when both files exist."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create .devcontainer directory
-        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
-        os.makedirs(devcontainer_dir)
-
-        # Create environment file
-        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
-        with open(env_file, "w") as f:
-            json.dump({"containerEnv": {"TEST": "value"}}, f)
-
-        # Create shell.env
-        shell_env = os.path.join(temp_dir, "shell.env")
-        with open(shell_env, "w") as f:
-            f.write("export TEST=value\n")
+        _, env_overrides = _setup_validation_env(temp_dir, _FULL_CONTAINER_ENV)
 
         # Create a fake IDE command
         fake_ide_dir = os.path.join(temp_dir, "fake_bin")
@@ -266,6 +232,7 @@ def test_code_command_launches_ide():
 
         env = os.environ.copy()
         env["PATH"] = fake_ide_dir + ":" + env.get("PATH", "")
+        env.update(env_overrides)
 
         result = subprocess.run(
             ["cdevcontainer", "code", temp_dir],
@@ -301,22 +268,14 @@ def test_code_command_missing_shell_env():
 def test_code_command_regenerate_shell_env():
     """Test --regenerate-shell-env creates shell.env and launches IDE."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create .devcontainer directory
-        devcontainer_dir = os.path.join(temp_dir, ".devcontainer")
-        os.makedirs(devcontainer_dir)
+        # Use full env vars so validation passes after regeneration
+        container_env = dict(_FULL_CONTAINER_ENV)
+        container_env["DEVELOPER_NAME"] = "tester"
+        _, env_overrides = _setup_validation_env(temp_dir, container_env)
 
-        # Create environment JSON
-        env_file = os.path.join(temp_dir, "devcontainer-environment-variables.json")
-        with open(env_file, "w") as f:
-            json.dump(
-                {
-                    "template_name": "test",
-                    "template_path": "/templates/test.json",
-                    "cli_version": "2.0.0",
-                    "containerEnv": {"DEVELOPER_NAME": "tester", "HOST_PROXY": "false"},
-                },
-                f,
-            )
+        # Remove shell.env — regeneration will recreate it
+        shell_env_path = os.path.join(temp_dir, "shell.env")
+        os.remove(shell_env_path)
 
         # Create a fake IDE command
         fake_ide_dir = os.path.join(temp_dir, "fake_bin")
@@ -328,6 +287,7 @@ def test_code_command_regenerate_shell_env():
 
         env = os.environ.copy()
         env["PATH"] = fake_ide_dir + ":" + env.get("PATH", "")
+        env.update(env_overrides)
 
         result = subprocess.run(
             ["cdevcontainer", "code", "--regenerate-shell-env", temp_dir],
@@ -342,7 +302,6 @@ def test_code_command_regenerate_shell_env():
         assert "launched" in result.stderr
 
         # Verify shell.env was created
-        shell_env_path = os.path.join(temp_dir, "shell.env")
         assert os.path.exists(shell_env_path)
 
         with open(shell_env_path, "r") as f:

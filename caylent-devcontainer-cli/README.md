@@ -184,6 +184,11 @@ cdevcontainer code /path/to/another-project --ide cursor
 - `vscode` - Visual Studio Code (default)
 - `cursor` - Cursor AI IDE
 
+**Options:**
+- `--regenerate-shell-env` - Regenerate `shell.env` from existing JSON configuration without running full setup
+
+**Validation:** Before launching, the code command validates environment variables against both the base configuration and the developer template. If missing variables are detected, you will be prompted to update project files or add the missing variables.
+
 > **Note**: You can run `cdevcontainer code` from within any devcontainer to launch any supported IDE for other projects. This allows you to work on multiple projects simultaneously, each in their own devcontainer environment.
 
 ## Development
