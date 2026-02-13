@@ -241,6 +241,54 @@ cdevcontainer template create --help
 # Should display help text for template creation
 ```
 
+### 10. Catalog List Test
+
+**Purpose**: Verify the catalog list command displays available collections
+
+```bash
+# Test 1: List collections from the default catalog
+cdevcontainer catalog list
+# Should display a formatted list of available devcontainer configurations
+# with "default" collection listed first
+
+# Test 2: Filter by tags
+cdevcontainer catalog list --tags general
+# Should only show collections matching the "general" tag
+
+# Test 3: Filter with no matches
+cdevcontainer catalog list --tags nonexistent-tag
+# Should display "No collections found matching tags: nonexistent-tag"
+
+# Test 4: Custom catalog URL
+export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
+cdevcontainer catalog list
+# Should display collections from the specified catalog
+unset DEVCONTAINER_CATALOG_URL
+```
+
+### 11. Catalog Validate Test
+
+**Purpose**: Verify the catalog validate command checks catalog structure
+
+```bash
+# Test 1: Validate local catalog (this repository)
+cd /path/to/devcontainer
+cdevcontainer catalog validate --local .
+# Should display "Catalog validation passed. N collections found."
+
+# Test 2: Validate remote default catalog
+cdevcontainer catalog validate
+# Should clone and validate the default catalog
+
+# Test 3: Validate invalid directory
+cdevcontainer catalog validate --local /tmp/empty-dir
+# Should fail with validation errors
+
+# Test 4: Validate nonexistent directory
+cdevcontainer catalog validate --local /nonexistent/path
+# Should fail with "Directory not found" error
+```
+
 ## Reporting Issues
 
 If any test fails:

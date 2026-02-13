@@ -12,6 +12,7 @@ A command-line tool for managing Caylent devcontainer environments.
    - [Setting Up a Devcontainer](#setting-up-a-devcontainer)
    - [Managing Templates](#managing-templates)
    - [Launching IDEs](#launching-ides)
+   - [Browsing and Validating Catalogs](#browsing-and-validating-catalogs)
 3. [Development](#development)
    - [Setup](#setup)
    - [Testing](#testing)
@@ -60,6 +61,7 @@ cdevcontainer --help
 
 ### Commands
 
+- `catalog`: Browse and validate devcontainer catalog repositories
 - `setup-devcontainer`: Set up a devcontainer in a project directory
 - `code`: Launch IDE (VS Code, Cursor) with the devcontainer environment
 - `template`: Manage devcontainer templates
@@ -96,6 +98,7 @@ Enter your choice [1]:
 - **Skip mechanisms**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
 
 **Environment Variables:**
+- `DEVCONTAINER_CATALOG_URL`: Override the default catalog repository URL (e.g., `https://github.com/org/custom-catalog.git@v1.0`)
 - `CDEVCONTAINER_SKIP_UPDATE=1`: Globally disable all automatic update checks
 - `CDEVCONTAINER_DEBUG_UPDATE=1`: Enable debug logging for update check process
 
@@ -183,6 +186,26 @@ cdevcontainer code /path/to/another-project --ide cursor
 **Validation:** Before launching, the code command validates environment variables against both the base configuration and the developer template. If missing variables are detected, you will be prompted to update project files or add the missing variables.
 
 > **Note**: You can run `cdevcontainer code` from within any devcontainer to launch any supported IDE for other projects. This allows you to work on multiple projects simultaneously, each in their own devcontainer environment.
+
+### Browsing and Validating Catalogs
+
+```bash
+# List available devcontainer configurations from the default catalog
+cdevcontainer catalog list
+
+# Filter collections by tags (ANY match)
+cdevcontainer catalog list --tags java,python
+
+# Validate the default catalog
+cdevcontainer catalog validate
+
+# Validate a local catalog directory
+cdevcontainer catalog validate --local /path/to/catalog
+
+# Use a custom catalog repository
+export DEVCONTAINER_CATALOG_URL="https://github.com/org/custom-catalog.git@v1.0"
+cdevcontainer catalog list
+```
 
 ## Development
 

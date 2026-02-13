@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.4.4 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.4 — Catalog Architecture |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -73,25 +73,42 @@ Output: "Catalog validation passed. <N> collections found." or list all violatio
 
 ## Acceptance Criteria
 
-- [ ] catalog list command implemented with correct display format
-- [ ] catalog list uses DEVCONTAINER_CATALOG_URL when set, DEFAULT_CATALOG_URL otherwise
-- [ ] --tags flag filters collections (ANY match)
-- [ ] catalog validate (remote) clones and validates
-- [ ] catalog validate --local validates local directory
-- [ ] All 6 validation checks implemented
-- [ ] Validation output format matches spec (pass/fail with counts)
-- [ ] catalog subcommand registered in CLI
-- [ ] Temp directories cleaned up
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] catalog list command implemented with correct display format
+- [x] catalog list uses DEVCONTAINER_CATALOG_URL when set, DEFAULT_CATALOG_URL otherwise
+- [x] --tags flag filters collections (ANY match)
+- [x] catalog validate (remote) clones and validates
+- [x] catalog validate --local validates local directory
+- [x] All 6 validation checks implemented
+- [x] Validation output format matches spec (pass/fail with counts)
+- [x] catalog subcommand registered in CLI
+- [x] Temp directories cleaned up
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Created `commands/catalog.py` with `catalog list` and `catalog validate` subcommands
+- `catalog list`: clones catalog, discovers collections, displays formatted table, supports `--tags` filtering (ANY match)
+- `catalog validate`: supports remote (clones + validates) and `--local <path>` modes
+- Validation uses all 6 checks from validate_catalog(): common assets, collection discovery, per-collection validation, file conflicts, name uniqueness, tag validation
+- Output format matches spec: pass with collection count, fail with error list and issue count
+- `DEVCONTAINER_CATALOG_URL` env var takes precedence over `DEFAULT_CATALOG_URL`
+- Source label shows "default catalog" or the env var URL in output header
+- Temp directories cleaned up in finally blocks
+- Registered `catalog` subcommand in `cli.py`
+- Wrote 21 unit tests across 5 test classes (TestGetCatalogUrl, TestRegisterCommand, TestHandleCatalogList, TestHandleCatalogValidate, TestRunValidation)
+- Wrote 10 functional tests across 3 test classes (TestCatalogListEndToEnd, TestCatalogValidateEndToEnd, TestCatalogValidateThisRepo)
+- Quality gate: 597 unit + 346 functional = 943 total, 0 failures, 100% coverage on catalog commands, 96% overall, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

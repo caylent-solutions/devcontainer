@@ -96,6 +96,7 @@ def test_help_command():
     assert result.returncode == 0
 
     # Check that the output contains expected commands
+    assert "catalog" in result.stdout
     assert "setup-devcontainer" in result.stdout
     assert "code" in result.stdout
     assert "template" in result.stdout

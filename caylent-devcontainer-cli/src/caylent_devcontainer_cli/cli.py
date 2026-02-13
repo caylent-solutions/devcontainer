@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.commands import code, setup, template
+from caylent_devcontainer_cli.commands import catalog, code, setup, template
 from caylent_devcontainer_cli.utils.constants import CLI_NAME
 
 
@@ -34,6 +34,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # Register commands
+    catalog.register_command(subparsers)
     code.register_command(subparsers)
     template.register_command(subparsers)
     setup.register_command(subparsers)

@@ -3,13 +3,12 @@
 ## In Review
 
 - **Status:** in-review
-- **Work Unit:** S1.4.3 — Catalog Shared Functions
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.3-catalog-shared-functions/story.md`
+- **Work Unit:** S1.4.4 — Catalog CLI Commands
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.4-catalog-cli-commands/story.md`
 - **Feature:** F1.4 — Catalog Architecture
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
-13. S1.4.4 — Catalog CLI Commands → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.4-catalog-cli-commands/story.md`
 14. S1.4.5 — URL Parsing & Error Handling → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.5-url-parsing-error-handling/story.md`
 15. S1.5.1 — Setup-DevContainer Catalog Integration → `claude-backlog/E1-devcontainer-cli-v2/F1.5-catalog-integration/S1.5.1-setup-devcontainer-catalog-integration/story.md`
 16. S1.5.2 — Code Command Catalog Integration → `claude-backlog/E1-devcontainer-cli-v2/F1.5-catalog-integration/S1.5.2-code-command-catalog-integration/story.md`
