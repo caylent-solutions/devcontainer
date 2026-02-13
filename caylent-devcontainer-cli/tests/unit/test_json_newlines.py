@@ -17,8 +17,7 @@ def test_apply_template_calls_write_project_files(mock_write_files):
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    with patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"):
-        apply_template(template_data, "/target")
+    apply_template(template_data, "/target")
 
     mock_write_files.assert_called_once()
     call_args = mock_write_files.call_args

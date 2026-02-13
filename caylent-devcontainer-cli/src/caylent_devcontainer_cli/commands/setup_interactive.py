@@ -779,13 +779,4 @@ def apply_template(template_data: Dict[str, Any], target_path: str) -> None:
     # Generate all project files (env vars JSON, shell.env, aws map, ssh key, gitignore)
     write_project_files(target_path, template_data, template_name, template_path_str)
 
-    # Check and create .tool-versions file
-    container_env = template_data.get("containerEnv", {})
-    python_version = container_env.get("DEFAULT_PYTHON_VERSION")
-
-    if python_version:
-        from caylent_devcontainer_cli.commands.setup import check_and_create_tool_versions
-
-        check_and_create_tool_versions(target_path, python_version)
-
     log("OK", "Template applied successfully")

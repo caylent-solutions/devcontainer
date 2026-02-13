@@ -3,13 +3,12 @@
 ## In Review
 
 - **Status:** in-review
-- **Work Unit:** S1.3.3 — Code Command Validation
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.3-code-command-validation/story.md`
+- **Work Unit:** S1.3.4 — Setup-DevContainer Rewrite
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.4-setup-devcontainer-rewrite/story.md`
 - **Feature:** F1.3 — Command Rewrites
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
-7. S1.3.4 — Setup-DevContainer Rewrite → `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.4-setup-devcontainer-rewrite/story.md`
 8. S1.3.5 — devcontainer.json & Postcreate Changes → `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.5-devcontainer-postcreate-changes/story.md`
 9. S1.3.6 — Git Authentication → `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.6-git-authentication/story.md`
 10. S1.4.1 — Catalog Data Model → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.1-catalog-data-model/story.md`
@@ -42,3 +41,4 @@
 10. S1.2.3 — Template Load Command (2026-02-12)
 11. S1.2.4 — Template Upgrade Command (2026-02-12)
 12. S1.3.2 — Code Command Rewrite (2026-02-12)
+13. S1.3.3 — Code Command Validation (2026-02-12)

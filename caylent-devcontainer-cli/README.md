@@ -118,23 +118,16 @@ This will show detailed information about:
 ```bash
 # Interactive setup
 cdevcontainer setup-devcontainer /path/to/your/project
-
-# Manual setup (skip interactive prompts)
-cdevcontainer setup-devcontainer --manual /path/to/your/project
-
-# Use specific git reference (branch, tag, or commit) instead of CLI version
-cdevcontainer setup-devcontainer --ref main /path/to/your/project
-cdevcontainer setup-devcontainer --ref 1.0.0 /path/to/your/project
-cdevcontainer setup-devcontainer --ref feature/new-feature /path/to/your/project
 ```
 
-The interactive setup will guide you through:
-1. Using an existing template or creating a new one
-2. Configuring environment variables
-3. Selecting pager preference (cat, less, more, most)
-4. Setting up AWS profiles (if enabled)
-5. Selecting AWS CLI output format (json, table, text, yaml) - only if AWS is enabled
-6. Automatically creating a `.tool-versions` file if one doesn't exist to ensure consistent runtime management via asdf
+The setup command will:
+1. Create an empty `.tool-versions` file if one doesn't exist
+2. Detect existing `.devcontainer/` configuration and show version/catalog info
+3. If `.tool-versions` contains a Python entry, recommend managing Python through devcontainer features
+4. Ask whether to replace existing `.devcontainer/` files or keep them
+5. Run informational validation on existing project configuration files
+6. Guide you through interactive template selection or creation
+7. Generate project configuration files via `write_project_files()`
 
 ### Managing Templates
 

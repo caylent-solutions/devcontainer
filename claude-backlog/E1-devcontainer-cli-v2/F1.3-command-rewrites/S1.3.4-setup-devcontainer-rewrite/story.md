@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.3.4 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.3 — Command Rewrites |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -76,21 +76,35 @@ After interactive setup completes, write_project_files() generates both files.
 
 ## Acceptance Criteria
 
-- [ ] .tool-versions created as empty file when missing
-- [ ] Existing config detection shows version and catalog entry info
-- [ ] Python notice displayed when .tool-versions contains Python entry
-- [ ] Replace flow with full notification and keypress acknowledgement
-- [ ] No-replace flow continues with env files only
-- [ ] Shared validation (Steps 0-3) runs in informational-only mode
-- [ ] File generation via write_project_files() after interactive setup
-- [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] .tool-versions created as empty file when missing
+- [x] Existing config detection shows version and catalog entry info
+- [x] Python notice displayed when .tool-versions contains Python entry
+- [x] Replace flow with full notification and keypress acknowledgement
+- [x] No-replace flow continues with env files only
+- [x] Shared validation (Steps 0-3) runs in informational-only mode
+- [x] File generation via write_project_files() after interactive setup
+- [x] 90%+ unit test coverage, functional tests pass
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Rewrote setup.py with new flow: config detection, replace/no-replace, .tool-versions as empty file, informational validation, Python notice
+- Removed clone/copy logic (REPO_URL, clone_repo, copy_devcontainer_files, show_manual_instructions, ensure_gitignore_entries, check_and_create_tool_versions)
+- Removed --manual and --ref flags from register_command
+- Updated setup_interactive.py to remove check_and_create_tool_versions reference from apply_template
+- Wrote 32 unit tests for new setup functions (TestRegisterCommand, TestEnsureToolVersions, TestHasPythonEntry, TestShowExistingConfig, TestShowPythonNotice, TestPromptReplaceDecision, TestShowReplaceNotification, TestRunInformationalValidation, TestHandleSetup)
+- Updated test_apply_template.py and test_json_newlines.py to remove check_and_create_tool_versions patches
+- Rewrote functional tests (test_setup_command.py, test_setup_version.py, test_cli.py) to test new behavior
+- Updated README.md to remove --manual and --ref documentation
+- Quality gate: 477 unit + 219 functional = 696 total, 0 failures, 96% coverage, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

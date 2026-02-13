@@ -1,22 +1,18 @@
 """Setup command for the Caylent Devcontainer CLI."""
 
+import json
 import os
-import shutil
-import subprocess
-import tempfile
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
+    CATALOG_ENTRY_FILENAME,
     ENV_VARS_FILENAME,
-    EXAMPLE_AWS_FILE,
-    EXAMPLE_ENV_FILE,
     SHELL_ENV_FILENAME,
 )
-from caylent_devcontainer_cli.utils.fs import remove_example_files
-from caylent_devcontainer_cli.utils.ui import confirm_action, exit_cancelled, exit_with_error, log
+from caylent_devcontainer_cli.utils.ui import ask_or_exit, exit_cancelled, exit_with_error, log
 
-# Constants
-REPO_URL = "https://github.com/caylent-solutions/devcontainer.git"
+# Constants — base environment variable keys and their defaults.
+# Imported by validation.py, template.py, and tests.
 EXAMPLE_ENV_VALUES = {
     "AWS_CONFIG_ENABLED": "true",
     "AWS_DEFAULT_OUTPUT": "json",
@@ -36,240 +32,243 @@ EXAMPLE_ENV_VALUES = {
 
 
 def register_command(subparsers):
-    """Register the setup command with the CLI."""
+    """Register the setup-devcontainer command with the CLI."""
     parser = subparsers.add_parser("setup-devcontainer", help="Set up a devcontainer in a project directory")
     parser.add_argument("path", help="Path to the root of the repository to set up")
-    parser.add_argument(
-        "--manual", action="store_true", help="Skip interactive prompts and copy files for manual configuration"
-    )
-
-    parser.add_argument("--ref", help="Git reference (branch, tag, or commit) to clone instead of CLI version")
     parser.set_defaults(func=handle_setup)
 
 
 def handle_setup(args):
-    """Handle the setup-devcontainer command."""
+    """Handle the setup-devcontainer command.
+
+    Flow:
+    1. Validate target path
+    2. Ensure .tool-versions exists (empty file)
+    3. Detect existing configuration → replace/no-replace decision
+    4. Run informational validation (Steps 0-3) if project files exist
+    5. Run interactive setup → write_project_files()
+    """
     target_path = args.path
-    manual_mode = args.manual
 
-    git_ref = args.ref if args.ref else __version__
-
-    # Validate target path
     if not os.path.isdir(target_path):
         exit_with_error(f"Target path does not exist or is not a directory: {target_path}")
 
-    # Check if devcontainer already exists
+    # Ensure .tool-versions exists as empty file
+    _ensure_tool_versions(target_path)
+
+    # Detect existing configuration
     target_devcontainer = os.path.join(target_path, ".devcontainer")
-    should_clone = True  # Flag to determine if we need to clone repo
+    user_wants_replace = False
 
     if os.path.exists(target_devcontainer):
-        version_file = os.path.join(target_devcontainer, "VERSION")
-        if os.path.exists(version_file):
-            with open(version_file, "r") as f:
-                current_version = f.read().strip()
-            log("INFO", f"Found existing devcontainer (version {current_version})")
-            if not confirm_action(f"Devcontainer already exists. Overwrite with version {__version__}?"):
-                log("INFO", "Overwrite declined by user.")
-                should_clone = False  # Skip cloning, work with existing setup
+        _show_existing_config(target_path)
+        _show_python_notice(target_path)
+        user_wants_replace = _prompt_replace_decision()
+
+        if user_wants_replace:
+            _show_replace_notification()
+            # Catalog selection will be added in S1.5.1
         else:
-            if not confirm_action(
-                f"Devcontainer already exists but has no version information. Overwrite with version {__version__}?"
-            ):
-                log("INFO", "Overwrite declined by user.")
-                should_clone = False  # Skip cloning, work with existing setup
+            log("INFO", "Keeping existing .devcontainer/ files. Continuing with environment file setup only.")
 
-    if should_clone:
-        # Clone repository to temporary location
-        with tempfile.TemporaryDirectory() as temp_dir:
-            log("INFO", f"Cloning devcontainer repository (ref: {git_ref})...")
-            clone_repo(temp_dir, git_ref)
+    # Informational validation (if both project files exist)
+    _run_informational_validation(target_path)
 
-            if manual_mode:
-                # Copy .devcontainer folder to target path
-                copy_devcontainer_files(temp_dir, target_path, keep_examples=True)
-                # Create VERSION file
-                create_version_file(target_path)
-                # Check and create .tool-versions file with default Python version
-                check_and_create_tool_versions(target_path, EXAMPLE_ENV_VALUES["DEFAULT_PYTHON_VERSION"])
-                # Ensure .gitignore entries
-                ensure_gitignore_entries(target_path)
-                show_manual_instructions(target_path)
-            else:
-                # Interactive setup
-                interactive_setup(target_path)
-                # Create VERSION file
-                create_version_file(target_path)
-                # Ensure .gitignore entries
-                ensure_gitignore_entries(target_path)
-    else:
-        # User declined overwrite, continue with existing .devcontainer
-        if manual_mode:
-            # Check and create .tool-versions file with default Python version
-            check_and_create_tool_versions(target_path, EXAMPLE_ENV_VALUES["DEFAULT_PYTHON_VERSION"])
-            # Ensure .gitignore entries
-            ensure_gitignore_entries(target_path)
-            show_manual_instructions(target_path)
-        else:
-            # Interactive setup - just create environment files
-            interactive_setup(target_path)
-            # Ensure .gitignore entries
-            ensure_gitignore_entries(target_path)
+    # Interactive setup
+    interactive_setup(target_path)
 
 
-def create_version_file(target_path: str) -> None:
-    """Create a VERSION file in the .devcontainer directory."""
-    version_file = os.path.join(target_path, ".devcontainer", "VERSION")
-    with open(version_file, "w") as f:
-        f.write(__version__ + "\n")  # Add newline
-    log("INFO", f"Created VERSION file with version {__version__}")
+def _ensure_tool_versions(target_path: str) -> None:
+    """Create .tool-versions as an empty file if it does not exist.
 
-
-def check_and_create_tool_versions(target_path: str, python_version: str) -> None:
-    """Check for .tool-versions file and create if missing."""
+    Args:
+        target_path: Path to the project root directory.
+    """
     tool_versions_path = os.path.join(target_path, ".tool-versions")
 
     if os.path.exists(tool_versions_path):
-        log("OK", "Found .tool-versions file")
+        return
+
+    with open(tool_versions_path, "w") as f:
+        f.write("")
+    log("OK", f"Created empty .tool-versions at {tool_versions_path}")
+
+
+def _show_existing_config(target_path: str) -> None:
+    """Display information about existing devcontainer configuration.
+
+    Shows VERSION file content and catalog-entry.json info if present.
+
+    Args:
+        target_path: Path to the project root directory.
+    """
+    devcontainer_dir = os.path.join(target_path, ".devcontainer")
+
+    log("INFO", "Devcontainer configuration files already exist in this project.")
+
+    # Show version from VERSION file
+    version_file = os.path.join(devcontainer_dir, "VERSION")
+    if os.path.exists(version_file):
+        with open(version_file, "r") as f:
+            version = f.read().strip()
+        log("INFO", f"Current version: {version}")
+    else:
+        log("INFO", "Current version: unknown")
+
+    # Show catalog entry info if present
+    catalog_entry_path = os.path.join(devcontainer_dir, CATALOG_ENTRY_FILENAME)
+    if os.path.exists(catalog_entry_path):
+        try:
+            with open(catalog_entry_path, "r") as f:
+                catalog_data = json.load(f)
+            collection_name = catalog_data.get("collection_name", "unknown")
+            catalog_url = catalog_data.get("catalog_url", "unknown")
+            log("INFO", f"Catalog collection: {collection_name}")
+            log("INFO", f"Catalog URL: {catalog_url}")
+        except (json.JSONDecodeError, OSError):
+            log("WARN", "Could not read catalog-entry.json")
+
+    log("INFO", "You will be asked whether to replace the existing configuration.")
+
+
+def _show_python_notice(target_path: str) -> None:
+    """Display Python management notice if .tool-versions contains a Python entry.
+
+    Args:
+        target_path: Path to the project root directory.
+    """
+    tool_versions_path = os.path.join(target_path, ".tool-versions")
+
+    if not os.path.exists(tool_versions_path):
+        return
+
+    with open(tool_versions_path, "r") as f:
+        content = f.read()
+
+    if _has_python_entry(content):
+        log(
+            "INFO",
+            "Your .tool-versions file contains a Python entry. The recommended "
+            "configuration manages Python through features in devcontainer.json, "
+            ".devcontainer/.devcontainer.postcreate.sh, and devcontainer-functions.sh. "
+            "If you want to follow this recommendation, choose yes when prompted to replace.",
+        )
+
+
+def _has_python_entry(content: str) -> bool:
+    """Check if tool-versions content contains a Python entry.
+
+    Args:
+        content: The raw text content of .tool-versions.
+
+    Returns:
+        True if a line starting with 'python' is found.
+    """
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("python"):
+            return True
+    return False
+
+
+def _prompt_replace_decision() -> bool:
+    """Ask the user whether to replace existing .devcontainer/ files.
+
+    Returns:
+        True if user wants to replace, False otherwise.
+    """
+    import questionary
+
+    return ask_or_exit(
+        questionary.confirm(
+            "Do you want to replace the existing .devcontainer/ files?",
+            default=False,
+        )
+    )
+
+
+def _show_replace_notification() -> None:
+    """Display notification about what replacing .devcontainer/ files entails.
+
+    Requires explicit keypress acknowledgement before proceeding.
+    """
+    import questionary
+
+    log("INFO", "Replacing .devcontainer/ files will:")
+    print("  - Overwrite existing devcontainer configuration files")
+    print("  - You should review git changes before building the devcontainer")
+    print("  - Close any remote connection if the project auto-starts a devcontainer")
+    print("  - Open the project from the OS file explorer, not recent folders")
+    print("  - Merge back any customizations you made to the previous configuration")
+    print("  - Test the new configuration before pushing")
+    print("  - Rebuild the devcontainer (possibly without cache)")
+
+    acknowledged = ask_or_exit(
+        questionary.confirm(
+            "I understand the above. Proceed with replacement?",
+            default=False,
+        )
+    )
+
+    if not acknowledged:
+        exit_cancelled("Replacement cancelled by user.")
+
+
+def _run_informational_validation(target_path: str) -> None:
+    """Run shared validation (Steps 0-3) in informational-only mode.
+
+    Unlike the code command, setup-devcontainer does NOT prompt the user
+    to fix issues. It displays detected issues as informational messages.
+
+    Args:
+        target_path: Path to the project root directory.
+    """
+    env_json_path = os.path.join(target_path, ENV_VARS_FILENAME)
+    shell_env_path = os.path.join(target_path, SHELL_ENV_FILENAME)
+
+    # Only run if both project files exist
+    if not os.path.isfile(env_json_path) or not os.path.isfile(shell_env_path):
+        return
+
+    from caylent_devcontainer_cli.utils.fs import load_json_config
+    from caylent_devcontainer_cli.utils.validation import detect_validation_issues
+
+    config_data = load_json_config(env_json_path)
+    result = detect_validation_issues(target_path, config_data)
+
+    if not result.has_issues:
         return
 
     log(
         "INFO",
-        ".tool-versions file not found but is required as the Caylent Devcontainer "
-        "requires runtimes and tools to be managed by asdf",
+        "The following configuration issues were detected. Completing this setup "
+        "will regenerate your project configuration from the selected template "
+        "and resolve these issues:",
     )
 
-    file_content = f"python {python_version}\n"
-    print(f"\nWill create file: {tool_versions_path}")
-    print(f"With content:\n{file_content}")
+    if result.missing_base_keys:
+        log("INFO", f"  Missing base keys: {', '.join(sorted(result.missing_base_keys.keys()))}")
 
-    try:
-        input("Press Enter to create the file...")
-    except (EOFError, KeyboardInterrupt):
-        # Handle non-interactive environments (like tests) or user cancellation
-        pass
+    if not result.metadata_present:
+        log("INFO", "  Missing metadata (template_name, template_path, cli_version)")
 
-    with open(tool_versions_path, "w") as f:
-        f.write(file_content)
+    if result.metadata_present and not result.template_found:
+        log("INFO", f"  Template '{result.template_name}' not found on disk")
 
-    log("OK", f"Created .tool-versions file with Python {python_version}")
+    if result.missing_template_keys:
+        log("INFO", f"  Missing template keys: {', '.join(sorted(result.missing_template_keys.keys()))}")
 
 
-def ensure_gitignore_entries(target_path: str) -> None:
-    """Ensure required entries are in .gitignore."""
-    gitignore_path = os.path.join(target_path, ".gitignore")
-    required_files = [
-        SHELL_ENV_FILENAME,
-        ENV_VARS_FILENAME,
-        ".devcontainer/aws-profile-map.json",
-        ".devcontainer/ssh-private-key",
-    ]
+def create_version_file(target_path: str) -> None:
+    """Create a VERSION file in the .devcontainer directory.
 
-    log("INFO", "Checking .gitignore for required environment file entries to prevent the commit of your secrets.")
-    log("INFO", "Files to check:")
-    for file_entry in required_files:
-        print(f"  - {file_entry}")
-
-    # Read existing .gitignore if it exists
-    existing_lines = []
-    gitignore_exists = os.path.exists(gitignore_path)
-
-    if gitignore_exists:
-        with open(gitignore_path, "r") as f:
-            existing_lines = [line.strip() for line in f.readlines()]
-    else:
-        log("INFO", ".gitignore file does not exist, will create it")
-
-    # Check which files are missing
-    missing_files = []
-    for file_entry in required_files:
-        if file_entry not in existing_lines:
-            missing_files.append(file_entry)
-
-    if not missing_files:
-        log("OK", "All required entries already present in .gitignore")
-        return
-
-    # Inform user about missing entries
-    log("INFO", f"Missing {len(missing_files)} entries in .gitignore:")
-    for file_entry in missing_files:
-        print(f"  - {file_entry}")
-
-    # Add missing entries
-    with open(gitignore_path, "a") as f:
-        if existing_lines and existing_lines[-1] != "":  # Add newline if file doesn't end with one
-            f.write("\n")
-        # Add comment header if we're adding any files
-        f.write("# Environment files\n")
-        for file_entry in missing_files:
-            f.write(file_entry + "\n")
-
-    action = "Created" if not gitignore_exists else "Updated"
-    log("OK", f"{action} .gitignore with {len(missing_files)} new entries:")
-    for file_entry in missing_files:
-        print(f"  - {file_entry}")
-
-
-def clone_repo(temp_dir: str, git_ref: str) -> None:
-    """Clone the repository at the specified git reference (branch, tag, or commit)."""
-    log("INFO", f"Cloning repository with git_ref: {git_ref}")
-    try:
-        subprocess.run(
-            ["git", "clone", "--depth", "1", "--branch", git_ref, REPO_URL, temp_dir],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except subprocess.CalledProcessError as e:
-        log("ERR", f"Failed to clone devcontainer repository at ref '{git_ref}'")
-        log("ERR", f"Reference '{git_ref}' does not exist in the repository")
-        log("ERR", f"Please check available branches/tags at: {REPO_URL}")
-        exit_with_error(f"Git error: {e}")
-
-
-def copy_devcontainer_files(source_dir: str, target_path: str, keep_examples: bool = False) -> None:
-    """Copy .devcontainer folder to target path."""
-    source_devcontainer = os.path.join(source_dir, ".devcontainer")
-    target_devcontainer = os.path.join(target_path, ".devcontainer")
-
-    if os.path.exists(target_devcontainer):
-        from caylent_devcontainer_cli.utils.ui import confirm_action
-
-        if not confirm_action(f".devcontainer folder already exists at {target_devcontainer}. Overwrite?"):
-            exit_cancelled("Setup cancelled by user.")
-
-        try:
-            shutil.rmtree(target_devcontainer)
-        except FileNotFoundError:
-            # This can happen in tests, just continue
-            pass
-
-    log("INFO", f"Copying .devcontainer folder to {target_path}...")
-    shutil.copytree(source_devcontainer, target_devcontainer)
-
-    # Remove example files if not in manual mode
-    if not keep_examples:
-        remove_example_files(target_devcontainer)
-
-    log("OK", "Devcontainer files copied successfully.")
-
-
-def show_manual_instructions(target_path: str) -> None:
-    """Show instructions for manual setup."""
-    log("OK", "Devcontainer files have been copied to your project.")
-    print("\n📋 Next steps:")
-    print(f"1. Create a {ENV_VARS_FILENAME} file:")
-    print(
-        f"   cp {os.path.join(target_path, '.devcontainer', EXAMPLE_ENV_FILE)} "
-        f"{os.path.join(target_path, ENV_VARS_FILENAME)}"
-    )
-    print("2. Edit the file with your settings")
-    print("3. If using AWS, create an aws-profile-map.json file:")
-    print(
-        f"   cp {os.path.join(target_path, '.devcontainer', EXAMPLE_AWS_FILE)} "
-        f"{os.path.join(target_path, '.devcontainer', 'aws-profile-map.json')}"
-    )
-    print("4. Edit the AWS profile map with your settings")
-    print("\n📚 For more information, see: https://github.com/caylent-solutions/devcontainer#-quick-start")
+    Args:
+        target_path: Path to the project root directory.
+    """
+    version_file = os.path.join(target_path, ".devcontainer", "VERSION")
+    with open(version_file, "w") as f:
+        f.write(__version__ + "\n")
+    log("INFO", f"Created VERSION file with version {__version__}")
 
 
 def interactive_setup(target_path: str) -> None:

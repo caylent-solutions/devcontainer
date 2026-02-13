@@ -20,10 +20,7 @@ def test_apply_template_with_container_env():
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    with (
-        patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files") as mock_write,
-        patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"),
-    ):
+    with patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files") as mock_write:
         apply_template(template_data, "/target/path")
 
     mock_write.assert_called_once()
@@ -43,10 +40,7 @@ def test_apply_template_with_env_values():
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
-    with (
-        patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files") as mock_write,
-        patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions"),
-    ):
+    with patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files") as mock_write:
         apply_template(template_data, "/target/path")
 
     mock_write.assert_called_once()
@@ -73,8 +67,8 @@ def test_apply_template_does_not_copy_devcontainer():
         mock_rmtree.assert_not_called()
 
 
-def test_apply_template_calls_tool_versions():
-    """Test that apply_template calls check_and_create_tool_versions when python version present."""
+def test_apply_template_does_not_call_tool_versions():
+    """Test that apply_template does not manage .tool-versions (handled by handle_setup)."""
     template_data = {
         "containerEnv": {
             "AWS_CONFIG_ENABLED": "false",
@@ -82,9 +76,6 @@ def test_apply_template_calls_tool_versions():
         },
     }
 
-    with (
-        patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files"),
-        patch("caylent_devcontainer_cli.commands.setup.check_and_create_tool_versions") as mock_tool,
-    ):
+    with patch("caylent_devcontainer_cli.commands.setup_interactive.write_project_files"):
+        # Should not raise AttributeError looking for check_and_create_tool_versions
         apply_template(template_data, "/target/path")
-        mock_tool.assert_called_once_with("/target/path", "3.12.9")
