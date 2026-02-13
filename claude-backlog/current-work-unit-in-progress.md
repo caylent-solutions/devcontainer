@@ -3,15 +3,24 @@
 ## In Review
 
 - **Status:** in-review
-- **Work Unit:** S1.5.3 — project-setup.sh Lifecycle
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.5-catalog-integration/S1.5.3-project-setup-lifecycle/story.md`
-- **Feature:** F1.5 — Catalog Integration
+- **Work Unit:** S1.6.1 — Caylent Internal Catalog Repo
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.1-caylent-internal-catalog-repo/story.md`
+- **Feature:** F1.6 — Specialized Catalog Repos
+- **Epic:** E1 — Caylent DevContainer CLI v2.0.0
+
+- **Status:** in-review
+- **Work Unit:** S1.6.2 — Smarsh Client Catalog Repo (default collection only; specialized collections deferred)
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.2-smarsh-client-catalog-repo/story.md`
+- **Feature:** F1.6 — Specialized Catalog Repos
+- **Epic:** E1 — Caylent DevContainer CLI v2.0.0
+
+- **Status:** in-review
+- **Work Unit:** S1.6.3 — Catalog Documentation
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.3-catalog-documentation/story.md`
+- **Feature:** F1.6 — Specialized Catalog Repos
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
-18. S1.6.1 — Caylent Internal Catalog Repo → `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.1-caylent-internal-catalog-repo/story.md`
-19. S1.6.2 — Smarsh Client Catalog Repo → `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.2-smarsh-client-catalog-repo/story.md`
-20. S1.6.3 — Catalog Documentation → `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.3-catalog-documentation/story.md`
 21. S2.1.1 — ECR Public Repository Setup → `claude-backlog/E2-ecr-public-image-mirror/F2.1-ecr-infrastructure/S2.1.1-ecr-public-repository-setup/story.md`
 22. S2.1.2 — IAM OIDC & Role Setup → `claude-backlog/E2-ecr-public-image-mirror/F2.1-ecr-infrastructure/S2.1.2-iam-oidc-role-setup/story.md`
 23. S2.2.1 — GitHub Actions Mirror Workflow → `claude-backlog/E2-ecr-public-image-mirror/F2.2-mirror-automation/S2.2.1-github-actions-mirror-workflow/story.md`
@@ -35,3 +44,4 @@
 14. S1.4.4 — Catalog CLI Commands (2026-02-12)
 15. S1.4.5 — URL Parsing & Error Handling (2026-02-12)
 16. S1.5.2 — Code Command Catalog Integration (2026-02-12)
+17. S1.5.3 — project-setup.sh Lifecycle (2026-02-12)

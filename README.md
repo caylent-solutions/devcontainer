@@ -18,6 +18,7 @@
 - [🧪 Validate Your Config](#-validate-your-config)
 - [🧼 Git Hygiene](#-git-hygiene)
 - [🛠️ CLI Reference](#️-cli-reference)
+- [DevContainer Catalogs](#devcontainer-catalogs)
 - [🤝 Contributing](#-contributing)
 
 ## 🚀 Overview
@@ -725,6 +726,47 @@ cdevcontainer template upgrade my-template
 ```
 
 For detailed information about the Caylent Devcontainer CLI, see the [CLI documentation](caylent-devcontainer-cli/README.md).
+
+---
+
+## DevContainer Catalogs
+
+This repository serves as the **default catalog** for the Caylent DevContainer CLI. A catalog is a Git repository containing one or more collections — each collection is a complete devcontainer configuration that can be applied to a project.
+
+Organizations can create their own specialized catalogs with custom collections, shared assets, and team-specific tooling. The CLI discovers and applies collections from any catalog repository.
+
+### Key Concepts
+
+- **Catalog** — A Git repository with `common/devcontainer-assets/` (shared scripts) and `collections/` (one or more configurations)
+- **Collection** — A directory containing `catalog-entry.json`, `devcontainer.json`, and `VERSION`
+- **Common assets** — Shared postcreate script, functions, and project-setup template inherited by all collections
+
+### Catalog Commands
+
+```bash
+# List collections from a catalog
+DEVCONTAINER_CATALOG_URL="https://github.com/your-org/your-catalog.git" \
+  cdevcontainer catalog list
+
+# Filter by tags
+cdevcontainer catalog list --tags java,backend
+
+# Validate a catalog (remote)
+cdevcontainer catalog validate
+
+# Validate a catalog (local clone)
+cdevcontainer catalog validate --local /path/to/catalog
+```
+
+### Creating a Custom Catalog
+
+See the catalog documentation in any catalog repository's README.md for the full guide covering:
+
+- Catalog repo structure and required files
+- Adding and validating collections
+- The `postCreateCommand` reference
+- The 3-layer customization model (catalog collections, developer templates, project-setup.sh)
+- Distribution via `DEVCONTAINER_CATALOG_URL`
 
 ---
 

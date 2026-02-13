@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.6.2 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.6 — Specialized Catalog Repos |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -95,22 +95,39 @@ Files prepared locally, pushed to the external repo after human creates it.
 
 ## Acceptance Criteria
 
-- [ ] Manual prereq verified: GitHub repo `caylent-solutions/smarsh-devcontainer-catalog` exists
-- [ ] `common/devcontainer-assets/` created with 3 required files (`.devcontainer.postcreate.sh`, `devcontainer-functions.sh`, `project-setup.sh`)
-- [ ] `smarsh-java-backend` collection complete with `catalog-entry.json`, `devcontainer.json`, `VERSION`
-- [ ] `smarsh-angular-fullstack` collection complete with all files
-- [ ] Both `devcontainer.json` files have compliant `postCreateCommand`
-- [ ] `README.md` and `CONTRIBUTING.md` created
-- [ ] Catalog passes `cdevcontainer catalog validate --local .`
-- [ ] All files committed and pushed to external repo
-- [ ] 90% or greater unit test coverage where applicable
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Manual prereq verified: GitHub repo `caylent-solutions/smarsh-devcontainer-catalog` exists (private repo created with matching settings)
+- [x] `common/devcontainer-assets/` created with 3 required files (`.devcontainer.postcreate.sh`, `devcontainer-functions.sh`, `project-setup.sh`)
+- [N/A] `smarsh-java-backend` collection — **deferred per user instruction** ("just make a default one for now; not the brownfield or greenfield")
+- [N/A] `smarsh-angular-fullstack` collection — **deferred per user instruction**
+- [x] `collections/default/` collection created with `catalog-entry.json`, `devcontainer.json`, `VERSION` (Smarsh-specific defaults targeting EKS)
+- [x] `devcontainer.json` has compliant `postCreateCommand`
+- [x] `README.md` and `CONTRIBUTING.md` created (Smarsh-specific)
+- [x] Catalog passes `cdevcontainer catalog validate --local .` (1 collection found)
+- [x] All files committed and pushed to external repo
+- [N/A] 90% or greater unit test coverage — no CLI code changes, external repo only
+- [N/A] Linting and formatting — no CLI code changes
+- [N/A] Pre-commit check — no CLI code changes
+- [N/A] Docs updated — external repo has its own README.md and CONTRIBUTING.md
 
 ## Log
 
-_(No work has been done yet — this story is in-queue)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Created private GitHub repo `caylent-solutions/smarsh-devcontainer-catalog` via `gh repo create`
+- Configured repo settings to match source repo: squash-only merges, branch ruleset on main (1 approval, dismiss stale reviews, code owner review, last push approval, thread resolution, non-fast-forward, copilot code review), secret scanning with push protection
+- Exception: no required status checks (no GitHub Actions yet), no Integration bypass actor
+- Created `common/devcontainer-assets/` with 3 shared files (postcreate, functions, project-setup) — copied from Caylent internal catalog
+- Created `collections/default/` with Smarsh-specific catalog-entry.json (EKS/Smarsh tags), devcontainer.json (name: smarsh-devcontainer), VERSION (1.0.0)
+- Created README.md and CONTRIBUTING.md with Smarsh-specific documentation
+- Validated catalog: `cdevcontainer catalog validate --local .` passes (1 collection)
+- Committed and pushed to main
+
+**Scope Change:**
+- User instructed "just make a default one for now; not the brownfield or greenfield" — smarsh-java-backend and smarsh-angular-fullstack collections deferred to future work
+
+**Remaining:**
+- Specialized collections (smarsh-java-backend, smarsh-angular-fullstack) to be created as separate future stories when Smarsh team requirements are finalized
 
 ---
 

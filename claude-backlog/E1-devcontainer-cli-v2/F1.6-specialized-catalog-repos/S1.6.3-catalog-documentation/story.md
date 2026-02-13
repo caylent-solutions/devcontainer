@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.6.3 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.6 — Specialized Catalog Repos |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -63,20 +63,34 @@ The README.md must cover all of the following sections:
 
 ## Acceptance Criteria
 
-- [ ] Comprehensive `README.md` covering all 9 documentation sections listed above
-- [ ] `CONTRIBUTING.md` with PR process and review checklist
-- [ ] Documentation in Caylent internal catalog repo
-- [ ] Documentation in Smarsh catalog repo
-- [ ] Brief reference added to this repo pointing to catalog docs
-- [ ] All documentation accurate and consistent with implementation
-- [ ] 3-layer customization model clearly explained (catalog collections, developer templates, `project-setup.sh`)
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Comprehensive `README.md` covering all 9 documentation sections listed above
+- [x] `CONTRIBUTING.md` with PR process and review checklist
+- [x] Documentation in Caylent internal catalog repo (637-line README.md, 402-line CONTRIBUTING.md — pushed)
+- [x] Documentation in Smarsh catalog repo (652-line README.md, 497-line CONTRIBUTING.md — pushed)
+- [x] Brief reference added to this repo pointing to catalog docs (DevContainer Catalogs section in README.md)
+- [x] All documentation accurate and consistent with implementation (grounded in actual catalog.py validation code)
+- [x] 3-layer customization model clearly explained (catalog collections, developer templates, `project-setup.sh`)
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes (main repo README.md updated)
+- [x] Removed Smarsh reference from test data in main repo (test_catalog_commands.py)
 
 ## Log
 
-_(No work has been done yet — this story is in-queue)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Wrote comprehensive README.md (637 lines) for Caylent internal catalog covering all 9 sections: catalog concepts, repo structure, creating catalogs, adding collections, modifying common assets, postCreateCommand reference, 3-layer customization model, validation reference, and distribution guide
+- Wrote comprehensive CONTRIBUTING.md (402 lines) for Caylent catalog with PR process, naming conventions, validation checks, testing expectations, review checklist
+- Wrote comprehensive README.md (652 lines) for Smarsh catalog covering all 9 sections, adapted for private repo with authentication guidance
+- Wrote comprehensive CONTRIBUTING.md (497 lines) for Smarsh catalog with authentication section and EKS-focused testing
+- Added "DevContainer Catalogs" section to main repo README.md with key concepts, catalog commands, and pointer to catalog repo docs
+- Fixed test data in test_catalog_commands.py: renamed "smarsh-java" to "acme-java" to remove Smarsh references from this repo
+- All docs pushed to both external catalog repos
+- All 1028 tests pass, lint clean, pre-commit clean
+
+**Remaining:**
+- None — all acceptance criteria met
 
 ---
 

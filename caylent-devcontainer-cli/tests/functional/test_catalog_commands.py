@@ -79,7 +79,7 @@ class TestCatalogListEndToEnd(TestCase):
         mock_clone.return_value = "/tmp/catalog-custom"
         mock_validate.return_value = []
         mock_discover.return_value = self._make_entries(
-            [("smarsh-java", "Smarsh Java Backend", ["java"])],
+            [("acme-java", "Acme Java Backend", ["java"])],
         )
 
         args = MagicMock()
