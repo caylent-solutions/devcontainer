@@ -53,5 +53,21 @@ env/
 .DS_Store
 Thumbs.db
 
+# Terraform / Terragrunt
+.terragrunt-cache/
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+*.tfstate
+*.tfstate.backup
+.terraform.tfstate.lock.info
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # Test files
 output_file.sh
