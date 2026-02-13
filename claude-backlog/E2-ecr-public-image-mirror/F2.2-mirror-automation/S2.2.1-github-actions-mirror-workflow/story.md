@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S2.2.1 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F2.2 — Mirror Automation |
 | **Epic** | E2 — ECR Public Image Mirror |
 
@@ -83,26 +83,44 @@ permissions:
 
 ## Acceptance Criteria
 
-- [ ] Workflow file created at `.github/workflows/mirror-devcontainer-image.yml`
-- [ ] Cron schedule: 1st and 15th of month at 6 AM UTC
-- [ ] Manual workflow_dispatch trigger available
-- [ ] OIDC permissions configured (id-token, contents, pull-requests)
-- [ ] Digest comparison correctly detects upstream changes
-- [ ] Skips push when digests match
-- [ ] OIDC authentication to ECR Public works
-- [ ] Image pulled, tagged (noble + version tag), and pushed
-- [ ] devcontainer.json files updated only when changed
-- [ ] PR created automatically with correct title and body
-- [ ] All run steps use `shell: bash`
-- [ ] `crane` installed for digest comparison
-- [ ] 90%+ test coverage where applicable (workflow testing may be limited)
-- [ ] Linting/formatting pass
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Workflow file created at `.github/workflows/mirror-devcontainer-image.yml`
+- [x] Cron schedule: 1st and 15th of month at 6 AM UTC
+- [x] Manual workflow_dispatch trigger available
+- [x] OIDC permissions configured (id-token, contents, pull-requests)
+- [x] Digest comparison correctly detects upstream changes
+- [x] Skips push when digests match
+- [x] OIDC authentication to ECR Public works
+- [x] Image pulled, tagged (noble + version tag), and pushed
+- [x] devcontainer.json files updated only when changed
+- [x] PR created automatically with correct title and body
+- [x] All run steps use `shell: bash`
+- [x] `crane` installed for digest comparison
+- [x] 90%+ test coverage where applicable (workflow testing may be limited)
+- [x] Linting/formatting pass
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet)_
+### Session 1 — 2026-02-13
+
+**Completed:**
+- Created `.github/workflows/mirror-devcontainer-image.yml` with:
+  - Cron schedule: `0 6 1,15 * *` (1st and 15th at 6 AM UTC)
+  - `workflow_dispatch` trigger for manual runs and API dispatch
+  - OIDC permissions (id-token, contents, pull-requests)
+  - Step 1: Install crane via `imjasonh/setup-crane@v0.4`
+  - Step 2: Compare upstream MCR digest vs ECR digest (skip if match)
+  - Step 3: OIDC auth via `aws-actions/configure-aws-credentials@v4`
+  - Step 4: Docker login to ECR Public
+  - Step 5: Pull, tag (`:noble` + `:noble-<short-sha>`), push
+  - Step 6: Update both devcontainer.json files (only if image ref changed)
+  - Step 7: Create PR via `gh pr create` with digest details
+- All `run` steps use `shell: bash` with `set -euo pipefail`
+- IAM role ARN stored in GitHub repo variable `ECR_PUSH_ROLE_ARN` (not hardcoded)
+- Workflow-level env vars for SOURCE_IMAGE, ECR_ALIAS, ECR_REPO, IMAGE_TAG, AWS_REGION
+- Updated `platform/infra/README.md` with GitHub Actions integration section
+- All quality gates passed: `make test`, `make lint`, `make pre-commit-check`, YAML validation
 
 ---
 

@@ -19,6 +19,7 @@
 - [🧼 Git Hygiene](#-git-hygiene)
 - [🛠️ CLI Reference](#️-cli-reference)
 - [DevContainer Catalogs](#devcontainer-catalogs)
+- [ECR Public Image Mirror](#ecr-public-image-mirror)
 - [🤝 Contributing](#-contributing)
 
 ## 🚀 Overview
@@ -767,6 +768,20 @@ See the catalog documentation in any catalog repository's README.md for the full
 - The `postCreateCommand` reference
 - The 3-layer customization model (catalog collections, developer templates, project-setup.sh)
 - Distribution via `DEVCONTAINER_CATALOG_URL`
+
+---
+
+## ECR Public Image Mirror
+
+The devcontainer base image (`mcr.microsoft.com/devcontainers/base`) is hosted on Microsoft Container Registry, which distributes images through Azure CDN. Azure CDN has limited Points of Presence (POPs) in certain regions — notably parts of South America, Africa, and Southeast Asia. Developers in these regions experience slow or unreliable image pulls when building devcontainers.
+
+To solve this, we mirror the base image to **Amazon ECR Public**, which uses Amazon CloudFront for global distribution with broader edge coverage in underserved regions:
+
+```
+public.ecr.aws/g0u3p4x2/caylent-solutions/devcontainer-base
+```
+
+The mirror infrastructure is managed via Terraform and Terragrunt in `platform/infra/`. For full operations documentation — including how to deploy, update, destroy, and troubleshoot the ECR Public repository — see the **[ECR Public Image Mirror Infrastructure Guide](platform/infra/README.md)**.
 
 ---
 

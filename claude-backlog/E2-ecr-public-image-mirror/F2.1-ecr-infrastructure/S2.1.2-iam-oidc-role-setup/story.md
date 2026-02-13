@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S2.1.2 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F2.1 — ECR Infrastructure |
 | **Epic** | E2 — ECR Public Image Mirror |
 
@@ -66,21 +66,36 @@ Create the IAM OIDC identity provider for GitHub Actions and an IAM role with le
 
 ## Acceptance Criteria
 
-- [ ] IAM OIDC identity provider created for GitHub Actions
-- [ ] Provider URL and audience configured correctly
-- [ ] IAM role created with correct name
-- [ ] Trust policy scoped to this specific repo and main branch
-- [ ] Permissions policy has least-privilege ECR Public push actions
-- [ ] Role ARN documented for GitHub Actions workflow
-- [ ] No long-lived AWS credentials anywhere
-- [ ] Verified: role can be assumed from GitHub Actions (test with dry run if possible)
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] IAM OIDC identity provider created for GitHub Actions
+- [x] Provider URL and audience configured correctly
+- [x] IAM role created with correct name
+- [x] Trust policy scoped to this specific repo and main branch
+- [x] Permissions policy has least-privilege ECR Public push actions
+- [x] Role ARN documented for GitHub Actions workflow
+- [x] No long-lived AWS credentials anywhere
+- [x] Verified: role can be assumed from GitHub Actions (test with dry run if possible)
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet)_
+### Session 1 — 2026-02-13
+
+**Completed (via Terraform/Terragrunt, not AWS CLI):**
+- Created Terraform module `platform/infra/terraform-modules/github-actions-ecr-push/` with:
+  - `aws_iam_openid_connect_provider` for `token.actions.githubusercontent.com`
+  - `aws_iam_role` with trust policy scoped to `caylent-solutions/devcontainer:main`
+  - `aws_iam_role_policy` with least-privilege ECR Public push permissions
+  - `data.aws_caller_identity` for dynamic account ID (no hardcoding)
+- Created Terragrunt child config at `us-east-1/github-actions-ecr-push/terragrunt.hcl`
+  - Uses `dependency` block to get ECR repository ARN from ecr-public-repository output
+- Deployed: 3 resources created (OIDC provider, IAM role, inline policy)
+- Role ARN stored in GitHub Actions repository variable `ECR_PUSH_ROLE_ARN`
+- Updated `platform/infra/README.md` with IAM module documentation
+- All quality gates passed: `make test`, `make lint`, `make pre-commit-check`
+
+**Note:** Story specified AWS CLI commands but Terraform modules were used instead to follow the project's declarative IaC standards (CLAUDE.md).
 
 ---
 

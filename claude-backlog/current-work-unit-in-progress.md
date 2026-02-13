@@ -20,10 +20,25 @@
 - **Feature:** F1.6 — Specialized Catalog Repos
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
+- **Status:** in-review
+- **Work Unit:** S2.1.1 — ECR Public Repository Setup
+- **Path:** `claude-backlog/E2-ecr-public-image-mirror/F2.1-ecr-infrastructure/S2.1.1-ecr-public-repository-setup/story.md`
+- **Feature:** F2.1 — ECR Infrastructure
+- **Epic:** E2 — ECR Public Image Mirror
+
+- **Status:** in-review
+- **Work Unit:** S2.1.2 — IAM OIDC & Role Setup
+- **Path:** `claude-backlog/E2-ecr-public-image-mirror/F2.1-ecr-infrastructure/S2.1.2-iam-oidc-role-setup/story.md`
+- **Feature:** F2.1 — ECR Infrastructure
+- **Epic:** E2 — ECR Public Image Mirror
+
+- **Status:** in-review
+- **Work Unit:** S2.2.1 — GitHub Actions Mirror Workflow
+- **Path:** `claude-backlog/E2-ecr-public-image-mirror/F2.2-mirror-automation/S2.2.1-github-actions-mirror-workflow/story.md`
+- **Feature:** F2.2 — Mirror Automation
+- **Epic:** E2 — ECR Public Image Mirror
+
 ## Up Next (Priority Order)
-21. S2.1.1 — ECR Public Repository Setup → `claude-backlog/E2-ecr-public-image-mirror/F2.1-ecr-infrastructure/S2.1.1-ecr-public-repository-setup/story.md`
-22. S2.1.2 — IAM OIDC & Role Setup → `claude-backlog/E2-ecr-public-image-mirror/F2.1-ecr-infrastructure/S2.1.2-iam-oidc-role-setup/story.md`
-23. S2.2.1 — GitHub Actions Mirror Workflow → `claude-backlog/E2-ecr-public-image-mirror/F2.2-mirror-automation/S2.2.1-github-actions-mirror-workflow/story.md`
 24. S2.2.2 — devcontainer.json Image Reference Updates → `claude-backlog/E2-ecr-public-image-mirror/F2.2-mirror-automation/S2.2.2-devcontainer-image-reference-updates/story.md`
 
 ## Completed
