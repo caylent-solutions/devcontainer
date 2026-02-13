@@ -1,6 +1,7 @@
 """Constants for the Caylent Devcontainer CLI."""
 
 import os
+import re
 
 # Directories
 TEMPLATES_DIR = os.path.expanduser("~/.devcontainer-templates")
@@ -15,6 +16,32 @@ EXAMPLE_ENV_FILE = "example-container-env-values.json"
 EXAMPLE_AWS_FILE = "example-aws-profile-map.json"
 CATALOG_ENTRY_FILENAME = "catalog-entry.json"
 SSH_KEY_FILENAME = "ssh-private-key"
+
+# Catalog structure constants
+CATALOG_COMMON_DIR = "common"
+CATALOG_ASSETS_DIR = "devcontainer-assets"
+CATALOG_COLLECTIONS_DIR = "collections"
+CATALOG_VERSION_FILENAME = "VERSION"
+
+# Required files in common/devcontainer-assets/
+CATALOG_REQUIRED_COMMON_ASSETS = (
+    ".devcontainer.postcreate.sh",
+    "devcontainer-functions.sh",
+    "project-setup.sh",
+)
+
+# Required files in each collection
+CATALOG_REQUIRED_COLLECTION_FILES = (
+    CATALOG_ENTRY_FILENAME,
+    "devcontainer.json",
+    CATALOG_VERSION_FILENAME,
+)
+
+# catalog-entry.json name pattern: lowercase, dash-separated, min 2 chars
+CATALOG_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]*[a-z0-9]$")
+
+# Tag pattern: lowercase, dash-separated
+CATALOG_TAG_PATTERN = re.compile(r"^[a-z][a-z0-9-]*[a-z0-9]$")
 
 # Template structural requirements — top-level keys that must exist
 REQUIRED_TEMPLATE_KEYS = ("containerEnv", "cli_version", "template_name", "template_path")

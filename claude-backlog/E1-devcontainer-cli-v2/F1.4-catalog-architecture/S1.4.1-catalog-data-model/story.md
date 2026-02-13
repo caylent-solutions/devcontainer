@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.4.1 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.4 — Catalog Architecture |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -86,24 +86,42 @@ Optional fields:
 
 ## Acceptance Criteria
 
-- [ ] Catalog data model defined (Python dataclasses or similar)
-- [ ] catalog-entry.json schema validation implemented
-- [ ] Name pattern regex validation: `^[a-z][a-z0-9-]*[a-z0-9]$`
-- [ ] Required fields validation (name, description)
-- [ ] Optional fields validation (tags format, min_cli_version semver)
-- [ ] Collection structure validation (required files present)
-- [ ] File conflict detection logic (collection vs common assets)
-- [ ] postCreateCommand validation (must call postcreate script)
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Catalog data model defined (Python dataclasses or similar)
+- [x] catalog-entry.json schema validation implemented
+- [x] Name pattern regex validation: `^[a-z][a-z0-9-]*[a-z0-9]$`
+- [x] Required fields validation (name, description)
+- [x] Optional fields validation (tags format, min_cli_version semver)
+- [x] Collection structure validation (required files present)
+- [x] File conflict detection logic (collection vs common assets)
+- [x] postCreateCommand validation (must call postcreate script)
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Created utils/catalog.py with CatalogEntry dataclass and validation functions
+- CatalogEntry: from_dict(), to_dict(), required fields (name, description), optional (tags, maintainer, min_cli_version)
+- validate_catalog_entry(): name pattern regex, required fields, tags format, semver
+- validate_collection_structure(): checks required files (catalog-entry.json, devcontainer.json, VERSION)
+- detect_file_conflicts(): flags collection files that conflict with common/devcontainer-assets/
+- validate_postcreate_command(): ensures postCreateCommand calls postcreate script
+- validate_collection(): combines all collection validations
+- validate_common_assets(): checks required common asset files exist
+- discover_collections(): recursive scan for catalog-entry.json under collections/
+- validate_catalog(): full catalog validation with duplicate name detection
+- Added catalog constants to constants.py (patterns, required files, directory names)
+- Wrote 60 unit tests across 10 test classes
+- Quality gate: 537 unit + 272 functional = 809 total, 0 failures, 96% coverage, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

@@ -3,9 +3,9 @@
 ## In Review
 
 - **Status:** in-review
-- **Work Unit:** S1.3.6 — Git Authentication
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.6-git-authentication/story.md`
-- **Feature:** F1.3 — Command Rewrites
+- **Work Unit:** S1.4.1 — Catalog Data Model
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.1-catalog-data-model/story.md`
+- **Feature:** F1.4 — Catalog Architecture
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
