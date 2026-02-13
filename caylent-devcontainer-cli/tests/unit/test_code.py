@@ -1,10 +1,18 @@
-"""Unit tests for the code command (S1.3.2 + S1.3.3)."""
+"""Unit tests for the code command (S1.3.2 + S1.3.3 + S1.5.2)."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from caylent_devcontainer_cli.commands.code import IDE_CONFIG, handle_code, register_command
+from caylent_devcontainer_cli.commands.code import (
+    IDE_CONFIG,
+    _handle_missing_metadata,
+    _replace_devcontainer_files,
+    _replace_from_catalog_entry,
+    handle_code,
+    register_command,
+)
 from caylent_devcontainer_cli.utils.validation import ValidationResult
 
 # Helper: a no-issues validation result for tests that don't care about validation
@@ -530,6 +538,7 @@ def test_missing_vars_option2_adds_vars_only(
     mock_popen.assert_called_once()
 
 
+@patch("caylent_devcontainer_cli.commands.code._replace_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
 @patch("caylent_devcontainer_cli.commands.code.load_json_config")
@@ -538,10 +547,19 @@ def test_missing_vars_option2_adds_vars_only(
 @patch("caylent_devcontainer_cli.commands.code.write_project_files")
 @patch("shutil.which", return_value="/usr/bin/code")
 @patch("subprocess.Popen")
-def test_missing_vars_option1_adds_vars_and_flags_catalog(
-    mock_popen, mock_which, mock_write_files, mock_ask, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
+def test_missing_vars_option1_adds_vars_and_replaces_devcontainer(
+    mock_popen,
+    mock_which,
+    mock_write_files,
+    mock_ask,
+    mock_detect,
+    mock_load,
+    mock_isfile,
+    mock_resolve,
+    mock_replace,
+    capsys,
 ):
-    """Test Step 5 Option 1: add missing vars + catalog update (placeholder)."""
+    """Test Step 5 Option 1: add missing vars + replace .devcontainer/ via catalog."""
     mock_process = MagicMock()
     mock_process.wait.return_value = 0
     mock_popen.return_value = mock_process
@@ -578,6 +596,7 @@ def test_missing_vars_option1_adds_vars_and_flags_catalog(
     handle_code(args)
 
     mock_write_files.assert_called_once()
+    mock_replace.assert_called_once_with("/test/path")
     mock_popen.assert_called_once()
 
 
@@ -633,6 +652,242 @@ def test_step4_displays_missing_variables(
     captured = capsys.readouterr()
     # Variable names are displayed via print() (stdout), warnings via log() (stderr)
     assert "MISSING_VAR" in captured.out
+
+
+# =============================================================================
+# _handle_missing_metadata tests (S1.5.2)
+# =============================================================================
+
+
+class TestHandleMissingMetadataYes:
+    """Test _handle_missing_metadata 'Yes' path calls interactive_setup."""
+
+    @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
+    @patch("caylent_devcontainer_cli.commands.code.ask_or_exit")
+    def test_yes_calls_interactive_setup(self, mock_ask, mock_interactive):
+        """User selects Yes — calls interactive_setup with project_root."""
+        mock_ask.return_value = "Yes — select or create a template to regenerate files"
+
+        result = _handle_missing_metadata("/test/path")
+
+        mock_interactive.assert_called_once_with("/test/path")
+        assert result is True
+
+    @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
+    @patch("caylent_devcontainer_cli.commands.code.ask_or_exit")
+    def test_yes_returns_true_for_ide_launch(self, mock_ask, mock_interactive):
+        """'Yes' path returns True so IDE is launched after regeneration."""
+        mock_ask.return_value = "Yes"
+
+        result = _handle_missing_metadata("/test/path")
+
+        assert result is True
+
+    @patch("caylent_devcontainer_cli.commands.code.ask_or_exit")
+    def test_no_does_not_call_interactive_setup(self, mock_ask):
+        """User selects No — interactive_setup is NOT called."""
+        mock_ask.return_value = "No"
+
+        with patch("caylent_devcontainer_cli.commands.setup.interactive_setup") as mock_interactive:
+            result = _handle_missing_metadata("/test/path")
+
+        mock_interactive.assert_not_called()
+        assert result is True
+
+
+# =============================================================================
+# _replace_devcontainer_files tests (S1.5.2)
+# =============================================================================
+
+
+class TestReplaceDevcontainerFiles:
+    """Test _replace_devcontainer_files dispatches correctly."""
+
+    @patch("caylent_devcontainer_cli.commands.code._replace_from_catalog_entry")
+    @patch("caylent_devcontainer_cli.commands.setup._show_replace_notification")
+    def test_with_catalog_entry_delegates_to_replace_from_entry(self, mock_show_notif, mock_replace_entry, tmp_path):
+        """When catalog-entry.json exists, delegates to _replace_from_catalog_entry."""
+        devcontainer_dir = tmp_path / ".devcontainer"
+        devcontainer_dir.mkdir()
+        entry_file = devcontainer_dir / "catalog-entry.json"
+        entry_file.write_text('{"name": "test", "catalog_url": "https://example.com"}')
+
+        _replace_devcontainer_files(str(tmp_path))
+
+        mock_show_notif.assert_called_once()
+        mock_replace_entry.assert_called_once_with(str(tmp_path), str(entry_file))
+
+    @patch("caylent_devcontainer_cli.commands.setup._select_and_copy_catalog")
+    @patch("caylent_devcontainer_cli.commands.setup._show_replace_notification")
+    def test_without_catalog_entry_delegates_to_select_and_copy(self, mock_show_notif, mock_select_copy, tmp_path):
+        """When catalog-entry.json is missing, delegates to _select_and_copy_catalog."""
+        devcontainer_dir = tmp_path / ".devcontainer"
+        devcontainer_dir.mkdir()
+        # No catalog-entry.json file
+
+        _replace_devcontainer_files(str(tmp_path))
+
+        mock_show_notif.assert_called_once()
+        mock_select_copy.assert_called_once_with(str(tmp_path))
+
+    @patch("caylent_devcontainer_cli.commands.setup._select_and_copy_catalog")
+    @patch("caylent_devcontainer_cli.commands.setup._show_replace_notification")
+    def test_without_devcontainer_dir_delegates_to_select_and_copy(self, mock_show_notif, mock_select_copy, tmp_path):
+        """When .devcontainer/ doesn't exist at all, uses setup flow."""
+        _replace_devcontainer_files(str(tmp_path))
+
+        mock_show_notif.assert_called_once()
+        mock_select_copy.assert_called_once_with(str(tmp_path))
+
+    @patch("caylent_devcontainer_cli.commands.code._replace_from_catalog_entry")
+    @patch("caylent_devcontainer_cli.commands.setup._show_replace_notification")
+    def test_notification_shown_before_replacement(self, mock_show_notif, mock_replace_entry, tmp_path):
+        """Replacement notification is shown before any catalog operations."""
+        devcontainer_dir = tmp_path / ".devcontainer"
+        devcontainer_dir.mkdir()
+        entry_file = devcontainer_dir / "catalog-entry.json"
+        entry_file.write_text('{"name": "test", "catalog_url": "https://example.com"}')
+
+        call_order = []
+        mock_show_notif.side_effect = lambda: call_order.append("notification")
+        mock_replace_entry.side_effect = lambda *a: call_order.append("replace")
+
+        _replace_devcontainer_files(str(tmp_path))
+
+        assert call_order == ["notification", "replace"]
+
+
+# =============================================================================
+# _replace_from_catalog_entry tests (S1.5.2)
+# =============================================================================
+
+
+class TestReplaceFromCatalogEntry:
+    """Test _replace_from_catalog_entry reads catalog-entry.json and clones."""
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
+    def test_valid_entry_clones_and_copies(
+        self, mock_clone, mock_discover, mock_find, mock_copy, mock_rmtree, tmp_path
+    ):
+        """Valid catalog-entry.json: clones, finds, copies collection."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text(
+            json.dumps({"name": "my-collection", "catalog_url": "https://github.com/org/catalog.git"})
+        )
+
+        mock_clone.return_value = "/tmp/catalog-xyz"
+        mock_selected = MagicMock()
+        mock_selected.path = "/tmp/catalog-xyz/collections/my-collection"
+        mock_discover.return_value = [mock_selected]
+        mock_find.return_value = mock_selected
+
+        _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        mock_clone.assert_called_once_with("https://github.com/org/catalog.git")
+        mock_discover.assert_called_once_with("/tmp/catalog-xyz", skip_incomplete=True)
+        mock_find.assert_called_once_with([mock_selected], "my-collection")
+        mock_copy.assert_called_once()
+
+    def test_invalid_json_exits_with_error(self, tmp_path, capsys):
+        """Invalid JSON in catalog-entry.json exits with error."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text("not valid json {{{")
+
+        with pytest.raises(SystemExit):
+            _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        captured = capsys.readouterr()
+        assert "Failed to read catalog-entry.json" in captured.err
+
+    def test_missing_catalog_url_exits_with_error(self, tmp_path, capsys):
+        """Missing catalog_url in catalog-entry.json exits with error."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text(json.dumps({"name": "test"}))
+
+        with pytest.raises(SystemExit):
+            _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        captured = capsys.readouterr()
+        assert "missing 'catalog_url' or 'name'" in captured.err
+
+    def test_missing_name_exits_with_error(self, tmp_path, capsys):
+        """Missing name in catalog-entry.json exits with error."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text(json.dumps({"catalog_url": "https://example.com"}))
+
+        with pytest.raises(SystemExit):
+            _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        captured = capsys.readouterr()
+        assert "missing 'catalog_url' or 'name'" in captured.err
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
+    def test_temp_dir_cleaned_up_on_success(
+        self, mock_clone, mock_discover, mock_find, mock_copy, mock_rmtree, tmp_path
+    ):
+        """Temp directory is cleaned up after successful copy."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text(json.dumps({"name": "test", "catalog_url": "https://example.com"}))
+
+        mock_clone.return_value = "/tmp/catalog-cleanup"
+        mock_selected = MagicMock()
+        mock_selected.path = "/tmp/catalog-cleanup/collections/test"
+        mock_discover.return_value = [mock_selected]
+        mock_find.return_value = mock_selected
+
+        _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        mock_rmtree.assert_called_once_with("/tmp/catalog-cleanup", ignore_errors=True)
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
+    def test_temp_dir_cleaned_up_on_failure(self, mock_clone, mock_discover, mock_find, mock_rmtree, tmp_path):
+        """Temp directory is cleaned up even when find fails."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text(json.dumps({"name": "nonexistent", "catalog_url": "https://example.com"}))
+
+        mock_clone.return_value = "/tmp/catalog-fail"
+        mock_discover.return_value = []
+        mock_find.side_effect = SystemExit("Collection not found")
+
+        with pytest.raises(SystemExit):
+            _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        mock_rmtree.assert_called_once_with("/tmp/catalog-fail", ignore_errors=True)
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
+    def test_success_message_logged(
+        self, mock_clone, mock_discover, mock_find, mock_copy, mock_rmtree, tmp_path, capsys
+    ):
+        """Success message includes collection name."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text(json.dumps({"name": "my-col", "catalog_url": "https://example.com"}))
+
+        mock_clone.return_value = "/tmp/catalog-msg"
+        mock_selected = MagicMock()
+        mock_selected.path = "/tmp/catalog-msg/collections/my-col"
+        mock_discover.return_value = [mock_selected]
+        mock_find.return_value = mock_selected
+
+        _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        captured = capsys.readouterr()
+        assert "my-col" in captured.err
+        assert "replaced" in captured.err
 
 
 # =============================================================================

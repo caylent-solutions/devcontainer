@@ -1,12 +1,19 @@
 """Code command for the Caylent Devcontainer CLI."""
 
+import json
 import os
 import shutil
 import subprocess
 
 import questionary
 
-from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, SHELL_ENV_FILENAME
+from caylent_devcontainer_cli.utils.constants import (
+    CATALOG_ASSETS_DIR,
+    CATALOG_COMMON_DIR,
+    CATALOG_ENTRY_FILENAME,
+    ENV_VARS_FILENAME,
+    SHELL_ENV_FILENAME,
+)
 from caylent_devcontainer_cli.utils.fs import (
     load_json_config,
     resolve_project_root,
@@ -105,7 +112,7 @@ def handle_code(args):
 
     # Step 1 response: metadata missing
     if not result.metadata_present:
-        skip_validation = _handle_missing_metadata()
+        skip_validation = _handle_missing_metadata(project_root)
         if skip_validation:
             # User chose "No" — launch IDE without changes
             _launch_ide(args.ide, project_root)
@@ -128,11 +135,17 @@ def handle_code(args):
     _launch_ide(args.ide, project_root)
 
 
-def _handle_missing_metadata():
+def _handle_missing_metadata(project_root):
     """Handle Step 1: missing metadata response.
 
+    If the user chooses "Yes", runs interactive setup to regenerate
+    project files with proper metadata.
+
+    Args:
+        project_root: Path to the project root directory.
+
     Returns:
-        True if user chose to skip (No), False if user chose to regenerate (Yes).
+        True — always launches IDE after handling (either skipped or regenerated).
     """
     log("WARN", "Project files are missing required metadata and must be regenerated.")
 
@@ -151,9 +164,10 @@ def _handle_missing_metadata():
         log("WARN", "Continuing without regeneration — the environment may not work correctly")
         return True
 
-    # User chose Yes — this flow will be fully implemented in S1.5.2
-    # For now, log guidance and continue
-    log("INFO", "To regenerate project files, run: cdevcontainer template load <name> -p <path>")
+    # User chose Yes — run interactive setup to regenerate project files
+    from caylent_devcontainer_cli.commands.setup import interactive_setup
+
+    interactive_setup(project_root)
     return True
 
 
@@ -205,16 +219,90 @@ def _handle_missing_variables(project_root, config_data, result):
     template_path = result.template_path or config_data.get("template_path", "")
 
     if "Update devcontainer" in choice:
-        # Option 1: Add missing vars + catalog update
+        # Option 1: Add missing vars + replace .devcontainer/ via catalog
         write_project_files(project_root, template_data, template_name, template_path)
         log("OK", "Project files updated with missing variables")
-
-        # Catalog pipeline integration (S1.5.2 will implement this)
-        log("INFO", "To update .devcontainer/ files, run: cdevcontainer setup-devcontainer <path>")
+        _replace_devcontainer_files(project_root)
     else:
         # Option 2: Add missing vars only, do not modify .devcontainer/
         write_project_files(project_root, template_data, template_name, template_path)
         log("OK", "Missing variables added to project files")
+
+
+def _replace_devcontainer_files(project_root):
+    """Replace .devcontainer/ files via the catalog pipeline.
+
+    Reads ``.devcontainer/catalog-entry.json`` to determine the catalog
+    source.  If the file exists, clones the same catalog and copies the
+    collection.  If missing (pre-catalog project), prompts the user to
+    select a catalog source using the same flow as setup-devcontainer.
+
+    Args:
+        project_root: Path to the project root directory.
+    """
+    from caylent_devcontainer_cli.commands.setup import (
+        _select_and_copy_catalog,
+        _show_replace_notification,
+    )
+
+    _show_replace_notification()
+
+    catalog_entry_path = os.path.join(project_root, ".devcontainer", CATALOG_ENTRY_FILENAME)
+
+    if os.path.isfile(catalog_entry_path):
+        _replace_from_catalog_entry(project_root, catalog_entry_path)
+    else:
+        # Pre-catalog project — use the same selection flow as setup-devcontainer
+        _select_and_copy_catalog(project_root)
+
+
+def _replace_from_catalog_entry(project_root, catalog_entry_path):
+    """Replace .devcontainer/ files using catalog-entry.json metadata.
+
+    Reads the catalog URL and collection name from the existing
+    catalog-entry.json, clones the catalog, finds the matching
+    collection, and copies it to the project.
+
+    Args:
+        project_root: Path to the project root directory.
+        catalog_entry_path: Path to the catalog-entry.json file.
+    """
+    from caylent_devcontainer_cli.utils.catalog import (
+        clone_catalog_repo,
+        copy_collection_to_project,
+        discover_collection_entries,
+        find_collection_by_name,
+    )
+
+    try:
+        with open(catalog_entry_path) as f:
+            entry_data = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        exit_with_error(
+            f"Failed to read {CATALOG_ENTRY_FILENAME}: {e}. "
+            "Run 'cdevcontainer setup-devcontainer <path>' to reconfigure."
+        )
+
+    catalog_url = entry_data.get("catalog_url")
+    collection_name = entry_data.get("name")
+
+    if not catalog_url or not collection_name:
+        exit_with_error(
+            f"{CATALOG_ENTRY_FILENAME} is missing 'catalog_url' or 'name'. "
+            "Run 'cdevcontainer setup-devcontainer <path>' to reconfigure."
+        )
+
+    target_devcontainer = os.path.join(project_root, ".devcontainer")
+
+    temp_dir = clone_catalog_repo(catalog_url)
+    try:
+        entries = discover_collection_entries(temp_dir, skip_incomplete=True)
+        selected = find_collection_by_name(entries, collection_name)
+        common_assets = os.path.join(temp_dir, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
+        copy_collection_to_project(selected.path, common_assets, target_devcontainer, catalog_url)
+        log("OK", f"Collection '{collection_name}' files replaced in .devcontainer/")
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def _launch_ide(ide_key, project_root):

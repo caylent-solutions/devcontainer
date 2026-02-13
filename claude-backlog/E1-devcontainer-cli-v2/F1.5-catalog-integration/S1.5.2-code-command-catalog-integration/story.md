@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.5.2 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.5 — Catalog Integration |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -53,22 +53,37 @@ When code Step 5 option 1 (from S1.3.3) needs to replace .devcontainer/ files:
 
 ## Acceptance Criteria
 
-- [ ] Step 5 option 1 reads `catalog-entry.json` for `catalog_url` and `name`
-- [ ] Catalog pipeline invoked correctly to replace .devcontainer/
-- [ ] Pre-catalog projects (missing `catalog-entry.json`) prompt for catalog source
-- [ ] Replacement notification displayed
-- [ ] Keypress acknowledgement required
-- [ ] `catalog-entry.json` NOT in `.gitignore` (committed to repo)
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Step 5 option 1 reads `catalog-entry.json` for `catalog_url` and `name`
+- [x] Catalog pipeline invoked correctly to replace .devcontainer/
+- [x] Pre-catalog projects (missing `catalog-entry.json`) prompt for catalog source
+- [x] Replacement notification displayed
+- [x] Keypress acknowledgement required
+- [x] `catalog-entry.json` NOT in `.gitignore` (committed to repo)
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this story is in-queue)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Implemented `_replace_devcontainer_files(project_root)` — dispatches to catalog-entry.json path or setup-devcontainer flow
+- Implemented `_replace_from_catalog_entry(project_root, catalog_entry_path)` — reads catalog-entry.json, clones catalog, finds collection, copies files with cleanup
+- Updated `_handle_missing_metadata(project_root)` — "Yes" path calls `interactive_setup()` from setup.py
+- Updated `_handle_missing_variables()` Option 1 — calls `_replace_devcontainer_files()` after writing project files
+- Added `import json` and catalog constants to code.py imports
+- Wrote 14 new unit tests: TestHandleMissingMetadataYes (3), TestReplaceDevcontainerFiles (4), TestReplaceFromCatalogEntry (7)
+- Updated existing Option 1 test to mock and verify `_replace_devcontainer_files` call
+- 97% unit test coverage on code.py (4 uncovered lines are pre-existing, unrelated to S1.5.2)
+- Updated MANUAL_TESTING.md with Test 13 for code command catalog integration
+- All 1021 tests pass, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

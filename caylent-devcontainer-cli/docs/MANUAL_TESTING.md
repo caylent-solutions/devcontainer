@@ -334,6 +334,41 @@ cdevcontainer setup-devcontainer /tmp/test-default-catalog
 # No source selection prompt should appear
 ```
 
+### 13. Code Command Catalog Integration Test
+
+**Purpose**: Verify catalog integration in the code command (Step 5 Option 1)
+
+```bash
+# Test 1: Step 5 Option 1 with catalog-entry.json present
+# First, set up a project using catalog
+mkdir -p /tmp/test-code-catalog
+cdevcontainer setup-devcontainer /tmp/test-code-catalog
+# Complete the interactive setup
+
+# Verify catalog-entry.json was created in .devcontainer/
+cat /tmp/test-code-catalog/.devcontainer/catalog-entry.json
+# Should contain "name" and "catalog_url" fields
+
+# Now simulate missing variables scenario:
+# Edit the devcontainer-environment-variables.json to remove a key
+# Then run code command
+cdevcontainer code /tmp/test-code-catalog
+# If missing variables detected, select "Update devcontainer configuration and add missing variables"
+# Should show replacement notification, ask for acknowledgement
+# Should clone catalog from catalog-entry.json URL, replace .devcontainer/ files
+
+# Test 2: Step 1 metadata missing — Yes path
+# Create a project with no metadata in project files
+mkdir -p /tmp/test-code-metadata
+mkdir -p /tmp/test-code-metadata/.devcontainer
+echo '{"containerEnv": {"DEVELOPER_NAME": "test"}}' > /tmp/test-code-metadata/devcontainer-environment-variables.json
+echo "export DEVELOPER_NAME='test'" > /tmp/test-code-metadata/shell.env
+cdevcontainer code /tmp/test-code-metadata
+# Should detect missing metadata and prompt
+# Select "Yes — select or create a template to regenerate files"
+# Should run interactive setup to regenerate files
+```
+
 ## Reporting Issues
 
 If any test fails:
