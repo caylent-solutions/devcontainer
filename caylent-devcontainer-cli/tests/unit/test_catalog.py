@@ -905,6 +905,44 @@ class TestDiscoverCollectionEntries(TestCase):
             self.assertEqual(entries[0].entry.name, "alpha")
             self.assertEqual(entries[1].entry.name, "beta")
 
+    def test_skip_incomplete_filters_missing_devcontainer_json(self):
+        """Collections missing devcontainer.json are skipped when skip_incomplete=True."""
+        with tempfile.TemporaryDirectory() as tmp:
+            # Complete collection
+            complete = os.path.join(tmp, "collections", "complete")
+            os.makedirs(complete)
+            with open(os.path.join(complete, CATALOG_ENTRY_FILENAME), "w") as f:
+                json.dump({"name": "complete", "description": "Has all files"}, f)
+            with open(os.path.join(complete, "devcontainer.json"), "w") as f:
+                json.dump({"name": "test"}, f)
+
+            # Incomplete collection (missing devcontainer.json)
+            incomplete = os.path.join(tmp, "collections", "incomplete")
+            os.makedirs(incomplete)
+            with open(os.path.join(incomplete, CATALOG_ENTRY_FILENAME), "w") as f:
+                json.dump({"name": "incomplete", "description": "Missing devcontainer.json"}, f)
+
+            # Without skip_incomplete: both returned
+            entries_all = discover_collection_entries(tmp, skip_incomplete=False)
+            self.assertEqual(len(entries_all), 2)
+
+            # With skip_incomplete: only complete returned
+            entries_filtered = discover_collection_entries(tmp, skip_incomplete=True)
+            self.assertEqual(len(entries_filtered), 1)
+            self.assertEqual(entries_filtered[0].entry.name, "complete")
+
+    def test_skip_incomplete_default_false(self):
+        """By default, skip_incomplete is False — incomplete collections are included."""
+        with tempfile.TemporaryDirectory() as tmp:
+            col = os.path.join(tmp, "collections", "no-devcontainer")
+            os.makedirs(col)
+            with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
+                json.dump({"name": "no-devcontainer", "description": "No devcontainer.json"}, f)
+
+            entries = discover_collection_entries(tmp)
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0].entry.name, "no-devcontainer")
+
 
 class TestCopyCollectionToProject(TestCase):
     """Test copy_collection_to_project() file merging and augmentation."""

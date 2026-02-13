@@ -19,6 +19,7 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ASSETS_DIR,
     CATALOG_COLLECTIONS_DIR,
@@ -75,6 +76,93 @@ class CollectionInfo:
 
     path: str
     entry: CatalogEntry
+
+
+def compare_semver(version_a: str, version_b: str) -> int:
+    """Compare two semantic version strings.
+
+    Args:
+        version_a: First version (e.g. ``"2.1.0"``).
+        version_b: Second version (e.g. ``"2.0.0"``).
+
+    Returns:
+        -1 if *version_a* < *version_b*, 0 if equal, 1 if greater.
+
+    Raises:
+        ValueError: If either version is not valid semver (X.Y.Z).
+    """
+    pattern = re.compile(r"^\d+\.\d+\.\d+$")
+    if not pattern.match(version_a):
+        raise ValueError(f"Invalid semver: '{version_a}'")
+    if not pattern.match(version_b):
+        raise ValueError(f"Invalid semver: '{version_b}'")
+
+    parts_a = tuple(int(x) for x in version_a.split("."))
+    parts_b = tuple(int(x) for x in version_b.split("."))
+
+    if parts_a < parts_b:
+        return -1
+    if parts_a > parts_b:
+        return 1
+    return 0
+
+
+def check_min_cli_version(min_version: str, current_version: Optional[str] = None) -> bool:
+    """Check whether the current CLI version meets a minimum version requirement.
+
+    Args:
+        min_version: The required minimum version (semver string).
+        current_version: Override for the current CLI version.  Defaults to
+            ``caylent_devcontainer_cli.__version__``.
+
+    Returns:
+        ``True`` if the current version is greater than or equal to
+        *min_version*.
+    """
+    if current_version is None:
+        current_version = __version__
+    return compare_semver(current_version, min_version) >= 0
+
+
+def find_collection_by_name(entries: List[CollectionInfo], name: str) -> CollectionInfo:
+    """Look up a collection by name from a list of discovered entries.
+
+    Args:
+        entries: The list of discovered :class:`CollectionInfo` objects.
+        name: The collection name to search for.
+
+    Returns:
+        The matching :class:`CollectionInfo`.
+
+    Raises:
+        SystemExit: If no collection with *name* is found.
+    """
+    for entry_info in entries:
+        if entry_info.entry.name == name:
+            return entry_info
+    raise SystemExit(
+        f"Collection '{name}' not found. " "Run 'cdevcontainer catalog list' to see available collections."
+    )
+
+
+def validate_catalog_entry_env(catalog_entry_name: str) -> str:
+    """Validate that DEVCONTAINER_CATALOG_URL is set when ``--catalog-entry`` is used.
+
+    Args:
+        catalog_entry_name: The collection name supplied via ``--catalog-entry``.
+
+    Returns:
+        The catalog URL from the environment variable.
+
+    Raises:
+        SystemExit: If DEVCONTAINER_CATALOG_URL is not set.
+    """
+    catalog_url = os.environ.get("DEVCONTAINER_CATALOG_URL")
+    if not catalog_url:
+        raise SystemExit(
+            "DEVCONTAINER_CATALOG_URL is not set. " "The --catalog-entry flag requires a specialized catalog."
+        )
+    return catalog_url
 
 
 def parse_catalog_url(url_with_ref: str) -> Tuple[str, Optional[str]]:
@@ -174,12 +262,22 @@ def clone_catalog_repo(url_with_ref: str) -> str:
     return temp_dir
 
 
-def discover_collection_entries(catalog_root: str) -> List[CollectionInfo]:
+def discover_collection_entries(
+    catalog_root: str,
+    skip_incomplete: bool = False,
+) -> List[CollectionInfo]:
     """Discover collections and return them with parsed metadata.
 
     Scans for ``catalog-entry.json`` files, parses each one into a
     :class:`CatalogEntry`, and returns the list sorted with ``default``
     first followed by A-Z order of collection names.
+
+    Args:
+        catalog_root: Path to the catalog repository root.
+        skip_incomplete: When ``True``, collections missing a
+            ``devcontainer.json`` are silently skipped.  Useful for
+            list/browse mode.  In validate mode this should be ``False``
+            so that all collections are discovered and checked.
     """
     raw_paths = discover_collections(catalog_root)
     entries: List[CollectionInfo] = []
@@ -188,6 +286,12 @@ def discover_collection_entries(catalog_root: str) -> List[CollectionInfo]:
         entry_path = os.path.join(path, CATALOG_ENTRY_FILENAME)
         if not os.path.isfile(entry_path):
             continue
+
+        if skip_incomplete:
+            devcontainer_path = os.path.join(path, "devcontainer.json")
+            if not os.path.isfile(devcontainer_path):
+                continue
+
         try:
             with open(entry_path) as f:
                 data = json.load(f)

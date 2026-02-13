@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.4.5 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.4 — Catalog Architecture |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -66,24 +66,62 @@ Examples:
 
 ## Acceptance Criteria
 
-- [ ] URL parsing handles all 4 example formats correctly
-- [ ] SSH git@ prefix distinguished from @ref delimiter
-- [ ] .git suffix detection works correctly
-- [ ] Default branch used when no @ref specified
-- [ ] All 7 error scenarios produce correct error messages
-- [ ] Errors exit non-zero with actionable messages
-- [ ] No silent fallbacks on any error
-- [ ] Edge cases: empty URL, malformed URL, multiple @ signs
-- [ ] 90% or greater unit test coverage with all URL format edge cases
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] URL parsing handles all 4 example formats correctly
+- [x] SSH git@ prefix distinguished from @ref delimiter
+- [x] .git suffix detection works correctly
+- [x] Default branch used when no @ref specified
+- [x] All 7 error scenarios produce correct error messages
+- [x] Errors exit non-zero with actionable messages
+- [x] No silent fallbacks on any error
+- [x] Edge cases: empty URL, malformed URL, multiple @ signs
+- [x] 90% or greater unit test coverage with all URL format edge cases
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+
+URL parsing (all 4 formats) and clone error handling were already implemented in S1.4.3. This story added the remaining error handling functions and catalog list improvements:
+
+**New functions in `utils/catalog.py`:**
+- `compare_semver(a, b)` — compare two semver strings, returns -1/0/1
+- `check_min_cli_version(min_version, current_version=None)` — check if CLI meets minimum version
+- `find_collection_by_name(entries, name)` — look up collection by name, raises SystemExit with actionable message if not found
+- `validate_catalog_entry_env(catalog_entry_name)` — validate DEVCONTAINER_CATALOG_URL is set when `--catalog-entry` is used
+- Updated `discover_collection_entries()` with `skip_incomplete` parameter to filter out collections missing devcontainer.json
+
+**Updated `commands/catalog.py`:**
+- `handle_catalog_list()` now validates common assets (exits non-zero if missing)
+- `handle_catalog_list()` now exits non-zero when no collections found
+- `handle_catalog_list()` now uses `skip_incomplete=True` to skip collections missing devcontainer.json
+- `handle_catalog_list()` now filters by min_cli_version — warns and skips incompatible entries
+
+**All 7 error scenarios covered:**
+1. `DEVCONTAINER_CATALOG_URL not set + --catalog-entry` → `validate_catalog_entry_env()` exits with actionable message
+2. Clone fails → already handled in S1.4.3 with actionable auth messages
+3. No common/devcontainer-assets/ → `handle_catalog_list()` exits non-zero with specific message
+4. No collections found → `handle_catalog_list()` exits non-zero with specific message
+5. `--catalog-entry` name not found → `find_collection_by_name()` exits with "Run 'cdevcontainer catalog list'"
+6. Collection missing devcontainer.json → skipped in list (via `skip_incomplete=True`), reported in validate
+7. min_cli_version higher than current → warned and skipped in list
+
+**Tests:**
+- Added 11 new unit tests in `test_catalog_commands.py` (TestCompareSemver, TestCheckMinCliVersion, TestFindCollectionByName, TestValidateCatalogEntryEnv)
+- Added 3 new unit tests for min_cli_version/common assets in TestHandleCatalogList
+- Added 2 new unit tests for `skip_incomplete` in `test_catalog.py`
+- Added 9 new functional tests in `test_catalog_commands.py` (TestErrorHandlingEndToEnd)
+- Updated all existing tests to mock `validate_common_assets` for new catalog list flow
+
+**Quality gate:** 625 unit + 354 functional = 979 total, 0 failures, 100% coverage on commands/catalog.py, 97% on catalog.py, 96% overall, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

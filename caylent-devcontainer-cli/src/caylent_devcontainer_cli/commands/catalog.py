@@ -5,9 +5,11 @@ import shutil
 import sys
 
 from caylent_devcontainer_cli.utils.catalog import (
+    check_min_cli_version,
     clone_catalog_repo,
     discover_collection_entries,
     validate_catalog,
+    validate_common_assets,
 )
 from caylent_devcontainer_cli.utils.constants import DEFAULT_CATALOG_URL
 from caylent_devcontainer_cli.utils.ui import log
@@ -61,30 +63,56 @@ def handle_catalog_list(args):
 
     temp_dir = clone_catalog_repo(catalog_url)
     try:
-        entries = discover_collection_entries(temp_dir)
+        # Validate common assets exist
+        asset_errors = validate_common_assets(temp_dir)
+        if asset_errors:
+            log(
+                "ERR",
+                "Catalog repo is missing required directory: common/devcontainer-assets/",
+            )
+            sys.exit(1)
+
+        # Discover collections (skip incomplete ones missing devcontainer.json)
+        entries = discover_collection_entries(temp_dir, skip_incomplete=True)
+
+        if not entries:
+            log("ERR", "No devcontainer collections found in the catalog.")
+            sys.exit(1)
+
+        # Filter by min_cli_version — warn and skip incompatible entries
+        compatible_entries = []
+        for entry_info in entries:
+            min_ver = entry_info.entry.min_cli_version
+            if min_ver and not check_min_cli_version(min_ver):
+                log(
+                    "WARN",
+                    f"Skipping '{entry_info.entry.name}': requires CLI version >= {min_ver}",
+                )
+                continue
+            compatible_entries.append(entry_info)
 
         # Filter by tags if specified
         if args.tags:
             filter_tags = {t.strip() for t in args.tags.split(",") if t.strip()}
-            entries = [e for e in entries if filter_tags & set(e.entry.tags)]
-            if not entries:
+            compatible_entries = [e for e in compatible_entries if filter_tags & set(e.entry.tags)]
+            if not compatible_entries:
                 tags_str = ", ".join(sorted(filter_tags))
                 log("INFO", f"No collections found matching tags: {tags_str}")
                 return
 
-        if not entries:
-            log("INFO", "No collections found in the catalog.")
+        if not compatible_entries:
+            log("INFO", "No compatible collections found in the catalog.")
             return
 
         # Display header
         print(f"\nAvailable DevContainer Configurations ({source_label}):\n")
 
         # Calculate column width for alignment
-        max_name_len = max(len(e.entry.name) for e in entries)
+        max_name_len = max(len(e.entry.name) for e in compatible_entries)
         col_width = max(max_name_len + 4, 20)
 
         # Display each entry
-        for entry_info in entries:
+        for entry_info in compatible_entries:
             name = entry_info.entry.name.ljust(col_width)
             print(f"  {name}{entry_info.entry.description}")
 

@@ -264,6 +264,13 @@ export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontain
 cdevcontainer catalog list
 # Should display collections from the specified catalog
 unset DEVCONTAINER_CATALOG_URL
+
+# Test 5: Invalid catalog URL should fail gracefully
+export DEVCONTAINER_CATALOG_URL="https://github.com/nonexistent/repo.git"
+cdevcontainer catalog list
+# Should fail with actionable error message about cloning
+# Exit code should be non-zero
+unset DEVCONTAINER_CATALOG_URL
 ```
 
 ### 11. Catalog Validate Test
