@@ -17,6 +17,9 @@ EXAMPLE_AWS_FILE = "example-aws-profile-map.json"
 CATALOG_ENTRY_FILENAME = "catalog-entry.json"
 SSH_KEY_FILENAME = "ssh-private-key"
 
+# Default catalog URL (this repo)
+DEFAULT_CATALOG_URL = "https://github.com/caylent-solutions/devcontainer.git"
+
 # Catalog structure constants
 CATALOG_COMMON_DIR = "common"
 CATALOG_ASSETS_DIR = "devcontainer-assets"

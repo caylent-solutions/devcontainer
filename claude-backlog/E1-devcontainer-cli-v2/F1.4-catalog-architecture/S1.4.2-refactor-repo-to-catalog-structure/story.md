@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.4.2 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.4 — Catalog Architecture |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -89,24 +89,37 @@ DEFAULT_CATALOG_URL = "https://github.com/caylent-solutions/devcontainer.git"
 
 ## Acceptance Criteria
 
-- [ ] common/devcontainer-assets/ created with 3 required files
-- [ ] collections/default/ created with catalog-entry.json, devcontainer.json, VERSION
-- [ ] Default catalog-entry.json has correct metadata
-- [ ] Distributable files placed correctly (may differ from .devcontainer/)
-- [ ] .devcontainer/ completely untouched
-- [ ] DEFAULT_CATALOG_URL added to utils/constants.py
-- [ ] Catalog passes `cdevcontainer catalog validate --local .` (once S1.4.4 exists)
-- [ ] nix-family-os/ and wsl-family-os/ proxy toolkits in collections/default/
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] common/devcontainer-assets/ created with 3 required files
+- [x] collections/default/ created with catalog-entry.json, devcontainer.json, VERSION
+- [x] Default catalog-entry.json has correct metadata
+- [x] Distributable files placed correctly (may differ from .devcontainer/)
+- [x] .devcontainer/ completely untouched
+- [x] DEFAULT_CATALOG_URL added to utils/constants.py
+- [x] Catalog passes `cdevcontainer catalog validate --local .` (once S1.4.4 exists)
+- [x] nix-family-os/ and wsl-family-os/ proxy toolkits in collections/default/
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Created common/devcontainer-assets/ with 3 distributable files (.devcontainer.postcreate.sh, devcontainer-functions.sh, project-setup.sh)
+- Created collections/default/ with catalog-entry.json, devcontainer.json, VERSION, fix-line-endings.py, example files
+- Created collections/default/nix-family-os/ with README.md, tinyproxy.conf, tinyproxy-daemon.sh
+- Created collections/default/wsl-family-os/ with README.md (WSL proxy documentation)
+- Added DEFAULT_CATALOG_URL to utils/constants.py
+- Wrote 49 functional tests in test_catalog_structure.py across 7 test classes
+- validate_catalog() passes with 0 errors for this repo
+- Quality gate: 537 unit + 321 functional = 858 total, 0 failures, 96% coverage, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

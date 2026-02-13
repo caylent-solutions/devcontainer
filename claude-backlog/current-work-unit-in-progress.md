@@ -3,14 +3,12 @@
 ## In Review
 
 - **Status:** in-review
-- **Work Unit:** S1.4.1 — Catalog Data Model
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.1-catalog-data-model/story.md`
+- **Work Unit:** S1.4.2 — Refactor Repo to Catalog Structure
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.2-refactor-repo-to-catalog-structure/story.md`
 - **Feature:** F1.4 — Catalog Architecture
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
-10. S1.4.1 — Catalog Data Model → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.1-catalog-data-model/story.md`
-11. S1.4.2 — Refactor Repo to Catalog Structure → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.2-refactor-repo-to-catalog-structure/story.md`
 12. S1.4.3 — Catalog Shared Functions → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.3-catalog-shared-functions/story.md`
 13. S1.4.4 — Catalog CLI Commands → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.4-catalog-cli-commands/story.md`
 14. S1.4.5 — URL Parsing & Error Handling → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.5-url-parsing-error-handling/story.md`
