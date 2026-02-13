@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.5.1 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.5 — Catalog Integration |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -78,25 +78,43 @@ Same function used for all paths: `copy_collection_to_project(collection_path, c
 
 ## Acceptance Criteria
 
-- [ ] Without DEVCONTAINER_CATALOG_URL: auto-clones this repo, auto-selects default
-- [ ] With DEVCONTAINER_CATALOG_URL: source selection prompt works
-- [ ] "Default" selection clones default catalog correctly
-- [ ] "Browse catalog" shows searchable selection list
-- [ ] Selected collection metadata displayed with confirmation
-- [ ] `--catalog-entry` flag skips browsing, selects directly
-- [ ] `--catalog-entry` requires DEVCONTAINER_CATALOG_URL (error if not set)
-- [ ] `copy_collection_to_project()` used for all paths
-- [ ] Temp directories cleaned up in all paths
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Without DEVCONTAINER_CATALOG_URL: auto-clones this repo, auto-selects default
+- [x] With DEVCONTAINER_CATALOG_URL: source selection prompt works
+- [x] "Default" selection clones default catalog correctly
+- [x] "Browse catalog" shows searchable selection list
+- [x] Selected collection metadata displayed with confirmation
+- [x] `--catalog-entry` flag skips browsing, selects directly
+- [x] `--catalog-entry` requires DEVCONTAINER_CATALOG_URL (error if not set)
+- [x] `copy_collection_to_project()` used for all paths
+- [x] Temp directories cleaned up in all paths
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this story is in-queue)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Implemented full catalog integration in `commands/setup.py`:
+  - Added `--catalog-entry` flag to `register_command()`
+  - Added `_select_and_copy_catalog()` — orchestrates all 3 catalog flows (no env var, env var set, --catalog-entry flag)
+  - Added `_prompt_source_selection()` — "Default" or "Browse" prompt with questionary
+  - Added `_browse_collections()` — searchable selection list with confirm loop
+  - Added `_display_collection_metadata()` — shows name, description, tags, maintainer, min_cli_version
+  - Added `_display_and_confirm_collection()` — metadata display + confirm, exits if declined
+  - Modified `handle_setup()` to integrate catalog flow with `should_copy_catalog` flag
+- Wrote 35 new unit tests covering all new functions (88 total in test_setup.py)
+- Wrote 2 new functional tests (--catalog-entry help text, --catalog-entry without env var)
+- 98% unit test coverage on setup.py (4 uncovered lines are pre-existing, unrelated to S1.5.1)
+- Updated MANUAL_TESTING.md with Test 12 for catalog integration
+- All 1007 tests pass, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

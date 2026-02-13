@@ -146,15 +146,23 @@ cdevcontainer setup-devcontainer /path/to/your/project
 ```
 
 This will:
-1. Guide you through an interactive setup process
-2. Let you select or create a template for your environment
-3. Configure AWS profiles if needed
-4. Copy the devcontainer files to your project
+1. Clone the devcontainer catalog and copy configuration files to your project
+2. Guide you through an interactive setup process
+3. Let you select or create a template for your environment
+4. Configure AWS profiles if needed
 
-If you prefer to set up manually, use the `--manual` flag:
+If your organization provides a specialized catalog, set the environment variable:
 
 ```bash
-cdevcontainer setup-devcontainer --manual /path/to/your/project
+export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/devcontainer-catalog.git"
+cdevcontainer setup-devcontainer /path/to/your/project
+```
+
+You can also select a specific collection directly (useful for CI/automation):
+
+```bash
+export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/devcontainer-catalog.git"
+cdevcontainer setup-devcontainer --catalog-entry java-backend /path/to/your/project
 ```
 
 
@@ -693,10 +701,9 @@ cdevcontainer --help
 # Set up a devcontainer in a project directory
 cdevcontainer setup-devcontainer /path/to/your/project
 
-# Set up with specific git reference (branch, tag, or commit)
-cdevcontainer setup-devcontainer --ref main /path/to/your/project
-cdevcontainer setup-devcontainer --ref 1.0.0 /path/to/your/project
-cdevcontainer setup-devcontainer --ref feature/new-feature /path/to/your/project
+# Set up using a specific collection from a specialized catalog
+export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/catalog.git"
+cdevcontainer setup-devcontainer --catalog-entry java-backend /path/to/your/project
 
 # Launch IDE with the devcontainer environment (default: VS Code)
 cdevcontainer code [/path/to/your/project]

@@ -2,10 +2,14 @@
 
 import json
 import os
+import shutil
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
+    CATALOG_ASSETS_DIR,
+    CATALOG_COMMON_DIR,
     CATALOG_ENTRY_FILENAME,
+    DEFAULT_CATALOG_URL,
     ENV_VARS_FILENAME,
     SHELL_ENV_FILENAME,
 )
@@ -35,6 +39,13 @@ def register_command(subparsers):
     """Register the setup-devcontainer command with the CLI."""
     parser = subparsers.add_parser("setup-devcontainer", help="Set up a devcontainer in a project directory")
     parser.add_argument("path", help="Path to the root of the repository to set up")
+    parser.add_argument(
+        "--catalog-entry",
+        type=str,
+        default=None,
+        metavar="NAME",
+        help="Select a specific collection by name from a specialized catalog (requires DEVCONTAINER_CATALOG_URL)",
+    )
     parser.set_defaults(func=handle_setup)
 
 
@@ -45,10 +56,12 @@ def handle_setup(args):
     1. Validate target path
     2. Ensure .tool-versions exists (empty file)
     3. Detect existing configuration → replace/no-replace decision
-    4. Run informational validation (Steps 0-3) if project files exist
-    5. Run interactive setup → write_project_files()
+    4. If replace or no existing config: run catalog selection + copy
+    5. Run informational validation (Steps 0-3) if project files exist
+    6. Run interactive setup → write_project_files()
     """
     target_path = args.path
+    catalog_entry = getattr(args, "catalog_entry", None)
 
     if not os.path.isdir(target_path):
         exit_with_error(f"Target path does not exist or is not a directory: {target_path}")
@@ -58,7 +71,7 @@ def handle_setup(args):
 
     # Detect existing configuration
     target_devcontainer = os.path.join(target_path, ".devcontainer")
-    user_wants_replace = False
+    should_copy_catalog = True
 
     if os.path.exists(target_devcontainer):
         _show_existing_config(target_path)
@@ -67,15 +80,184 @@ def handle_setup(args):
 
         if user_wants_replace:
             _show_replace_notification()
-            # Catalog selection will be added in S1.5.1
         else:
+            should_copy_catalog = False
             log("INFO", "Keeping existing .devcontainer/ files. Continuing with environment file setup only.")
+
+    # Catalog selection and file copy (when setting up or replacing .devcontainer/)
+    if should_copy_catalog:
+        _select_and_copy_catalog(target_path, catalog_entry=catalog_entry)
 
     # Informational validation (if both project files exist)
     _run_informational_validation(target_path)
 
     # Interactive setup
     interactive_setup(target_path)
+
+
+def _select_and_copy_catalog(target_path, catalog_entry=None):
+    """Select a catalog collection and copy its files to the project.
+
+    Handles all 3 catalog flows:
+    1. ``--catalog-entry`` flag: validate env, clone specialized, find by name, confirm, copy
+    2. No ``DEVCONTAINER_CATALOG_URL``: clone default catalog, auto-select, copy
+    3. ``DEVCONTAINER_CATALOG_URL`` set: prompt source selection, then clone/browse/copy
+
+    Args:
+        target_path: Path to the project root directory.
+        catalog_entry: Optional collection name from ``--catalog-entry`` flag.
+    """
+    from caylent_devcontainer_cli.utils.catalog import (
+        check_min_cli_version,
+        clone_catalog_repo,
+        copy_collection_to_project,
+        discover_collection_entries,
+        find_collection_by_name,
+        validate_catalog_entry_env,
+    )
+
+    target_devcontainer = os.path.join(target_path, ".devcontainer")
+    env_url = os.environ.get("DEVCONTAINER_CATALOG_URL")
+
+    # Determine which catalog URL to use
+    if catalog_entry:
+        catalog_url = validate_catalog_entry_env(catalog_entry)
+    elif env_url:
+        source = _prompt_source_selection()
+        catalog_url = DEFAULT_CATALOG_URL if source == "default" else env_url
+    else:
+        catalog_url = DEFAULT_CATALOG_URL
+
+    # Clone, discover, select, copy
+    temp_dir = clone_catalog_repo(catalog_url)
+    try:
+        entries = discover_collection_entries(temp_dir, skip_incomplete=True)
+
+        # Filter by min_cli_version — warn and skip incompatible entries
+        compatible = []
+        for entry_info in entries:
+            min_ver = entry_info.entry.min_cli_version
+            if min_ver and not check_min_cli_version(min_ver):
+                log("WARN", f"Skipping '{entry_info.entry.name}': requires CLI version >= {min_ver}")
+                continue
+            compatible.append(entry_info)
+
+        if not compatible:
+            exit_with_error("No compatible devcontainer collections found in the catalog.")
+
+        # Select collection
+        if catalog_entry:
+            selected = find_collection_by_name(compatible, catalog_entry)
+            _display_and_confirm_collection(selected)
+        elif len(compatible) == 1:
+            selected = compatible[0]
+            log("INFO", f"Auto-selected collection: {selected.entry.name}")
+        elif env_url and catalog_url == DEFAULT_CATALOG_URL:
+            # User picked "Default" from source selection
+            selected = find_collection_by_name(compatible, "default")
+            log("INFO", f"Selected default collection: {selected.entry.name}")
+        else:
+            # Browse specialized catalog
+            selected = _browse_collections(compatible)
+            _display_and_confirm_collection(selected)
+
+        # Copy files
+        common_assets = os.path.join(temp_dir, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
+        copy_collection_to_project(selected.path, common_assets, target_devcontainer, catalog_url)
+        log("OK", f"Collection '{selected.entry.name}' files copied to .devcontainer/")
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def _prompt_source_selection():
+    """Prompt the user to select a devcontainer configuration source.
+
+    Shown only when DEVCONTAINER_CATALOG_URL is set, giving the user
+    a choice between the default Caylent devcontainer and browsing
+    the specialized catalog.
+
+    Returns:
+        ``"default"`` or ``"browse"``.
+    """
+    import questionary
+
+    choices = [
+        questionary.Choice("Default Caylent General DevContainer", value="default"),
+        questionary.Choice("Browse specialized configurations from catalog", value="browse"),
+    ]
+
+    log("INFO", "DevContainer configuration sources available:")
+
+    return ask_or_exit(
+        questionary.select(
+            "Select a configuration source:",
+            choices=choices,
+        )
+    )
+
+
+def _browse_collections(entries):
+    """Present a searchable selection list of catalog collections.
+
+    Loops until the user confirms their selection with "Is this correct?".
+
+    Args:
+        entries: List of :class:`CollectionInfo` objects to choose from.
+
+    Returns:
+        The selected :class:`CollectionInfo`.
+    """
+    import questionary
+
+    while True:
+        choices = [questionary.Choice(f"{e.entry.name} — {e.entry.description}", value=e) for e in entries]
+
+        selected = ask_or_exit(
+            questionary.select(
+                "Select a devcontainer collection:",
+                choices=choices,
+            )
+        )
+
+        _display_collection_metadata(selected)
+
+        confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
+        if confirmed:
+            return selected
+
+
+def _display_collection_metadata(entry_info):
+    """Display the full metadata for a selected collection.
+
+    Args:
+        entry_info: The :class:`CollectionInfo` to display.
+    """
+    entry = entry_info.entry
+    print(f"\n  Name:        {entry.name}")
+    print(f"  Description: {entry.description}")
+    if entry.tags:
+        print(f"  Tags:        {', '.join(entry.tags)}")
+    if entry.maintainer:
+        print(f"  Maintainer:  {entry.maintainer}")
+    if entry.min_cli_version:
+        print(f"  Min CLI:     {entry.min_cli_version}")
+    print()
+
+
+def _display_and_confirm_collection(entry_info):
+    """Display collection metadata and ask the user to confirm.
+
+    If the user does not confirm, exits with a cancellation message.
+
+    Args:
+        entry_info: The :class:`CollectionInfo` to confirm.
+    """
+    import questionary
+
+    _display_collection_metadata(entry_info)
+    confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
+    if not confirmed:
+        exit_cancelled("Collection selection cancelled by user.")
 
 
 def _ensure_tool_versions(target_path: str) -> None:

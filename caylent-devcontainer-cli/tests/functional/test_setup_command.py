@@ -65,3 +65,29 @@ def test_setup_rejects_removed_flags():
         result = run_command(["cdevcontainer", "setup-devcontainer", "--ref", "main", temp_dir])
         assert result.returncode == 2
         assert "unrecognized arguments" in result.stderr
+
+
+def test_setup_help_shows_catalog_entry_flag():
+    """Test that --catalog-entry flag appears in help text."""
+    result = run_command(["cdevcontainer", "setup-devcontainer", "--help"])
+
+    assert result.returncode == 0
+    assert "--catalog-entry" in result.stdout
+
+
+def test_catalog_entry_without_env_var_exits():
+    """Test --catalog-entry fails when DEVCONTAINER_CATALOG_URL is not set."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        import os
+
+        env = {k: v for k, v in os.environ.items() if k != "DEVCONTAINER_CATALOG_URL"}
+        result = subprocess.run(
+            ["cdevcontainer", "setup-devcontainer", "--catalog-entry", "my-collection", temp_dir],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
+
+        assert result.returncode != 0
+        assert "DEVCONTAINER_CATALOG_URL" in result.stderr

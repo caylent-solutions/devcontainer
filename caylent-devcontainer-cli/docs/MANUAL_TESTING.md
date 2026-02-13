@@ -296,6 +296,44 @@ cdevcontainer catalog validate --local /nonexistent/path
 # Should fail with "Directory not found" error
 ```
 
+### 12. Setup-DevContainer Catalog Integration Test
+
+**Purpose**: Verify catalog integration in the setup-devcontainer command
+
+```bash
+# Test 1: --catalog-entry flag requires DEVCONTAINER_CATALOG_URL
+unset DEVCONTAINER_CATALOG_URL
+mkdir -p /tmp/test-catalog-entry
+cdevcontainer setup-devcontainer --catalog-entry my-collection /tmp/test-catalog-entry
+# Should fail with error about DEVCONTAINER_CATALOG_URL not being set
+# Exit code should be non-zero
+
+# Test 2: --catalog-entry flag with env var set
+export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
+mkdir -p /tmp/test-catalog-entry2
+cdevcontainer setup-devcontainer --catalog-entry default /tmp/test-catalog-entry2
+# Should clone the catalog, find the "default" collection, display metadata
+# Ask "Is this correct?" and continue with setup
+unset DEVCONTAINER_CATALOG_URL
+
+# Test 3: Source selection when DEVCONTAINER_CATALOG_URL is set
+export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
+mkdir -p /tmp/test-source-select
+cdevcontainer setup-devcontainer /tmp/test-source-select
+# Should present a source selection prompt:
+# > Default Caylent General DevContainer
+#   Browse specialized configurations from catalog
+# Select "Default" and verify setup continues normally
+unset DEVCONTAINER_CATALOG_URL
+
+# Test 4: Default setup (no DEVCONTAINER_CATALOG_URL)
+unset DEVCONTAINER_CATALOG_URL
+mkdir -p /tmp/test-default-catalog
+cdevcontainer setup-devcontainer /tmp/test-default-catalog
+# Should auto-clone default catalog and auto-select the default collection
+# No source selection prompt should appear
+```
+
 ## Reporting Issues
 
 If any test fails:

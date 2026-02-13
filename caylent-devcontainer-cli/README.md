@@ -119,8 +119,15 @@ This will show detailed information about:
 ### Setting Up a Devcontainer
 
 ```bash
-# Interactive setup
+# Interactive setup (clones default catalog automatically)
 cdevcontainer setup-devcontainer /path/to/your/project
+
+# Use a specialized catalog
+export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/catalog.git"
+cdevcontainer setup-devcontainer /path/to/your/project
+
+# Select a specific collection by name (requires DEVCONTAINER_CATALOG_URL)
+cdevcontainer setup-devcontainer --catalog-entry java-backend /path/to/your/project
 ```
 
 The setup command will:
@@ -128,9 +135,10 @@ The setup command will:
 2. Detect existing `.devcontainer/` configuration and show version/catalog info
 3. If `.tool-versions` contains a Python entry, recommend managing Python through devcontainer features
 4. Ask whether to replace existing `.devcontainer/` files or keep them
-5. Run informational validation on existing project configuration files
-6. Guide you through interactive template selection or creation
-7. Generate project configuration files via `write_project_files()`
+5. Clone the catalog, discover collections, and copy selected collection files to `.devcontainer/`
+6. Run informational validation on existing project configuration files
+7. Guide you through interactive template selection or creation
+8. Generate project configuration files via `write_project_files()`
 
 ### Managing Templates
 
