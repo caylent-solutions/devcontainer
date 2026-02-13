@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.3.5 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.3 — Command Rewrites |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -83,24 +83,38 @@ NO_PROXY=localhost,127.0.0.1,.local (Ubuntu and Microsoft domains removed so apt
 
 ## Acceptance Criteria
 
-- [ ] containerEnv block removed from devcontainer.json
-- [ ] postCreateCommand updated for both non-WSL and WSL paths
-- [ ] source shell.env comes first in postCreateCommand
-- [ ] sudo -E used throughout postCreateCommand
-- [ ] Postcreate configures shell.env sourcing in .bashrc and .zshenv
-- [ ] BASH_ENV set in .bashrc
-- [ ] CICD read from runtime environment with default false
-- [ ] Host proxy validation with active polling (no sleep)
-- [ ] Configurable timeout for proxy validation
-- [ ] NO_PROXY simplified to localhost,127.0.0.1,.local
-- [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] containerEnv block removed from devcontainer.json
+- [x] postCreateCommand updated for both non-WSL and WSL paths
+- [x] source shell.env comes first in postCreateCommand
+- [x] sudo -E used throughout postCreateCommand
+- [x] Postcreate configures shell.env sourcing in .bashrc and .zshenv
+- [x] BASH_ENV set in .bashrc
+- [x] CICD read from runtime environment with default false
+- [x] Host proxy validation with active polling (no sleep)
+- [x] Configurable timeout for proxy validation
+- [x] NO_PROXY simplified to localhost,127.0.0.1,.local
+- [x] 90%+ unit test coverage, functional tests pass
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Removed containerEnv block from devcontainer.json (was 22 env vars)
+- Updated postCreateCommand: source shell.env first, sudo -E throughout, WSL and non-WSL paths
+- Added parse_proxy_host_port() to devcontainer-functions.sh — parses host/port from HOST_PROXY_URL env var
+- Added validate_host_proxy() to devcontainer-functions.sh — active nc -z -w 1 polling, no sleep, configurable timeout
+- Updated postcreate.sh proxy section: parses HOST_PROXY_URL dynamically (no hardcoded host/port), validates HOST_PROXY_URL is set when HOST_PROXY=true
+- NO_PROXY already simplified to localhost,127.0.0.1,.local in fs.py (done in S1.1.5)
+- Shell.env sourcing in .bashrc/.zshenv and CICD handling already correct (pre-existing)
+- Wrote 27 functional tests (TestDevcontainerJson, TestPostcreateScript, TestDevcontainerFunctions)
+- Quality gate: 477 unit + 246 functional = 723 total, 0 failures, 96% coverage, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

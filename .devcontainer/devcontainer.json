@@ -262,28 +262,5 @@
     }
   },
   "userEnvProbe": "loginInteractiveShell",
-  "containerEnv": {
-    "AWS_CONFIG_ENABLED": "${localEnv:AWS_CONFIG_ENABLED}",
-    "AWS_DEFAULT_OUTPUT": "${localEnv:AWS_DEFAULT_OUTPUT}",
-    "BASH_ENV": "${containerWorkspaceFolder}/shell.env",
-    "CICD": "${localEnv:CICD}",
-    "DEFAULT_GIT_BRANCH": "${localEnv:DEFAULT_GIT_BRANCH}",
-    "DEVELOPER_NAME": "${localEnv:DEVELOPER_NAME}",
-    "DEVCONTAINER": "true",
-    "EXTRA_APT_PACKAGES": "${localEnv:EXTRA_APT_PACKAGES}",
-    "GIT_PROVIDER_URL": "${localEnv:GIT_PROVIDER_URL}",
-    "GIT_TOKEN": "${localEnv:GIT_TOKEN}",
-    "GIT_USER": "${localEnv:GIT_USER}",
-    "GIT_USER_EMAIL": "${localEnv:GIT_USER_EMAIL}",
-    "HOST_PROXY": "${localEnv:HOST_PROXY}",
-    "HOST_PROXY_URL": "${localEnv:HOST_PROXY_URL}",
-    "HTTP_PROXY": "${localEnv:HOST_PROXY_URL}",
-    "HTTPS_PROXY": "${localEnv:HOST_PROXY_URL}",
-    "http_proxy": "${localEnv:HOST_PROXY_URL}",
-    "https_proxy": "${localEnv:HOST_PROXY_URL}",
-    "NO_PROXY": "localhost,127.0.0.1,.local,ports.ubuntu.com,archive.ubuntu.com,security.ubuntu.com,packages.microsoft.com",
-    "no_proxy": "localhost,127.0.0.1,.local,ports.ubuntu.com,archive.ubuntu.com,security.ubuntu.com,packages.microsoft.com",
-    "PAGER": "${localEnv:PAGER}"
-  },
-  "postCreateCommand": "bash -c 'exec > >(tee /tmp/devcontainer-setup.log) 2>&1; if uname -r | grep -i microsoft > /dev/null; then sudo apt-get update && sudo apt-get install -y gettext-base jq python3 && find .devcontainer -type f -exec sed -i \"s/\\r$//\" {} + && python3 .devcontainer/fix-line-endings.py && sudo apt-get remove -y python3 && sudo apt-get autoremove -y && source shell.env && exec bash .devcontainer/.devcontainer.postcreate.sh vscode; else sudo apt-get update && sudo apt-get install -y gettext-base jq && source shell.env && sudo bash .devcontainer/.devcontainer.postcreate.sh vscode; fi && echo \"Setup complete. View logs: cat /tmp/devcontainer-setup.log\" && exit 0'"
+  "postCreateCommand": "bash -c 'exec > >(tee /tmp/devcontainer-setup.log) 2>&1; source shell.env; if uname -r | grep -i microsoft > /dev/null; then sudo -E apt-get update && sudo -E apt-get install -y gettext-base jq python3 && find .devcontainer -type f -exec sed -i \"s/\\r$//\" {} + && python3 .devcontainer/fix-line-endings.py && sudo -E apt-get remove -y python3 && sudo -E apt-get autoremove -y && sudo -E bash .devcontainer/.devcontainer.postcreate.sh vscode; else sudo -E apt-get update && sudo -E apt-get install -y gettext-base jq && sudo -E bash .devcontainer/.devcontainer.postcreate.sh vscode; fi && echo \"Setup complete. View logs: cat /tmp/devcontainer-setup.log\" && exit 0'"
 }

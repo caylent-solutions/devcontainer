@@ -94,3 +94,47 @@ append_to_file_with_wsl_compat() {
     echo "$content" >> "$file_path"
   fi
 }
+
+parse_proxy_host_port() {
+  # Parse host and port from a proxy URL (e.g., http://host.docker.internal:3128)
+  # Sets PROXY_PARSED_HOST and PROXY_PARSED_PORT as global variables
+  local proxy_url="${1:?proxy URL must be provided}"
+
+  # Strip protocol prefix (http:// or https://)
+  local host_port="${proxy_url#*://}"
+  # Strip trailing slash/path
+  host_port="${host_port%%/*}"
+
+  if [[ "$host_port" != *:* ]]; then
+    exit_with_error "❌ HOST_PROXY_URL '${proxy_url}' does not contain a port (expected format: http://host:port)"
+  fi
+
+  PROXY_PARSED_HOST="${host_port%:*}"
+  PROXY_PARSED_PORT="${host_port##*:}"
+
+  if [ -z "$PROXY_PARSED_HOST" ] || [ -z "$PROXY_PARSED_PORT" ]; then
+    exit_with_error "❌ Failed to parse host/port from HOST_PROXY_URL '${proxy_url}'"
+  fi
+}
+
+validate_host_proxy() {
+  # Validate that the host proxy is reachable using active nc polling (no sleep).
+  # Args: proxy_host, proxy_port, timeout_seconds, readme_reference
+  local proxy_host="$1"
+  local proxy_port="$2"
+  local timeout="${3:?timeout must be provided}"
+  local readme_ref="$4"
+
+  log_info "Validating host proxy at ${proxy_host}:${proxy_port} (timeout: ${timeout}s)..."
+
+  local elapsed=0
+  while [ "$elapsed" -lt "$timeout" ]; do
+    if nc -z -w 1 "$proxy_host" "$proxy_port" 2>/dev/null; then
+      log_success "Host proxy reachable at ${proxy_host}:${proxy_port}"
+      return 0
+    fi
+    elapsed=$((elapsed + 1))
+  done
+
+  exit_with_error "❌ Host proxy not reachable at ${proxy_host}:${proxy_port} after ${timeout}s. See ${readme_ref} for troubleshooting."
+}
