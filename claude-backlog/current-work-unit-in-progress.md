@@ -3,13 +3,12 @@
 ## In Review
 
 - **Status:** in-review
-- **Work Unit:** S1.5.2 — Code Command Catalog Integration
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.5-catalog-integration/S1.5.2-code-command-catalog-integration/story.md`
+- **Work Unit:** S1.5.3 — project-setup.sh Lifecycle
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.5-catalog-integration/S1.5.3-project-setup-lifecycle/story.md`
 - **Feature:** F1.5 — Catalog Integration
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
-17. S1.5.3 — project-setup.sh Lifecycle → `claude-backlog/E1-devcontainer-cli-v2/F1.5-catalog-integration/S1.5.3-project-setup-lifecycle/story.md`
 18. S1.6.1 — Caylent Internal Catalog Repo → `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.1-caylent-internal-catalog-repo/story.md`
 19. S1.6.2 — Smarsh Client Catalog Repo → `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.2-smarsh-client-catalog-repo/story.md`
 20. S1.6.3 — Catalog Documentation → `claude-backlog/E1-devcontainer-cli-v2/F1.6-specialized-catalog-repos/S1.6.3-catalog-documentation/story.md`
@@ -35,3 +34,4 @@
 13. S1.3.3 — Code Command Validation (2026-02-12)
 14. S1.4.4 — Catalog CLI Commands (2026-02-12)
 15. S1.4.5 — URL Parsing & Error Handling (2026-02-12)
+16. S1.5.2 — Code Command Catalog Integration (2026-02-12)

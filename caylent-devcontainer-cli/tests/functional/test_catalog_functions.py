@@ -278,6 +278,70 @@ class TestCopyCollectionToProjectEndToEnd(TestCase):
             self.assertIn("name", data)
 
 
+class TestProjectSetupOverwriteOnReSetup(TestCase):
+    """Functional tests verifying project-setup.sh is overwritten on re-setup."""
+
+    def _create_full_collection(self, tmp_dir):
+        """Create a complete collection and common assets setup."""
+        collection = os.path.join(tmp_dir, "collection")
+        assets = os.path.join(tmp_dir, "assets")
+        target = os.path.join(tmp_dir, "project", ".devcontainer")
+        os.makedirs(collection)
+        os.makedirs(assets)
+
+        # Collection files
+        entry = {
+            "name": "test-app",
+            "description": "Test application",
+        }
+        with open(os.path.join(collection, CATALOG_ENTRY_FILENAME), "w") as f:
+            json.dump(entry, f)
+        with open(os.path.join(collection, "devcontainer.json"), "w") as f:
+            json.dump(
+                {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode"},
+                f,
+            )
+        with open(os.path.join(collection, CATALOG_VERSION_FILENAME), "w") as f:
+            f.write("2.0.0")
+
+        # Common assets
+        with open(os.path.join(assets, ".devcontainer.postcreate.sh"), "w") as f:
+            f.write("#!/bin/bash\necho postcreate\n")
+        with open(os.path.join(assets, "devcontainer-functions.sh"), "w") as f:
+            f.write("#!/bin/bash\necho functions\n")
+        with open(os.path.join(assets, "project-setup.sh"), "w") as f:
+            f.write("#!/bin/bash\necho original-project-setup\n")
+
+        return collection, assets, target
+
+    def test_project_setup_overwritten_on_second_copy(self):
+        """project-setup.sh must be overwritten when copy_collection_to_project runs again."""
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._create_full_collection(tmp)
+            catalog_url = "https://github.com/org/repo.git"
+
+            # First copy
+            copy_collection_to_project(collection, assets, target, catalog_url)
+
+            # Simulate developer customization
+            setup_path = os.path.join(target, "project-setup.sh")
+            with open(setup_path, "w") as f:
+                f.write("#!/bin/bash\necho customized-by-developer\n")
+
+            # Verify customization is in place
+            with open(setup_path) as f:
+                content = f.read()
+            self.assertIn("customized-by-developer", content)
+
+            # Second copy (re-setup) — must overwrite the customization
+            copy_collection_to_project(collection, assets, target, catalog_url)
+
+            with open(setup_path) as f:
+                content = f.read()
+            self.assertIn("original-project-setup", content)
+            self.assertNotIn("customized-by-developer", content)
+
+
 class TestValidateCatalogEndToEnd(TestCase):
     """Functional test for validate_catalog on a realistic catalog structure."""
 

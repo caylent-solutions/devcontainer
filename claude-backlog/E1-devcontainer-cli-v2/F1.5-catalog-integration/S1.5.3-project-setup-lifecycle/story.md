@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.5.3 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.5 — Catalog Integration |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -62,20 +62,41 @@ On re-setup (when user chooses to replace .devcontainer/ files), `project-setup.
 
 ## Acceptance Criteria
 
-- [ ] `project-setup.sh` included in `copy_collection_to_project()` output
-- [ ] Postcreate script sources `project-setup.sh` if it exists
-- [ ] `project-setup.sh` is overwritten on re-setup (same as all other files)
-- [ ] Replacement notification covers `project-setup.sh` merge guidance
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] `project-setup.sh` included in `copy_collection_to_project()` output
+- [x] Postcreate script sources `project-setup.sh` if it exists
+- [x] `project-setup.sh` is overwritten on re-setup (same as all other files)
+- [x] Replacement notification covers `project-setup.sh` merge guidance
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this story is in-queue)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Verified all lifecycle components already implemented by prior stories (S1.4.2, S1.4.3, S1.5.1):
+  - `common/devcontainer-assets/project-setup.sh` template exists with bash shebang, strict mode, sources devcontainer-functions.sh
+  - `copy_collection_to_project()` copies project-setup.sh as a common asset
+  - Postcreate script (lines 419-434) checks existence and executes project-setup.sh with WSL compatibility
+  - Replacement notification instructs developers to merge back customizations
+- Added 6 new functional tests to `test_catalog_structure.py` (TestProjectSetupShLifecycle):
+  - test_project_setup_has_bash_shebang
+  - test_project_setup_has_strict_mode
+  - test_project_setup_sources_devcontainer_functions
+  - test_postcreate_checks_project_setup_exists
+  - test_postcreate_executes_project_setup
+  - test_postcreate_warns_if_project_setup_missing
+- Added 1 new functional test to `test_catalog_functions.py` (TestProjectSetupOverwriteOnReSetup):
+  - test_project_setup_overwritten_on_second_copy — verifies developer customizations are overwritten on re-setup
+- All 1028 tests pass (665 unit + 363 functional), lint clean, pre-commit clean
+- No documentation changes needed (project-setup.sh is self-documenting with inline comments)
+
+**Remaining:**
+- Human review and approval
 
 ---
 

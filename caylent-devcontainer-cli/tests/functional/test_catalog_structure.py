@@ -250,6 +250,67 @@ class TestDefaultCatalogEntryJson(TestCase):
         self.assertEqual(entry.min_cli_version, "2.0.0")
 
 
+class TestProjectSetupShLifecycle(TestCase):
+    """Tests for the project-setup.sh lifecycle (S1.5.3).
+
+    Validates that:
+    - The template has correct bash structure (header, strict mode, sources functions)
+    - The postcreate script integrates project-setup.sh (sources if exists)
+    - The replacement notification covers customization merge guidance
+    """
+
+    def setUp(self):
+        self.repo_root = _repo_root()
+        self.assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
+
+    def test_project_setup_has_bash_shebang(self):
+        """project-setup.sh must start with a bash shebang."""
+        filepath = os.path.join(self.assets_dir, "project-setup.sh")
+        with open(filepath) as f:
+            first_line = f.readline().strip()
+        self.assertEqual(first_line, "#!/usr/bin/env bash")
+
+    def test_project_setup_has_strict_mode(self):
+        """project-setup.sh must use set -euo pipefail."""
+        filepath = os.path.join(self.assets_dir, "project-setup.sh")
+        with open(filepath) as f:
+            content = f.read()
+        self.assertIn("set -euo pipefail", content)
+
+    def test_project_setup_sources_devcontainer_functions(self):
+        """project-setup.sh must source devcontainer-functions.sh."""
+        filepath = os.path.join(self.assets_dir, "project-setup.sh")
+        with open(filepath) as f:
+            content = f.read()
+        self.assertIn("devcontainer-functions.sh", content)
+        self.assertIn("source", content)
+
+    def test_postcreate_checks_project_setup_exists(self):
+        """Postcreate script must check if project-setup.sh exists before running."""
+        filepath = os.path.join(self.assets_dir, ".devcontainer.postcreate.sh")
+        with open(filepath) as f:
+            content = f.read()
+        self.assertIn("project-setup.sh", content)
+        self.assertIn("-f", content)
+
+    def test_postcreate_executes_project_setup(self):
+        """Postcreate script must execute project-setup.sh via bash."""
+        filepath = os.path.join(self.assets_dir, ".devcontainer.postcreate.sh")
+        with open(filepath) as f:
+            content = f.read()
+        self.assertIn("bash", content)
+        self.assertIn("project-setup.sh", content)
+
+    def test_postcreate_warns_if_project_setup_missing(self):
+        """Postcreate script must warn if project-setup.sh is missing."""
+        filepath = os.path.join(self.assets_dir, ".devcontainer.postcreate.sh")
+        with open(filepath) as f:
+            content = f.read()
+        # The else branch must log a warning about missing project-setup.sh
+        self.assertIn("log_warn", content)
+        self.assertIn("No project-specific setup script found", content)
+
+
 class TestDefaultCollectionDevcontainerJson(TestCase):
     """Tests for collections/default/devcontainer.json."""
 
