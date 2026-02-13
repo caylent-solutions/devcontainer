@@ -375,34 +375,25 @@ log_success "Claude Code CLI installed successfully: ${CLAUDE_VERSION}"
 #################
 if [ "$CICD_VALUE" != "true" ]; then
   log_info "Setting up Git credentials..."
-  cat <<EOF > /home/${CONTAINER_USER}/.netrc
-machine ${GIT_PROVIDER_URL}
-login ${GIT_USER}
-password ${GIT_TOKEN}
-EOF
-  chmod 600 /home/${CONTAINER_USER}/.netrc
 
-  cat <<EOF >> /home/${CONTAINER_USER}/.gitconfig
-[user]
-    name = ${GIT_USER}
-    email = ${GIT_USER_EMAIL}
-[core]
-    editor = vim
-[push]
-    autoSetupRemote = true
-[safe]
-    directory = *
-[pager]
-    branch = false
-    config = false
-    diff = false
-    log = false
-    show = false
-    status = false
-    tag = false
-[credential]
-    helper = store
-EOF
+  if [ -z "${GIT_AUTH_METHOD:-}" ]; then
+    exit_with_error "❌ GIT_AUTH_METHOD is required. Please regenerate project files."
+  fi
+
+  # Shared git config (both methods)
+  configure_git_shared "${CONTAINER_USER}" "${GIT_USER}" "${GIT_USER_EMAIL}"
+
+  case "${GIT_AUTH_METHOD}" in
+    token)
+      configure_git_token "${CONTAINER_USER}" "${GIT_PROVIDER_URL}" "${GIT_USER}" "${GIT_TOKEN}"
+      ;;
+    ssh)
+      configure_git_ssh "${CONTAINER_USER}" "${GIT_PROVIDER_URL}" "${WORK_DIR}"
+      ;;
+    *)
+      exit_with_error "❌ Invalid GIT_AUTH_METHOD: '${GIT_AUTH_METHOD}'. Must be 'token' or 'ssh'."
+      ;;
+  esac
 else
   log_info "CICD mode enabled - skipping Git configuration"
 fi

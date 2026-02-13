@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.3.6 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.3 — Command Rewrites |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -99,25 +99,38 @@ Exit non-zero with error: "GIT_AUTH_METHOD is required. Please regenerate projec
 
 ## Acceptance Criteria
 
-- [ ] Token method: ~/.netrc created with correct format and 600 permissions
-- [ ] Token method: .gitconfig includes credential helper = store
-- [ ] SSH method: openssh-client installed
-- [ ] SSH method: SSH key copied, permissions set to 600
-- [ ] SSH method: ssh-keyscan runs for GIT_PROVIDER_URL
-- [ ] SSH method: ~/.ssh/config created with correct format
-- [ ] SSH method: SSH connectivity verified with ssh -T
-- [ ] SSH method: no ~/.netrc, no credential helper
-- [ ] Shared git config applied for both methods
-- [ ] GIT_AUTH_METHOD unset produces clear error
-- [ ] GIT_PROVIDER_URL used correctly for each method (hostname only)
-- [ ] 90%+ unit test coverage, functional tests pass
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] Token method: ~/.netrc created with correct format and 600 permissions
+- [x] Token method: .gitconfig includes credential helper = store
+- [x] SSH method: openssh-client installed
+- [x] SSH method: SSH key copied, permissions set to 600
+- [x] SSH method: ssh-keyscan runs for GIT_PROVIDER_URL
+- [x] SSH method: ~/.ssh/config created with correct format
+- [x] SSH method: SSH connectivity verified with ssh -T
+- [x] SSH method: no ~/.netrc, no credential helper
+- [x] Shared git config applied for both methods
+- [x] GIT_AUTH_METHOD unset produces clear error
+- [x] GIT_PROVIDER_URL used correctly for each method (hostname only)
+- [x] 90%+ unit test coverage, functional tests pass
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Added configure_git_shared(), configure_git_token(), configure_git_ssh() to devcontainer-functions.sh
+- configure_git_shared: writes [user], [core], [push], [safe], [pager] sections to .gitconfig
+- configure_git_token: creates .netrc (600 perms), appends [credential] helper=store to .gitconfig
+- configure_git_ssh: installs openssh-client, creates .ssh/ (700), copies ssh-private-key (600), ssh-keyscan, creates SSH config (600), verifies connectivity with ssh -T
+- Updated postcreate.sh: validates GIT_AUTH_METHOD is set, branches via case statement (token/ssh/invalid), calls shared config first then method-specific function
+- SSH connectivity check: captures output, checks for "permission denied" (ssh -T returns exit 1 on GitHub even on success)
+- Wrote 26 new functional tests: TestDevcontainerFunctions (git functions), TestPostcreateGitAuth (branching, validation)
+- Quality gate: 477 unit + 272 functional = 749 total, 0 failures, 96% coverage, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

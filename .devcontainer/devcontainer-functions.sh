@@ -138,3 +138,123 @@ validate_host_proxy() {
 
   exit_with_error "❌ Host proxy not reachable at ${proxy_host}:${proxy_port} after ${timeout}s. See ${readme_ref} for troubleshooting."
 }
+
+configure_git_shared() {
+  # Write shared .gitconfig entries used by both token and SSH auth methods.
+  # Args: container_user, git_user, git_user_email
+  local container_user="$1"
+  local git_user="${2:?GIT_USER must be set}"
+  local git_user_email="${3:?GIT_USER_EMAIL must be set}"
+  local gitconfig="/home/${container_user}/.gitconfig"
+
+  cat <<EOF >> "${gitconfig}"
+[user]
+    name = ${git_user}
+    email = ${git_user_email}
+[core]
+    editor = vim
+[push]
+    autoSetupRemote = true
+[safe]
+    directory = *
+[pager]
+    branch = false
+    config = false
+    diff = false
+    log = false
+    show = false
+    status = false
+    tag = false
+EOF
+}
+
+configure_git_token() {
+  # Configure git authentication using token method (.netrc + credential helper).
+  # Args: container_user, git_provider_url, git_user, git_token
+  local container_user="$1"
+  local git_provider_url="${2:?GIT_PROVIDER_URL must be set}"
+  local git_user="${3:?GIT_USER must be set}"
+  local git_token="${4:?GIT_TOKEN must be set}"
+  local netrc="/home/${container_user}/.netrc"
+  local gitconfig="/home/${container_user}/.gitconfig"
+
+  log_info "Configuring git token authentication..."
+
+  cat <<EOF > "${netrc}"
+machine ${git_provider_url}
+login ${git_user}
+password ${git_token}
+EOF
+  chmod 600 "${netrc}"
+
+  cat <<EOF >> "${gitconfig}"
+[credential]
+    helper = store
+EOF
+
+  log_success "Git token authentication configured"
+}
+
+configure_git_ssh() {
+  # Configure git authentication using SSH method.
+  # Args: container_user, git_provider_url, work_dir
+  local container_user="$1"
+  local git_provider_url="${2:?GIT_PROVIDER_URL must be set}"
+  local work_dir="${3:?WORK_DIR must be set}"
+  local ssh_dir="/home/${container_user}/.ssh"
+  local ssh_key_source="${work_dir}/.devcontainer/ssh-private-key"
+  local ssh_key_dest="${ssh_dir}/id_private_key"
+
+  log_info "Configuring git SSH authentication..."
+
+  # Ensure openssh-client is installed
+  if ! command -v ssh &> /dev/null; then
+    log_info "Installing openssh-client..."
+    sudo apt-get install -y -qq openssh-client
+  fi
+
+  # Create .ssh directory
+  mkdir -p "${ssh_dir}"
+  chmod 700 "${ssh_dir}"
+
+  # Copy SSH private key
+  if [ ! -f "${ssh_key_source}" ]; then
+    exit_with_error "❌ SSH private key not found at ${ssh_key_source}. Ensure ssh-private-key exists in .devcontainer/"
+  fi
+  cp "${ssh_key_source}" "${ssh_key_dest}"
+  chmod 600 "${ssh_key_dest}"
+
+  # Run ssh-keyscan to add host to known_hosts
+  log_info "Running ssh-keyscan for ${git_provider_url}..."
+  if ! ssh-keyscan "${git_provider_url}" >> "${ssh_dir}/known_hosts" 2>/dev/null; then
+    exit_with_error "❌ ssh-keyscan failed for ${git_provider_url}"
+  fi
+  chmod 600 "${ssh_dir}/known_hosts"
+
+  # Create SSH config
+  cat <<EOF > "${ssh_dir}/config"
+Host ${git_provider_url}
+    HostName ${git_provider_url}
+    User git
+    IdentityFile ${ssh_key_dest}
+    IdentitiesOnly yes
+EOF
+  chmod 600 "${ssh_dir}/config"
+
+  # Fix ownership
+  chown -R "${container_user}:${container_user}" "${ssh_dir}"
+
+  # Verify SSH connectivity
+  # Note: ssh -T returns exit code 1 on GitHub (no shell access) even on success,
+  # so we check output for permission denied rather than exit code.
+  log_info "Verifying SSH connectivity to ${git_provider_url}..."
+  local ssh_output
+  ssh_output=$(sudo -u "${container_user}" ssh -T "git@${git_provider_url}" -o BatchMode=yes -o StrictHostKeyChecking=no 2>&1 || true)
+
+  if echo "${ssh_output}" | grep -qi "permission denied\|publickey.*denied"; then
+    exit_with_error "❌ SSH connectivity test failed for git@${git_provider_url}: ${ssh_output}"
+  fi
+  log_info "SSH connectivity response: ${ssh_output}"
+
+  log_success "Git SSH authentication configured"
+}

@@ -3,13 +3,12 @@
 ## In Review
 
 - **Status:** in-review
-- **Work Unit:** S1.3.5 — devcontainer.json & Postcreate Changes
-- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.5-devcontainer-postcreate-changes/story.md`
+- **Work Unit:** S1.3.6 — Git Authentication
+- **Path:** `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.6-git-authentication/story.md`
 - **Feature:** F1.3 — Command Rewrites
 - **Epic:** E1 — Caylent DevContainer CLI v2.0.0
 
 ## Up Next (Priority Order)
-9. S1.3.6 — Git Authentication → `claude-backlog/E1-devcontainer-cli-v2/F1.3-command-rewrites/S1.3.6-git-authentication/story.md`
 10. S1.4.1 — Catalog Data Model → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.1-catalog-data-model/story.md`
 11. S1.4.2 — Refactor Repo to Catalog Structure → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.2-refactor-repo-to-catalog-structure/story.md`
 12. S1.4.3 — Catalog Shared Functions → `claude-backlog/E1-devcontainer-cli-v2/F1.4-catalog-architecture/S1.4.3-catalog-shared-functions/story.md`

@@ -1,8 +1,9 @@
 """Functional tests validating devcontainer configuration file patterns.
 
 These tests read the actual .devcontainer/ files in the repository and validate
-that they conform to the S1.3.5 requirements: no containerEnv, shell.env sourced
-first, sudo -E used, proxy validation with active polling, no sleep commands.
+that they conform to the S1.3.5 and S1.3.6 requirements: no containerEnv, shell.env
+sourced first, sudo -E used, proxy validation with active polling, no sleep commands,
+git authentication with token/SSH branching.
 """
 
 import json
@@ -198,3 +199,141 @@ class TestDevcontainerFunctions(TestCase):
         """devcontainer-functions.sh must define exit_with_error function."""
         self.assertIn("exit_with_error()", self.content)
         self.assertIn("exit 1", self.content)
+
+    def test_configure_git_shared_function_exists(self):
+        """devcontainer-functions.sh must define configure_git_shared function."""
+        self.assertIn("configure_git_shared()", self.content)
+
+    def test_configure_git_token_function_exists(self):
+        """devcontainer-functions.sh must define configure_git_token function."""
+        self.assertIn("configure_git_token()", self.content)
+
+    def test_configure_git_ssh_function_exists(self):
+        """devcontainer-functions.sh must define configure_git_ssh function."""
+        self.assertIn("configure_git_ssh()", self.content)
+
+    def test_git_shared_config_has_user_section(self):
+        """Shared git config must include [user] section with name and email."""
+        self.assertIn("[user]", self.content)
+        self.assertIn("name = ${git_user}", self.content)
+        self.assertIn("email = ${git_user_email}", self.content)
+
+    def test_git_shared_config_has_pager_section(self):
+        """Shared git config must disable pager for common commands."""
+        self.assertIn("[pager]", self.content)
+        self.assertIn("branch = false", self.content)
+        self.assertIn("diff = false", self.content)
+        self.assertIn("log = false", self.content)
+
+    def test_git_shared_config_has_safe_directory(self):
+        """Shared git config must set safe.directory = *."""
+        self.assertIn("[safe]", self.content)
+        self.assertIn("directory = *", self.content)
+
+    def test_git_shared_config_has_push_auto_setup(self):
+        """Shared git config must set push.autoSetupRemote = true."""
+        self.assertIn("[push]", self.content)
+        self.assertIn("autoSetupRemote = true", self.content)
+
+    def test_git_token_creates_netrc(self):
+        """Token method must create .netrc with machine, login, password."""
+        self.assertIn("machine ${git_provider_url}", self.content)
+        self.assertIn("login ${git_user}", self.content)
+        self.assertIn("password ${git_token}", self.content)
+
+    def test_git_token_sets_netrc_permissions(self):
+        """Token method must set .netrc permissions to 600."""
+        self.assertIn('chmod 600 "${netrc}"', self.content)
+
+    def test_git_token_adds_credential_helper(self):
+        """Token method must add credential helper = store to .gitconfig."""
+        self.assertIn("[credential]", self.content)
+        self.assertIn("helper = store", self.content)
+
+    def test_git_ssh_installs_openssh(self):
+        """SSH method must ensure openssh-client is installed."""
+        self.assertIn("openssh-client", self.content)
+
+    def test_git_ssh_creates_ssh_dir(self):
+        """SSH method must create .ssh directory with 700 permissions."""
+        self.assertIn('mkdir -p "${ssh_dir}"', self.content)
+        self.assertIn('chmod 700 "${ssh_dir}"', self.content)
+
+    def test_git_ssh_copies_private_key(self):
+        """SSH method must copy ssh-private-key with 600 permissions."""
+        self.assertIn("ssh-private-key", self.content)
+        self.assertIn('chmod 600 "${ssh_key_dest}"', self.content)
+
+    def test_git_ssh_runs_keyscan(self):
+        """SSH method must run ssh-keyscan for GIT_PROVIDER_URL."""
+        self.assertIn("ssh-keyscan", self.content)
+        self.assertIn("known_hosts", self.content)
+
+    def test_git_ssh_creates_config(self):
+        """SSH method must create ~/.ssh/config with correct entries."""
+        self.assertIn("Host ${git_provider_url}", self.content)
+        self.assertIn("HostName ${git_provider_url}", self.content)
+        self.assertIn("User git", self.content)
+        self.assertIn("IdentityFile ${ssh_key_dest}", self.content)
+        self.assertIn("IdentitiesOnly yes", self.content)
+
+    def test_git_ssh_sets_config_permissions(self):
+        """SSH method must set ~/.ssh/config permissions to 600."""
+        self.assertIn('chmod 600 "${ssh_dir}/config"', self.content)
+
+    def test_git_ssh_verifies_connectivity(self):
+        """SSH method must verify SSH connectivity with ssh -T."""
+        self.assertIn("ssh -T", self.content)
+
+    def test_git_ssh_checks_permission_denied(self):
+        """SSH method must detect permission denied errors."""
+        self.assertIn("permission denied", self.content)
+
+
+class TestPostcreateGitAuth(TestCase):
+    """Validate git authentication patterns in postcreate.sh."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.content = _read_file(".devcontainer.postcreate.sh")
+
+    def test_git_auth_method_required(self):
+        """Postcreate must exit with error when GIT_AUTH_METHOD is unset."""
+        self.assertIn("GIT_AUTH_METHOD is required", self.content)
+
+    def test_git_auth_method_branching(self):
+        """Postcreate must branch on GIT_AUTH_METHOD value."""
+        self.assertIn('case "${GIT_AUTH_METHOD}"', self.content)
+        self.assertIn("token)", self.content)
+        self.assertIn("ssh)", self.content)
+
+    def test_invalid_git_auth_method_rejected(self):
+        """Postcreate must reject invalid GIT_AUTH_METHOD values."""
+        self.assertIn("Invalid GIT_AUTH_METHOD", self.content)
+
+    def test_shared_git_config_called(self):
+        """Postcreate must call configure_git_shared for both methods."""
+        self.assertIn("configure_git_shared", self.content)
+
+    def test_token_method_calls_configure_git_token(self):
+        """Postcreate must call configure_git_token for token method."""
+        self.assertIn("configure_git_token", self.content)
+
+    def test_ssh_method_calls_configure_git_ssh(self):
+        """Postcreate must call configure_git_ssh for SSH method."""
+        self.assertIn("configure_git_ssh", self.content)
+
+    def test_cicd_skips_git_configuration(self):
+        """CICD mode must skip git configuration."""
+        self.assertIn("CICD mode enabled - skipping Git configuration", self.content)
+
+    def test_no_hardcoded_netrc_outside_function(self):
+        """Postcreate must not create .netrc directly — delegated to function."""
+        lines = self.content.splitlines()
+        for i, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            # .netrc should only appear in the function call, not inline cat heredoc
+            if "cat <<EOF > " in stripped and ".netrc" in stripped:
+                self.fail(f"Line {i} creates .netrc directly instead of using function: {stripped}")
