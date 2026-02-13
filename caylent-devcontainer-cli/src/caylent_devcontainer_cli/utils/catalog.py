@@ -13,6 +13,9 @@ Layout:
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -25,6 +28,8 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_REQUIRED_COLLECTION_FILES,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_TAG_PATTERN,
+    EXAMPLE_AWS_FILE,
+    EXAMPLE_ENV_FILE,
 )
 
 
@@ -62,6 +67,192 @@ class CatalogEntry:
         if self.min_cli_version is not None:
             result["min_cli_version"] = self.min_cli_version
         return result
+
+
+@dataclass
+class CollectionInfo:
+    """A discovered collection with its path and parsed metadata."""
+
+    path: str
+    entry: CatalogEntry
+
+
+def parse_catalog_url(url_with_ref: str) -> Tuple[str, Optional[str]]:
+    """Parse a catalog URL with an optional @ref suffix.
+
+    Format: ``<git-clone-url>[@<branch-or-tag>]``
+
+    The ``.git`` suffix is the anchor for splitting.  When there is no
+    ``.git``, the last ``@`` is used as the delimiter unless it is the
+    SSH user prefix (``git@host:path``).
+
+    Returns:
+        (clone_url, ref) where *ref* is ``None`` when the default branch
+        should be used.
+
+    Raises:
+        ValueError: If *url_with_ref* is empty.
+    """
+    if not url_with_ref:
+        raise ValueError("Catalog URL must not be empty")
+
+    git_idx = url_with_ref.rfind(".git")
+    if git_idx != -1:
+        after_git = url_with_ref[git_idx + 4 :]
+        if after_git.startswith("@") and len(after_git) > 1:
+            return (url_with_ref[: git_idx + 4], after_git[1:])
+        # .git with nothing useful after it
+        return (url_with_ref, None)
+
+    # No .git suffix — split on the last @ if it is not the SSH prefix.
+    last_at = url_with_ref.rfind("@")
+    if last_at == -1:
+        return (url_with_ref, None)
+
+    # Determine whether this single @ is part of the SSH user prefix.
+    at_count = url_with_ref.count("@")
+    if at_count > 1:
+        # Multiple @ — the last one delimits the ref.
+        ref = url_with_ref[last_at + 1 :]
+        return (url_with_ref[:last_at], ref if ref else None)
+
+    # Single @.  SSH pattern: user@host:path  (colon after the @).
+    after_at = url_with_ref[last_at + 1 :]
+    if ":" in after_at:
+        return (url_with_ref, None)
+
+    ref = url_with_ref[last_at + 1 :]
+    return (url_with_ref[:last_at], ref if ref else None)
+
+
+def clone_catalog_repo(url_with_ref: str) -> str:
+    """Clone a catalog repository to a temporary directory.
+
+    Performs a shallow clone (``--depth 1``).  When a ref is specified in
+    the URL the clone targets that branch/tag.
+
+    Returns:
+        The path to the cloned repository (a temporary directory).  The
+        caller is responsible for cleaning it up.
+
+    Raises:
+        SystemExit: On clone failure with actionable error messages.
+    """
+    clone_url, ref = parse_catalog_url(url_with_ref)
+
+    temp_dir = tempfile.mkdtemp(prefix="catalog-")
+
+    cmd: List[str] = ["git", "clone", "--depth", "1"]
+    if ref:
+        cmd.extend(["--branch", ref])
+    cmd.extend([clone_url, temp_dir])
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        # Clean up on failure
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+        error_lines = [
+            f"Failed to clone the devcontainer catalog from '{clone_url}'",
+        ]
+        if ref:
+            error_lines[0] += f" (ref: {ref})"
+        error_lines.extend(
+            [
+                "For HTTPS repos: verify a valid token or credential helper is configured.",
+                "For SSH repos: verify your SSH key is loaded and the host is in known_hosts.",
+                f"You can test access by running: git ls-remote {clone_url}",
+            ]
+        )
+        stderr_snippet = result.stderr.strip()
+        if stderr_snippet:
+            error_lines.append(f"Git error: {stderr_snippet}")
+
+        raise SystemExit("\n".join(error_lines))
+
+    return temp_dir
+
+
+def discover_collection_entries(catalog_root: str) -> List[CollectionInfo]:
+    """Discover collections and return them with parsed metadata.
+
+    Scans for ``catalog-entry.json`` files, parses each one into a
+    :class:`CatalogEntry`, and returns the list sorted with ``default``
+    first followed by A-Z order of collection names.
+    """
+    raw_paths = discover_collections(catalog_root)
+    entries: List[CollectionInfo] = []
+
+    for path in raw_paths:
+        entry_path = os.path.join(path, CATALOG_ENTRY_FILENAME)
+        if not os.path.isfile(entry_path):
+            continue
+        try:
+            with open(entry_path) as f:
+                data = json.load(f)
+            entry = CatalogEntry.from_dict(data)
+            entries.append(CollectionInfo(path=path, entry=entry))
+        except (json.JSONDecodeError, OSError):
+            continue
+
+    # Sort: "default" first, then alphabetically by name.
+    def _sort_key(info: CollectionInfo) -> Tuple[int, str]:
+        return (0 if info.entry.name == "default" else 1, info.entry.name)
+
+    entries.sort(key=_sort_key)
+    return entries
+
+
+def copy_collection_to_project(
+    collection_path: str,
+    common_assets_path: str,
+    target_path: str,
+    catalog_url: str,
+) -> None:
+    """Copy collection files and common assets into a project ``.devcontainer/``.
+
+    1. Copies all files/dirs from *collection_path* to *target_path*.
+    2. Copies all files/dirs from *common_assets_path* to *target_path*
+       (common assets take precedence on name collisions).
+    3. Augments the copied ``catalog-entry.json`` with *catalog_url*.
+    4. Removes example files from *target_path*.
+    """
+    os.makedirs(target_path, exist_ok=True)
+
+    # 1. Copy collection files
+    for item in os.listdir(collection_path):
+        src = os.path.join(collection_path, item)
+        dst = os.path.join(target_path, item)
+        if os.path.isdir(src):
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        else:
+            shutil.copy2(src, dst)
+
+    # 2. Copy common assets (overwrites on collision)
+    for item in os.listdir(common_assets_path):
+        src = os.path.join(common_assets_path, item)
+        dst = os.path.join(target_path, item)
+        if os.path.isdir(src):
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        else:
+            shutil.copy2(src, dst)
+
+    # 3. Augment catalog-entry.json with catalog_url
+    entry_path = os.path.join(target_path, CATALOG_ENTRY_FILENAME)
+    if os.path.isfile(entry_path):
+        with open(entry_path) as f:
+            entry_data = json.load(f)
+        entry_data["catalog_url"] = catalog_url
+        with open(entry_path, "w") as f:
+            json.dump(entry_data, f, indent=2)
+            f.write("\n")
+
+    # 4. Remove example files
+    for example_file in (EXAMPLE_ENV_FILE, EXAMPLE_AWS_FILE):
+        example_path = os.path.join(target_path, example_file)
+        if os.path.exists(example_path):
+            os.remove(example_path)
 
 
 def validate_catalog_entry(data: Dict[str, Any]) -> List[str]:

@@ -6,7 +6,7 @@
 |-------|-------|
 | **Type** | Story |
 | **Number** | S1.4.3 |
-| **Status** | in-queue |
+| **Status** | in-review |
 | **Parent** | F1.4 — Catalog Architecture |
 | **Epic** | E1 — Caylent DevContainer CLI v2.0.0 |
 
@@ -64,27 +64,41 @@ If cloning fails, exit non-zero with:
 
 ## Acceptance Criteria
 
-- [ ] parse_catalog_url() correctly parses all URL formats
-- [ ] clone_catalog_repo() performs shallow clone to temp dir
-- [ ] clone_catalog_repo() handles auth failures with actionable messages
-- [ ] validate_catalog_structure() checks common assets exist
-- [ ] discover_collections() recursively finds catalog-entry.json files
-- [ ] discover_collections() sorts with default first, then A-Z
-- [ ] validate_collection() checks metadata, conflicts, postCreateCommand
-- [ ] validate_catalog() runs full validation including uniqueness
-- [ ] copy_collection_to_project() merges collection + common assets
-- [ ] copy_collection_to_project() augments catalog-entry.json with catalog_url
-- [ ] Temp directories cleaned up properly
-- [ ] 90% or greater unit test coverage for all new/modified code
-- [ ] Functional tests verify end-to-end behavior
-- [ ] All existing tests still pass after refactoring
-- [ ] Linting and formatting pass (`make lint && make format`)
-- [ ] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
-- [ ] Docs updated if project documentation is affected by these changes
+- [x] parse_catalog_url() correctly parses all URL formats
+- [x] clone_catalog_repo() performs shallow clone to temp dir
+- [x] clone_catalog_repo() handles auth failures with actionable messages
+- [x] validate_catalog_structure() checks common assets exist
+- [x] discover_collections() recursively finds catalog-entry.json files
+- [x] discover_collections() sorts with default first, then A-Z
+- [x] validate_collection() checks metadata, conflicts, postCreateCommand
+- [x] validate_catalog() runs full validation including uniqueness
+- [x] copy_collection_to_project() merges collection + common assets
+- [x] copy_collection_to_project() augments catalog-entry.json with catalog_url
+- [x] Temp directories cleaned up properly
+- [x] 90% or greater unit test coverage for all new/modified code
+- [x] Functional tests verify end-to-end behavior
+- [x] All existing tests still pass after refactoring
+- [x] Linting and formatting pass (`make lint && make format`)
+- [x] Pre-commit check passes (`cd caylent-devcontainer-cli && make test && make lint && cd .. && make pre-commit-check`)
+- [x] Docs updated if project documentation is affected by these changes
 
 ## Log
 
-_(No work has been done yet — this is the first session)_
+### Session 1 — 2026-02-12
+
+**Completed:**
+- Implemented `parse_catalog_url()` with full URL format parsing (.git anchor, SSH prefix detection, @ref splitting)
+- Implemented `clone_catalog_repo()` with shallow clone, ref support, temp dir management, actionable auth failure messages
+- Implemented `discover_collection_entries()` returning sorted `CollectionInfo` list (default first, then A-Z)
+- Implemented `copy_collection_to_project()` with collection+assets merge, catalog_url augmentation, example file removal
+- Added `CollectionInfo` dataclass
+- Added `extend-ignore = E203` to .flake8 (standard black/flake8 compatibility fix)
+- Wrote 39 new unit tests across 5 test classes (TestCollectionInfo, TestParseCatalogUrl, TestCloneCatalogRepo, TestDiscoverCollectionEntries, TestCopyCollectionToProject)
+- Wrote 15 functional tests across 5 test classes (TestUrlParsingEndToEnd, TestCloneCatalogRepoEndToEnd, TestDiscoverCollectionEntriesEndToEnd, TestCopyCollectionToProjectEndToEnd, TestValidateCatalogEndToEnd)
+- Quality gate: 576 unit + 336 functional = 912 total, 0 failures, 97% coverage on catalog.py, 96% overall, lint clean, pre-commit clean
+
+**Remaining:**
+- Human review and approval
 
 ---
 

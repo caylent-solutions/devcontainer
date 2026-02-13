@@ -1,5 +1,6 @@
 [flake8]
 max-line-length = 120
+extend-ignore = E203
 exclude = build,dist,*.egg-info,.git,.tox,__pycache__,*.pyc
 per-file-ignores =
     tests/*: E402

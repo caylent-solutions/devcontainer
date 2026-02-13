@@ -2,12 +2,19 @@
 
 import json
 import os
+import tempfile
 from unittest import TestCase
+from unittest.mock import patch
 
 from caylent_devcontainer_cli.utils.catalog import (
     CatalogEntry,
+    CollectionInfo,
+    clone_catalog_repo,
+    copy_collection_to_project,
     detect_file_conflicts,
+    discover_collection_entries,
     discover_collections,
+    parse_catalog_url,
     validate_catalog,
     validate_catalog_entry,
     validate_collection,
@@ -22,6 +29,8 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_TAG_PATTERN,
     CATALOG_VERSION_FILENAME,
+    EXAMPLE_AWS_FILE,
+    EXAMPLE_ENV_FILE,
 )
 
 
@@ -622,3 +631,402 @@ class TestConstants(TestCase):
         self.assertIn(CATALOG_ENTRY_FILENAME, CATALOG_REQUIRED_COLLECTION_FILES)
         self.assertIn("devcontainer.json", CATALOG_REQUIRED_COLLECTION_FILES)
         self.assertIn(CATALOG_VERSION_FILENAME, CATALOG_REQUIRED_COLLECTION_FILES)
+
+
+class TestCollectionInfo(TestCase):
+    """Test CollectionInfo dataclass."""
+
+    def test_creation(self):
+        entry = CatalogEntry(name="my-app", description="App")
+        info = CollectionInfo(path="/some/path", entry=entry)
+        self.assertEqual(info.path, "/some/path")
+        self.assertEqual(info.entry.name, "my-app")
+        self.assertEqual(info.entry.description, "App")
+
+    def test_different_entries(self):
+        entry1 = CatalogEntry(name="app-a", description="A", tags=["java"])
+        entry2 = CatalogEntry(name="app-b", description="B", maintainer="team")
+        info1 = CollectionInfo(path="/path/a", entry=entry1)
+        info2 = CollectionInfo(path="/path/b", entry=entry2)
+        self.assertNotEqual(info1.path, info2.path)
+        self.assertNotEqual(info1.entry.name, info2.entry.name)
+
+
+class TestParseCatalogUrl(TestCase):
+    """Test parse_catalog_url() for all URL format variations."""
+
+    def test_https_with_git_suffix_no_ref(self):
+        url, ref = parse_catalog_url("https://github.com/org/repo.git")
+        self.assertEqual(url, "https://github.com/org/repo.git")
+        self.assertIsNone(ref)
+
+    def test_https_with_git_suffix_and_ref(self):
+        url, ref = parse_catalog_url("https://github.com/org/repo.git@v2.0")
+        self.assertEqual(url, "https://github.com/org/repo.git")
+        self.assertEqual(ref, "v2.0")
+
+    def test_https_with_git_suffix_and_branch_ref(self):
+        url, ref = parse_catalog_url("https://github.com/org/repo.git@feature/branch")
+        self.assertEqual(url, "https://github.com/org/repo.git")
+        self.assertEqual(ref, "feature/branch")
+
+    def test_https_without_git_suffix_no_ref(self):
+        url, ref = parse_catalog_url("https://github.com/org/repo")
+        self.assertEqual(url, "https://github.com/org/repo")
+        self.assertIsNone(ref)
+
+    def test_https_without_git_suffix_with_ref(self):
+        url, ref = parse_catalog_url("https://github.com/org/repo@v2.0")
+        self.assertEqual(url, "https://github.com/org/repo")
+        self.assertEqual(ref, "v2.0")
+
+    def test_ssh_url_no_ref(self):
+        url, ref = parse_catalog_url("git@github.com:org/repo.git")
+        self.assertEqual(url, "git@github.com:org/repo.git")
+        self.assertIsNone(ref)
+
+    def test_ssh_url_with_ref(self):
+        url, ref = parse_catalog_url("git@github.com:org/repo.git@main")
+        self.assertEqual(url, "git@github.com:org/repo.git")
+        self.assertEqual(ref, "main")
+
+    def test_ssh_url_no_git_suffix_no_ref(self):
+        # Single @ with colon after -> SSH prefix, not a ref delimiter
+        url, ref = parse_catalog_url("git@github.com:org/repo")
+        self.assertEqual(url, "git@github.com:org/repo")
+        self.assertIsNone(ref)
+
+    def test_ssh_url_no_git_suffix_with_ref(self):
+        # Two @s: first is SSH prefix, second is ref delimiter
+        url, ref = parse_catalog_url("git@github.com:org/repo@v1.0")
+        self.assertEqual(url, "git@github.com:org/repo")
+        self.assertEqual(ref, "v1.0")
+
+    def test_empty_url_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            parse_catalog_url("")
+        self.assertIn("must not be empty", str(ctx.exception))
+
+    def test_git_suffix_with_trailing_at_only(self):
+        # .git@ with nothing after the @
+        url, ref = parse_catalog_url("https://github.com/org/repo.git@")
+        self.assertEqual(url, "https://github.com/org/repo.git@")
+        self.assertIsNone(ref)
+
+    def test_no_at_no_git_suffix(self):
+        url, ref = parse_catalog_url("https://github.com/org/repo")
+        self.assertEqual(url, "https://github.com/org/repo")
+        self.assertIsNone(ref)
+
+    def test_multiple_at_last_one_is_ref(self):
+        url, ref = parse_catalog_url("git@github.com:org/repo@develop")
+        self.assertEqual(url, "git@github.com:org/repo")
+        self.assertEqual(ref, "develop")
+
+    def test_git_suffix_in_middle_of_path(self):
+        # .git appears but with a path after — still anchors on .git
+        url, ref = parse_catalog_url("https://github.com/org/repo.git@release/1.0")
+        self.assertEqual(url, "https://github.com/org/repo.git")
+        self.assertEqual(ref, "release/1.0")
+
+    def test_single_at_no_colon_after(self):
+        # Single @ without colon after it -> ref delimiter
+        url, ref = parse_catalog_url("https://example.com/repo@tag")
+        self.assertEqual(url, "https://example.com/repo")
+        self.assertEqual(ref, "tag")
+
+    def test_multiple_at_empty_ref(self):
+        # Multiple @s but last one has empty string after
+        url, ref = parse_catalog_url("git@github.com:org/repo@")
+        self.assertEqual(url, "git@github.com:org/repo")
+        self.assertIsNone(ref)
+
+
+class TestCloneCatalogRepo(TestCase):
+    """Test clone_catalog_repo() with mocked subprocess."""
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    @patch("caylent_devcontainer_cli.utils.catalog.tempfile.mkdtemp")
+    def test_clone_success_no_ref(self, mock_mkdtemp, mock_run):
+        mock_mkdtemp.return_value = "/tmp/catalog-abc"
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stderr": ""})()
+
+        result = clone_catalog_repo("https://github.com/org/repo.git")
+
+        self.assertEqual(result, "/tmp/catalog-abc")
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        self.assertEqual(cmd, ["git", "clone", "--depth", "1", "https://github.com/org/repo.git", "/tmp/catalog-abc"])
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    @patch("caylent_devcontainer_cli.utils.catalog.tempfile.mkdtemp")
+    def test_clone_success_with_ref(self, mock_mkdtemp, mock_run):
+        mock_mkdtemp.return_value = "/tmp/catalog-xyz"
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stderr": ""})()
+
+        result = clone_catalog_repo("https://github.com/org/repo.git@v2.0")
+
+        self.assertEqual(result, "/tmp/catalog-xyz")
+        cmd = mock_run.call_args[0][0]
+        self.assertEqual(
+            cmd,
+            ["git", "clone", "--depth", "1", "--branch", "v2.0", "https://github.com/org/repo.git", "/tmp/catalog-xyz"],
+        )
+
+    @patch("caylent_devcontainer_cli.utils.catalog.shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    @patch("caylent_devcontainer_cli.utils.catalog.tempfile.mkdtemp")
+    def test_clone_failure_exits(self, mock_mkdtemp, mock_run, mock_rmtree):
+        mock_mkdtemp.return_value = "/tmp/catalog-fail"
+        mock_run.return_value = type("Result", (), {"returncode": 128, "stderr": "fatal: repo not found"})()
+
+        with self.assertRaises(SystemExit) as ctx:
+            clone_catalog_repo("https://github.com/org/repo.git")
+
+        error_msg = str(ctx.exception)
+        self.assertIn("Failed to clone", error_msg)
+        self.assertIn("https://github.com/org/repo.git", error_msg)
+        self.assertIn("HTTPS repos", error_msg)
+        self.assertIn("SSH repos", error_msg)
+        self.assertIn("git ls-remote", error_msg)
+        self.assertIn("fatal: repo not found", error_msg)
+        mock_rmtree.assert_called_once_with("/tmp/catalog-fail", ignore_errors=True)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    @patch("caylent_devcontainer_cli.utils.catalog.tempfile.mkdtemp")
+    def test_clone_failure_with_ref_includes_ref_in_message(self, mock_mkdtemp, mock_run, mock_rmtree):
+        mock_mkdtemp.return_value = "/tmp/catalog-fail2"
+        mock_run.return_value = type("Result", (), {"returncode": 128, "stderr": "branch not found"})()
+
+        with self.assertRaises(SystemExit) as ctx:
+            clone_catalog_repo("https://github.com/org/repo.git@v999")
+
+        error_msg = str(ctx.exception)
+        self.assertIn("ref: v999", error_msg)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    @patch("caylent_devcontainer_cli.utils.catalog.tempfile.mkdtemp")
+    def test_clone_failure_no_stderr(self, mock_mkdtemp, mock_run, mock_rmtree):
+        mock_mkdtemp.return_value = "/tmp/catalog-fail3"
+        mock_run.return_value = type("Result", (), {"returncode": 1, "stderr": ""})()
+
+        with self.assertRaises(SystemExit) as ctx:
+            clone_catalog_repo("https://github.com/org/repo.git")
+
+        error_msg = str(ctx.exception)
+        self.assertIn("Failed to clone", error_msg)
+        self.assertNotIn("Git error:", error_msg)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    @patch("caylent_devcontainer_cli.utils.catalog.tempfile.mkdtemp")
+    def test_clone_uses_shallow_depth(self, mock_mkdtemp, mock_run):
+        mock_mkdtemp.return_value = "/tmp/catalog-shallow"
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stderr": ""})()
+
+        clone_catalog_repo("https://github.com/org/repo.git")
+
+        cmd = mock_run.call_args[0][0]
+        self.assertIn("--depth", cmd)
+        depth_idx = cmd.index("--depth")
+        self.assertEqual(cmd[depth_idx + 1], "1")
+
+
+class TestDiscoverCollectionEntries(TestCase):
+    """Test discover_collection_entries() metadata parsing and sorting."""
+
+    def test_default_first_then_alpha(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            # Create collections in non-alpha order
+            for name in ["zebra", "default", "alpha"]:
+                col = os.path.join(tmp, "collections", name)
+                os.makedirs(col)
+                entry = {"name": name, "description": f"Desc for {name}"}
+                with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
+                    json.dump(entry, f)
+            entries = discover_collection_entries(tmp)
+            self.assertEqual(len(entries), 3)
+            self.assertEqual(entries[0].entry.name, "default")
+            self.assertEqual(entries[1].entry.name, "alpha")
+            self.assertEqual(entries[2].entry.name, "zebra")
+
+    def test_parses_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            col = os.path.join(tmp, "collections", "my-app")
+            os.makedirs(col)
+            entry = {
+                "name": "my-app",
+                "description": "My application",
+                "tags": ["python", "aws"],
+                "maintainer": "team-a",
+                "min_cli_version": "2.0.0",
+            }
+            with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
+                json.dump(entry, f)
+            entries = discover_collection_entries(tmp)
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0].entry.name, "my-app")
+            self.assertEqual(entries[0].entry.tags, ["python", "aws"])
+            self.assertEqual(entries[0].entry.maintainer, "team-a")
+            self.assertEqual(entries[0].entry.min_cli_version, "2.0.0")
+            self.assertEqual(entries[0].path, col)
+
+    def test_skips_invalid_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            col = os.path.join(tmp, "collections", "broken")
+            os.makedirs(col)
+            with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
+                f.write("not valid json")
+            entries = discover_collection_entries(tmp)
+            self.assertEqual(len(entries), 0)
+
+    def test_empty_collections_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "collections"))
+            entries = discover_collection_entries(tmp)
+            self.assertEqual(len(entries), 0)
+
+    def test_no_collections_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            entries = discover_collection_entries(tmp)
+            self.assertEqual(len(entries), 0)
+
+    def test_without_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for name in ["beta", "alpha"]:
+                col = os.path.join(tmp, "collections", name)
+                os.makedirs(col)
+                entry = {"name": name, "description": f"Desc {name}"}
+                with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
+                    json.dump(entry, f)
+            entries = discover_collection_entries(tmp)
+            self.assertEqual(len(entries), 2)
+            self.assertEqual(entries[0].entry.name, "alpha")
+            self.assertEqual(entries[1].entry.name, "beta")
+
+
+class TestCopyCollectionToProject(TestCase):
+    """Test copy_collection_to_project() file merging and augmentation."""
+
+    def _setup_collection_and_assets(self, tmp_dir):
+        """Create a collection dir and common assets dir for testing."""
+        collection = os.path.join(tmp_dir, "collection")
+        assets = os.path.join(tmp_dir, "assets")
+        target = os.path.join(tmp_dir, "target")
+        os.makedirs(collection)
+        os.makedirs(assets)
+
+        # Collection files
+        entry = {"name": "test-app", "description": "Test app"}
+        with open(os.path.join(collection, CATALOG_ENTRY_FILENAME), "w") as f:
+            json.dump(entry, f)
+        with open(os.path.join(collection, "devcontainer.json"), "w") as f:
+            json.dump({"name": "test"}, f)
+        with open(os.path.join(collection, "VERSION"), "w") as f:
+            f.write("1.0.0")
+
+        # Common assets
+        with open(os.path.join(assets, ".devcontainer.postcreate.sh"), "w") as f:
+            f.write("#!/bin/bash\necho postcreate")
+        with open(os.path.join(assets, "devcontainer-functions.sh"), "w") as f:
+            f.write("#!/bin/bash\necho functions")
+        with open(os.path.join(assets, "project-setup.sh"), "w") as f:
+            f.write("#!/bin/bash\necho setup")
+
+        return collection, assets, target
+
+    def test_copies_collection_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+
+            self.assertTrue(os.path.isfile(os.path.join(target, "devcontainer.json")))
+            self.assertTrue(os.path.isfile(os.path.join(target, "VERSION")))
+
+    def test_copies_common_assets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+
+            self.assertTrue(os.path.isfile(os.path.join(target, ".devcontainer.postcreate.sh")))
+            self.assertTrue(os.path.isfile(os.path.join(target, "devcontainer-functions.sh")))
+            self.assertTrue(os.path.isfile(os.path.join(target, "project-setup.sh")))
+
+    def test_common_assets_override_collection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            # Add a file to collection that also exists in assets
+            with open(os.path.join(collection, "project-setup.sh"), "w") as f:
+                f.write("collection version")
+            with open(os.path.join(assets, "project-setup.sh"), "w") as f:
+                f.write("assets version")
+
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+
+            with open(os.path.join(target, "project-setup.sh")) as f:
+                content = f.read()
+            self.assertEqual(content, "assets version")
+
+    def test_augments_catalog_entry_with_url(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            catalog_url = "https://github.com/org/repo.git@v2.0"
+            copy_collection_to_project(collection, assets, target, catalog_url)
+
+            with open(os.path.join(target, CATALOG_ENTRY_FILENAME)) as f:
+                data = json.load(f)
+            self.assertEqual(data["catalog_url"], catalog_url)
+            self.assertEqual(data["name"], "test-app")
+
+    def test_removes_example_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            # Add example files to collection
+            with open(os.path.join(collection, EXAMPLE_ENV_FILE), "w") as f:
+                json.dump({"example": True}, f)
+            with open(os.path.join(collection, EXAMPLE_AWS_FILE), "w") as f:
+                json.dump({"example": True}, f)
+
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+
+            self.assertFalse(os.path.exists(os.path.join(target, EXAMPLE_ENV_FILE)))
+            self.assertFalse(os.path.exists(os.path.join(target, EXAMPLE_AWS_FILE)))
+
+    def test_creates_target_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, _ = self._setup_collection_and_assets(tmp)
+            target = os.path.join(tmp, "nested", "deep", "target")
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+
+            self.assertTrue(os.path.isdir(target))
+
+    def test_copies_subdirectories(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            # Add a subdirectory to collection
+            subdir = os.path.join(collection, "nix-family-os")
+            os.makedirs(subdir)
+            with open(os.path.join(subdir, "tinyproxy.conf"), "w") as f:
+                f.write("proxy config")
+
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+
+            self.assertTrue(os.path.isdir(os.path.join(target, "nix-family-os")))
+            self.assertTrue(os.path.isfile(os.path.join(target, "nix-family-os", "tinyproxy.conf")))
+
+    def test_catalog_entry_json_has_trailing_newline(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+
+            with open(os.path.join(target, CATALOG_ENTRY_FILENAME)) as f:
+                content = f.read()
+            self.assertTrue(content.endswith("\n"))
+
+    def test_no_example_files_present_no_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            collection, assets, target = self._setup_collection_and_assets(tmp)
+            # No example files exist — should not raise
+            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            self.assertTrue(os.path.isdir(target))
