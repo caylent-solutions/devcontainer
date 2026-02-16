@@ -1,0 +1,205 @@
+name: Mirror DevContainer Base Image
+
+on:
+  schedule:
+    - cron: '0 6 1,15 * *' # 6 AM UTC on 1st and 15th of each month
+  workflow_dispatch:        # Manual trigger and API/dispatch support
+
+permissions:
+  id-token: write       # Required for OIDC authentication to AWS
+  contents: write       # Required for committing devcontainer.json updates
+  pull-requests: write  # Required for creating PRs
+
+env:
+  SOURCE_IMAGE: mcr.microsoft.com/devcontainers/base:noble
+  ECR_ALIAS: g0u3p4x2
+  ECR_REPO: caylent-solutions/devcontainer-base
+  IMAGE_TAG: noble
+  AWS_REGION: us-east-1
+  IAM_ROLE_ARN: ${{ vars.ECR_PUSH_ROLE_ARN }}
+
+jobs:
+  mirror:
+    name: Mirror image to ECR Public
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validate required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${IAM_ROLE_ARN}" ]]; then
+            echo "::error::Repository variable ECR_PUSH_ROLE_ARN is not set. Configure it in Settings → Secrets and variables → Actions → Variables."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install crane
+        uses: imjasonh/setup-crane@v0.4
+
+      - name: Check for upstream image update
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ECR_IMAGE="public.ecr.aws/${ECR_ALIAS}/${ECR_REPO}:${IMAGE_TAG}"
+
+          echo "Fetching upstream digest for ${SOURCE_IMAGE}..."
+          UPSTREAM_DIGEST=$(crane digest "${SOURCE_IMAGE}" 2>/dev/null || echo "")
+          if [[ -z "${UPSTREAM_DIGEST}" ]]; then
+            echo "::error::Failed to fetch upstream digest from ${SOURCE_IMAGE}"
+            exit 1
+          fi
+          echo "Upstream digest: ${UPSTREAM_DIGEST}"
+
+          echo "Fetching ECR digest for ${ECR_IMAGE}..."
+          ECR_DIGEST=$(crane digest "${ECR_IMAGE}" 2>/dev/null || echo "")
+          if [[ -z "${ECR_DIGEST}" ]]; then
+            echo "ECR image does not exist yet — will mirror"
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          elif [[ "${UPSTREAM_DIGEST}" == "${ECR_DIGEST}" ]]; then
+            echo "Digests match — no update needed"
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Digests differ — will mirror"
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+          SHORT_SHA="${UPSTREAM_DIGEST#sha256:}"
+          SHORT_SHA="${SHORT_SHA:0:12}"
+          echo "upstream_digest=${UPSTREAM_DIGEST}" >> "${GITHUB_OUTPUT}"
+          echo "short_sha=${SHORT_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure AWS credentials via OIDC
+        if: steps.check.outputs.changed == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.IAM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Authenticate Docker to ECR Public
+        if: steps.check.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws ecr-public get-login-password --region "${AWS_REGION}" \
+            | docker login --username AWS --password-stdin public.ecr.aws
+
+      - name: Pull, tag, and push image
+        if: steps.check.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ECR_TARGET="public.ecr.aws/${ECR_ALIAS}/${ECR_REPO}"
+          VERSION_TAG="${IMAGE_TAG}-${{ steps.check.outputs.short_sha }}"
+
+          echo "Pulling ${SOURCE_IMAGE}..."
+          docker pull "${SOURCE_IMAGE}"
+
+          echo "Tagging as ${ECR_TARGET}:${IMAGE_TAG}..."
+          docker tag "${SOURCE_IMAGE}" "${ECR_TARGET}:${IMAGE_TAG}"
+
+          echo "Tagging as ${ECR_TARGET}:${VERSION_TAG}..."
+          docker tag "${SOURCE_IMAGE}" "${ECR_TARGET}:${VERSION_TAG}"
+
+          echo "Pushing ${ECR_TARGET}:${IMAGE_TAG}..."
+          docker push "${ECR_TARGET}:${IMAGE_TAG}"
+
+          echo "Pushing ${ECR_TARGET}:${VERSION_TAG}..."
+          docker push "${ECR_TARGET}:${VERSION_TAG}"
+
+          echo "Mirror complete"
+
+      - name: Update devcontainer.json image references
+        if: steps.check.outputs.changed == 'true'
+        id: update
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          NEW_IMAGE="public.ecr.aws/${ECR_ALIAS}/${ECR_REPO}:${IMAGE_TAG}"
+          FILES=(
+            ".devcontainer/devcontainer.json"
+            "collections/default/devcontainer.json"
+          )
+          UPDATED="false"
+
+          for file in "${FILES[@]}"; do
+            if [[ ! -f "${file}" ]]; then
+              echo "::warning::File not found: ${file}"
+              continue
+            fi
+
+            CURRENT=$(grep -o '"image": *"[^"]*"' "${file}" | head -1 | sed 's/"image": *"//' | sed 's/"//')
+            if [[ "${CURRENT}" != "${NEW_IMAGE}" ]]; then
+              echo "Updating ${file}: ${CURRENT} -> ${NEW_IMAGE}"
+              sed -i "s|\"image\": *\"[^\"]*\"|\"image\": \"${NEW_IMAGE}\"|" "${file}"
+              UPDATED="true"
+            else
+              echo "${file} already up to date"
+            fi
+          done
+
+          echo "updated=${UPDATED}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create pull request
+        if: steps.check.outputs.changed == 'true' && steps.update.outputs.updated == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          BRANCH="chore/mirror-devcontainer-image-${{ steps.check.outputs.short_sha }}"
+          UPSTREAM_DIGEST="${{ steps.check.outputs.upstream_digest }}"
+          DATE=$(date -u +"%Y-%m-%d")
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git push origin --delete "${BRANCH}" 2>/dev/null || true
+          git checkout -b "${BRANCH}"
+          for f in .devcontainer/devcontainer.json collections/default/devcontainer.json; do
+            [[ -f "${f}" ]] && git add "${f}"
+          done
+          git commit -m "chore: update devcontainer base image to latest mirror"
+          git push origin "${BRANCH}"
+
+          BODY=$(cat <<EOF
+          ## DevContainer Base Image Mirror Update
+
+          Updated devcontainer.json image references to the latest ECR Public mirror.
+
+          - **Date:** ${DATE}
+          - **Upstream digest:** \`${UPSTREAM_DIGEST}\`
+          - **Source:** \`${SOURCE_IMAGE}\`
+          - **Mirror:** \`public.ecr.aws/${ECR_ALIAS}/${ECR_REPO}:${IMAGE_TAG}\`
+
+          This PR was created automatically by the [mirror-devcontainer-image](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow.
+          EOF
+          )
+
+          gh pr create \
+            --title "chore: update devcontainer base image to latest mirror" \
+            --body "${BODY}" \
+            --base main \
+            --head "${BRANCH}"
+
+      - name: Job summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.check.outputs.changed }}" != "true" ]]; then
+            echo "### Mirror DevContainer Base Image" >> "${GITHUB_STEP_SUMMARY}"
+            echo "No update needed — upstream and ECR digests match." >> "${GITHUB_STEP_SUMMARY}"
+          elif [[ "${{ steps.update.outputs.updated }}" != "true" ]]; then
+            echo "### Mirror DevContainer Base Image" >> "${GITHUB_STEP_SUMMARY}"
+            echo "Image mirrored to ECR Public. devcontainer.json references already up to date — no PR created." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "### Mirror DevContainer Base Image" >> "${GITHUB_STEP_SUMMARY}"
+            echo "Image mirrored to ECR Public and PR created to update devcontainer.json references." >> "${GITHUB_STEP_SUMMARY}"
+          fi
