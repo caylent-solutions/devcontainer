@@ -15,6 +15,8 @@ from caylent_devcontainer_cli.utils.catalog import (
     discover_collection_entries,
     discover_collections,
     parse_catalog_url,
+    resolve_default_catalog_url,
+    resolve_latest_catalog_tag,
     validate_catalog,
     validate_catalog_entry,
     validate_collection,
@@ -29,8 +31,10 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_TAG_PATTERN,
     CATALOG_VERSION_FILENAME,
+    DEFAULT_CATALOG_URL,
     EXAMPLE_AWS_FILE,
     EXAMPLE_ENV_FILE,
+    MIN_CATALOG_TAG_VERSION,
 )
 
 
@@ -1068,3 +1072,146 @@ class TestCopyCollectionToProject(TestCase):
             # No example files exist — should not raise
             copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
             self.assertTrue(os.path.isdir(target))
+
+
+class TestResolveLatestCatalogTag(TestCase):
+    """Test resolve_latest_catalog_tag() tag parsing, filtering, and sorting."""
+
+    def _make_ls_remote_output(self, tags):
+        """Build git ls-remote --tags stdout from a list of tag names."""
+        lines = []
+        for tag in tags:
+            lines.append(f"abc123\trefs/tags/{tag}")
+        return "\n".join(lines)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_returns_highest_tag(self, mock_run):
+        mock_run.return_value = type(
+            "Result",
+            (),
+            {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["2.0.0", "2.1.0", "2.0.1"])},
+        )()
+        result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        self.assertEqual(result, "2.1.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_filters_below_min_version(self, mock_run):
+        mock_run.return_value = type(
+            "Result",
+            (),
+            {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["1.0.0", "1.9.9", "2.0.0"])},
+        )()
+        result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        self.assertEqual(result, "2.0.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_includes_exact_min_version(self, mock_run):
+        mock_run.return_value = type(
+            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["2.0.0"])}
+        )()
+        result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        self.assertEqual(result, "2.0.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_skips_dereferenced_tags(self, mock_run):
+        stdout = (
+            "abc123\trefs/tags/2.0.0\ndef456\trefs/tags/2.0.0^{}\nabc789\trefs/tags/2.1.0\ndef012\trefs/tags/2.1.0^{}"
+        )
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stderr": "", "stdout": stdout})()
+        result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        self.assertEqual(result, "2.1.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_skips_non_semver_tags(self, mock_run):
+        stdout = self._make_ls_remote_output(["v2.0.0", "release-2.0", "2.0.0", "latest"])
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stderr": "", "stdout": stdout})()
+        result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        self.assertEqual(result, "2.0.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_no_compatible_tags_raises_system_exit(self, mock_run):
+        mock_run.return_value = type(
+            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["1.0.0", "1.5.0"])}
+        )()
+        with self.assertRaises(SystemExit) as ctx:
+            resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        msg = str(ctx.exception)
+        self.assertIn("No catalog tags >= 2.0.0", msg)
+        self.assertIn("https://example.com/repo.git", msg)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_empty_output_raises_system_exit(self, mock_run):
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stderr": "", "stdout": ""})()
+        with self.assertRaises(SystemExit) as ctx:
+            resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        msg = str(ctx.exception)
+        self.assertIn("No catalog tags >= 2.0.0", msg)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_git_failure_raises_system_exit(self, mock_run):
+        mock_run.return_value = type(
+            "Result", (), {"returncode": 128, "stderr": "fatal: repository not found", "stdout": ""}
+        )()
+        with self.assertRaises(SystemExit) as ctx:
+            resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        msg = str(ctx.exception)
+        self.assertIn("Failed to query tags", msg)
+        self.assertIn("https://example.com/repo.git", msg)
+        self.assertIn("fatal: repository not found", msg)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_git_failure_no_stderr(self, mock_run):
+        mock_run.return_value = type("Result", (), {"returncode": 1, "stderr": "", "stdout": ""})()
+        with self.assertRaises(SystemExit) as ctx:
+            resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        msg = str(ctx.exception)
+        self.assertIn("Failed to query tags", msg)
+        self.assertNotIn(": ", msg.split("Failed to query tags")[1][:2])
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_semver_sorting_across_major_minor_patch(self, mock_run):
+        tags = ["2.0.0", "3.0.0", "2.10.0", "2.9.0", "2.1.0", "10.0.0"]
+        mock_run.return_value = type(
+            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(tags)}
+        )()
+        result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        self.assertEqual(result, "10.0.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_malformed_lines_ignored(self, mock_run):
+        stdout = "malformed line\nabc123\trefs/tags/2.0.0\n\n"
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stderr": "", "stdout": stdout})()
+        result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        self.assertEqual(result, "2.0.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
+    def test_calls_git_ls_remote_with_correct_args(self, mock_run):
+        mock_run.return_value = type(
+            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["2.0.0"])}
+        )()
+        resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        self.assertEqual(cmd, ["git", "ls-remote", "--tags", "https://example.com/repo.git"])
+
+
+class TestResolveDefaultCatalogUrl(TestCase):
+    """Test resolve_default_catalog_url() returns URL with tag suffix."""
+
+    @patch("caylent_devcontainer_cli.utils.catalog.resolve_latest_catalog_tag")
+    def test_returns_url_with_tag(self, mock_resolve):
+        mock_resolve.return_value = "2.1.0"
+        result = resolve_default_catalog_url()
+        self.assertEqual(result, f"{DEFAULT_CATALOG_URL}@2.1.0")
+
+    @patch("caylent_devcontainer_cli.utils.catalog.resolve_latest_catalog_tag")
+    def test_calls_resolve_with_correct_args(self, mock_resolve):
+        mock_resolve.return_value = "2.0.0"
+        resolve_default_catalog_url()
+        mock_resolve.assert_called_once_with(DEFAULT_CATALOG_URL, MIN_CATALOG_TAG_VERSION)
+
+    @patch("caylent_devcontainer_cli.utils.catalog.resolve_latest_catalog_tag")
+    def test_propagates_system_exit(self, mock_resolve):
+        mock_resolve.side_effect = SystemExit("No catalog tags >= 2.0.0 found")
+        with self.assertRaises(SystemExit):
+            resolve_default_catalog_url()

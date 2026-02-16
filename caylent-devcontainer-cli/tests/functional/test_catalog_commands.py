@@ -45,8 +45,11 @@ class TestCatalogListEndToEnd(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
-    def test_list_with_default_catalog(self, mock_clone, mock_validate, mock_discover, mock_rmtree):
-        """List command uses DEFAULT_CATALOG_URL when no env var set."""
+    @patch("caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url")
+    def test_list_with_default_catalog(self, mock_resolve, mock_clone, mock_validate, mock_discover, mock_rmtree):
+        """List command uses resolve_default_catalog_url when no env var set."""
+        resolved_url = f"{DEFAULT_CATALOG_URL}@2.1.0"
+        mock_resolve.return_value = resolved_url
         mock_clone.return_value = "/tmp/catalog-test"
         mock_validate.return_value = []
         mock_discover.return_value = self._make_entries(
@@ -63,7 +66,8 @@ class TestCatalogListEndToEnd(TestCase):
             with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
                 handle_catalog_list(args)
 
-        mock_clone.assert_called_once_with(DEFAULT_CATALOG_URL)
+        mock_resolve.assert_called_once()
+        mock_clone.assert_called_once_with(resolved_url)
         output = mock_stdout.getvalue()
         self.assertIn("default catalog", output)
         self.assertIn("default", output)
@@ -97,7 +101,11 @@ class TestCatalogListEndToEnd(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
-    def test_list_tag_filtering_any_match(self, mock_clone, mock_validate, mock_discover, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_list_tag_filtering_any_match(self, mock_resolve, mock_clone, mock_validate, mock_discover, mock_rmtree):
         """Tag filtering uses ANY match logic."""
         mock_clone.return_value = "/tmp/catalog-test"
         mock_validate.return_value = []
@@ -130,7 +138,11 @@ class TestCatalogListEndToEnd(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
-    def test_list_column_alignment(self, mock_clone, mock_validate, mock_discover, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_list_column_alignment(self, mock_resolve, mock_clone, mock_validate, mock_discover, mock_rmtree):
         """Names are left-aligned with consistent column width."""
         mock_clone.return_value = "/tmp/catalog-test"
         mock_validate.return_value = []
@@ -226,8 +238,11 @@ class TestCatalogValidateEndToEnd(TestCase):
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
-    def test_validate_remote_clones_and_validates(self, mock_clone, mock_rmtree):
+    @patch("caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url")
+    def test_validate_remote_clones_and_validates(self, mock_resolve, mock_clone, mock_rmtree):
         """Validate (remote) clones, validates, and cleans up."""
+        resolved_url = f"{DEFAULT_CATALOG_URL}@2.1.0"
+        mock_resolve.return_value = resolved_url
         with tempfile.TemporaryDirectory() as tmp:
             self._create_valid_catalog(tmp)
             mock_clone.return_value = tmp
@@ -239,7 +254,8 @@ class TestCatalogValidateEndToEnd(TestCase):
                 with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
                     handle_catalog_validate(args)
 
-            mock_clone.assert_called_once_with(DEFAULT_CATALOG_URL)
+            mock_resolve.assert_called_once()
+            mock_clone.assert_called_once_with(resolved_url)
             output = mock_stderr.getvalue()
             self.assertIn("Catalog validation passed", output)
 
@@ -347,7 +363,11 @@ class TestErrorHandlingEndToEnd(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
-    def test_list_missing_common_assets_exits_nonzero(self, mock_clone, mock_validate, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_list_missing_common_assets_exits_nonzero(self, mock_resolve, mock_clone, mock_validate, mock_rmtree):
         """catalog list exits non-zero when common assets are missing."""
         mock_clone.return_value = "/tmp/catalog-broken"
         mock_validate.return_value = ["Missing required directory: common/devcontainer-assets/"]
@@ -369,7 +389,13 @@ class TestErrorHandlingEndToEnd(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
-    def test_list_no_collections_exits_nonzero(self, mock_clone, mock_validate, mock_discover, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_list_no_collections_exits_nonzero(
+        self, mock_resolve, mock_clone, mock_validate, mock_discover, mock_rmtree
+    ):
         """catalog list exits non-zero when no collections are found."""
         mock_clone.return_value = "/tmp/catalog-empty"
         mock_validate.return_value = []

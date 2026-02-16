@@ -29,8 +29,10 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_REQUIRED_COLLECTION_FILES,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_TAG_PATTERN,
+    DEFAULT_CATALOG_URL,
     EXAMPLE_AWS_FILE,
     EXAMPLE_ENV_FILE,
+    MIN_CATALOG_TAG_VERSION,
 )
 
 
@@ -260,6 +262,74 @@ def clone_catalog_repo(url_with_ref: str) -> str:
         raise SystemExit("\n".join(error_lines))
 
     return temp_dir
+
+
+def resolve_latest_catalog_tag(clone_url: str, min_version: str) -> str:
+    """Resolve the latest semver tag >= *min_version* from a remote git repository.
+
+    Runs ``git ls-remote --tags`` against *clone_url*, parses the output for
+    valid semver tags, filters for those >= *min_version*, and returns the
+    highest one.
+
+    Args:
+        clone_url: The git clone URL to query.
+        min_version: Minimum semver version to consider (e.g. ``"2.0.0"``).
+
+    Returns:
+        The tag name of the latest compatible version (e.g. ``"2.1.0"``).
+
+    Raises:
+        SystemExit: If ``git ls-remote`` fails or no compatible tags are found.
+    """
+    cmd = ["git", "ls-remote", "--tags", clone_url]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        stderr_snippet = result.stderr.strip()
+        raise SystemExit(f"Failed to query tags from '{clone_url}'" + (f": {stderr_snippet}" if stderr_snippet else ""))
+
+    semver_pattern = re.compile(r"^\d+\.\d+\.\d+$")
+    candidates: List[str] = []
+
+    for line in result.stdout.strip().splitlines():
+        if not line:
+            continue
+        parts = line.split("\t")
+        if len(parts) != 2:
+            continue
+        ref = parts[1]
+        # Skip dereferenced annotated tag entries (e.g. refs/tags/2.0.0^{})
+        if ref.endswith("^{}"):
+            continue
+        tag = ref.removeprefix("refs/tags/")
+        if semver_pattern.match(tag) and compare_semver(tag, min_version) >= 0:
+            candidates.append(tag)
+
+    if not candidates:
+        raise SystemExit(
+            f"No catalog tags >= {min_version} found in '{clone_url}'. "
+            "Ensure the catalog repository has semver tags (e.g. 2.0.0)."
+        )
+
+    candidates.sort(key=lambda t: tuple(int(x) for x in t.split(".")))
+    return candidates[-1]
+
+
+def resolve_default_catalog_url() -> str:
+    """Resolve the default catalog URL with the latest compatible semver tag.
+
+    Queries the default catalog repository for tags and returns the URL
+    with an ``@tag`` suffix targeting the latest tag >= ``MIN_CATALOG_TAG_VERSION``.
+
+    Returns:
+        The default catalog URL with a tag ref (e.g.
+        ``"https://github.com/caylent-solutions/devcontainer.git@2.1.0"``).
+
+    Raises:
+        SystemExit: If no compatible tags are found.
+    """
+    tag = resolve_latest_catalog_tag(DEFAULT_CATALOG_URL, MIN_CATALOG_TAG_VERSION)
+    return f"{DEFAULT_CATALOG_URL}@{tag}"
 
 
 def discover_collection_entries(

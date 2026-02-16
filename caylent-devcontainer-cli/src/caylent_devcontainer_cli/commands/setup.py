@@ -9,7 +9,6 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ASSETS_DIR,
     CATALOG_COMMON_DIR,
     CATALOG_ENTRY_FILENAME,
-    DEFAULT_CATALOG_URL,
     ENV_VARS_FILENAME,
     SHELL_ENV_FILENAME,
 )
@@ -113,6 +112,7 @@ def _select_and_copy_catalog(target_path, catalog_entry=None):
         copy_collection_to_project,
         discover_collection_entries,
         find_collection_by_name,
+        resolve_default_catalog_url,
         validate_catalog_entry_env,
     )
 
@@ -120,13 +120,19 @@ def _select_and_copy_catalog(target_path, catalog_entry=None):
     env_url = os.environ.get("DEVCONTAINER_CATALOG_URL")
 
     # Determine which catalog URL to use
+    user_chose_default = False
     if catalog_entry:
         catalog_url = validate_catalog_entry_env(catalog_entry)
     elif env_url:
         source = _prompt_source_selection()
-        catalog_url = DEFAULT_CATALOG_URL if source == "default" else env_url
+        if source == "default":
+            catalog_url = resolve_default_catalog_url()
+            user_chose_default = True
+        else:
+            catalog_url = env_url
     else:
-        catalog_url = DEFAULT_CATALOG_URL
+        catalog_url = resolve_default_catalog_url()
+        user_chose_default = True
 
     # Clone, discover, select, copy
     temp_dir = clone_catalog_repo(catalog_url)
@@ -152,7 +158,7 @@ def _select_and_copy_catalog(target_path, catalog_entry=None):
         elif len(compatible) == 1:
             selected = compatible[0]
             log("INFO", f"Auto-selected collection: {selected.entry.name}")
-        elif env_url and catalog_url == DEFAULT_CATALOG_URL:
+        elif env_url and user_chose_default:
             # User picked "Default" from source selection
             selected = find_collection_by_name(compatible, "default")
             log("INFO", f"Selected default collection: {selected.entry.name}")

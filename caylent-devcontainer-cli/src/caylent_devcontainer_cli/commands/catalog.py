@@ -8,10 +8,10 @@ from caylent_devcontainer_cli.utils.catalog import (
     check_min_cli_version,
     clone_catalog_repo,
     discover_collection_entries,
+    resolve_default_catalog_url,
     validate_catalog,
     validate_common_assets,
 )
-from caylent_devcontainer_cli.utils.constants import DEFAULT_CATALOG_URL
 from caylent_devcontainer_cli.utils.ui import log
 
 CATALOG_URL_ENV_VAR = "DEVCONTAINER_CATALOG_URL"
@@ -27,7 +27,7 @@ def _get_catalog_url():
     env_url = os.environ.get(CATALOG_URL_ENV_VAR)
     if env_url:
         return (env_url, env_url)
-    return (DEFAULT_CATALOG_URL, "default catalog")
+    return (resolve_default_catalog_url(), "default catalog")
 
 
 def register_command(subparsers):

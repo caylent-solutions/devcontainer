@@ -20,6 +20,9 @@ SSH_KEY_FILENAME = "ssh-private-key"
 # Default catalog URL (this repo)
 DEFAULT_CATALOG_URL = "https://github.com/caylent-solutions/devcontainer.git"
 
+# Minimum catalog tag version — the CLI resolves the latest semver tag >= this value
+MIN_CATALOG_TAG_VERSION = "2.0.0"
+
 # Catalog structure constants
 CATALOG_COMMON_DIR = "common"
 CATALOG_ASSETS_DIR = "devcontainer-assets"

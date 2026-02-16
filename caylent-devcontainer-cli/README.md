@@ -13,6 +13,7 @@ A command-line tool for managing Caylent devcontainer environments.
    - [Managing Templates](#managing-templates)
    - [Launching IDEs](#launching-ides)
    - [Browsing and Validating Catalogs](#browsing-and-validating-catalogs)
+   - [Catalog Tagging](#catalog-tagging)
 3. [Development](#development)
    - [Setup](#setup)
    - [Testing](#testing)
@@ -98,7 +99,7 @@ Enter your choice [1]:
 - **Skip mechanisms**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
 
 **Environment Variables:**
-- `DEVCONTAINER_CATALOG_URL`: Override the default catalog repository URL (e.g., `https://github.com/org/custom-catalog.git@v1.0`)
+- `DEVCONTAINER_CATALOG_URL`: Override the default catalog repository URL (e.g., `https://github.com/org/custom-catalog.git@v1.0`). When not set, the CLI auto-resolves the latest semver tag >= 2.0.0 from the default catalog repository. See [Catalog Tagging](#catalog-tagging).
 - `CDEVCONTAINER_SKIP_UPDATE=1`: Globally disable all automatic update checks
 - `CDEVCONTAINER_DEBUG_UPDATE=1`: Enable debug logging for update check process
 
@@ -119,11 +120,11 @@ This will show detailed information about:
 ### Setting Up a Devcontainer
 
 ```bash
-# Interactive setup (clones default catalog automatically)
+# Interactive setup (auto-resolves the latest semver tag from the default catalog)
 cdevcontainer setup-devcontainer /path/to/your/project
 
-# Use a specialized catalog
-export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/catalog.git"
+# Use a specialized catalog (pin to a specific tag)
+export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/catalog.git@v1.0"
 cdevcontainer setup-devcontainer /path/to/your/project
 
 # Select a specific collection by name (requires DEVCONTAINER_CATALOG_URL)
@@ -214,6 +215,18 @@ cdevcontainer catalog validate --local /path/to/catalog
 export DEVCONTAINER_CATALOG_URL="https://github.com/org/custom-catalog.git@v1.0"
 cdevcontainer catalog list
 ```
+
+### Catalog Tagging
+
+All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for releases. The CLI relies on tags for deterministic, reproducible behavior:
+
+- **Default catalog**: When `DEVCONTAINER_CATALOG_URL` is not set, the CLI queries `git ls-remote --tags` against the default catalog and selects the latest semver tag >= `2.0.0`. This ensures the CLI always clones a known release rather than the default branch.
+- **Custom catalogs**: When setting `DEVCONTAINER_CATALOG_URL`, use the `@tag` suffix to pin to a specific version (e.g., `https://github.com/org/catalog.git@1.2.0`). Without a tag suffix, the default branch is cloned.
+
+**Recommendations for catalog maintainers:**
+- Tag every release with a semver version (`MAJOR.MINOR.PATCH`)
+- Do not rely on the default branch (`main`) for production use
+- Use annotated tags (`git tag -a 2.1.0 -m "Release 2.1.0"`) for provenance
 
 ## Development
 

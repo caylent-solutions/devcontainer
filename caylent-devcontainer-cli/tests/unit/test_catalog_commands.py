@@ -35,11 +35,15 @@ from caylent_devcontainer_cli.utils.constants import (
 class TestGetCatalogUrl(TestCase):
     """Test _get_catalog_url() env var precedence."""
 
-    def test_returns_default_when_no_env_var(self):
+    @patch("caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url")
+    def test_returns_default_when_no_env_var(self, mock_resolve):
+        resolved_url = f"{DEFAULT_CATALOG_URL}@2.1.0"
+        mock_resolve.return_value = resolved_url
         with patch.dict(os.environ, {}, clear=True):
             url, label = _get_catalog_url()
-            self.assertEqual(url, DEFAULT_CATALOG_URL)
+            self.assertEqual(url, resolved_url)
             self.assertEqual(label, "default catalog")
+        mock_resolve.assert_called_once()
 
     def test_returns_env_var_when_set(self):
         with patch.dict(os.environ, {CATALOG_URL_ENV_VAR: "https://custom.com/repo.git"}):
@@ -47,11 +51,15 @@ class TestGetCatalogUrl(TestCase):
             self.assertEqual(url, "https://custom.com/repo.git")
             self.assertEqual(label, "https://custom.com/repo.git")
 
-    def test_returns_default_when_env_var_empty(self):
+    @patch("caylent_devcontainer_cli.commands.catalog.resolve_default_catalog_url")
+    def test_returns_default_when_env_var_empty(self, mock_resolve):
+        resolved_url = f"{DEFAULT_CATALOG_URL}@2.1.0"
+        mock_resolve.return_value = resolved_url
         with patch.dict(os.environ, {CATALOG_URL_ENV_VAR: ""}):
             url, label = _get_catalog_url()
-            self.assertEqual(url, DEFAULT_CATALOG_URL)
+            self.assertEqual(url, resolved_url)
             self.assertEqual(label, "default catalog")
+        mock_resolve.assert_called_once()
 
 
 class TestRegisterCommand(TestCase):

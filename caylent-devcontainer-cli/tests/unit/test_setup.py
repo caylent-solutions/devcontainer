@@ -519,14 +519,21 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    def test_default_flow_no_env_url(self, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree):
-        """No DEVCONTAINER_CATALOG_URL → clone default, auto-select single collection."""
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_default_flow_no_env_url(
+        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+    ):
+        """No DEVCONTAINER_CATALOG_URL → resolve default tag, clone, auto-select single collection."""
         entry = _make_entry()
         mock_discover.return_value = [entry]
 
         with patch.dict(os.environ, {}, clear=True):
             _select_and_copy_catalog("/target")
 
+        mock_resolve.assert_called_once()
         mock_clone.assert_called_once()
         mock_copy.assert_called_once()
         # Verify temp dir cleanup
@@ -537,7 +544,13 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    def test_auto_select_single_collection(self, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_auto_select_single_collection(
+        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+    ):
         """When only one compatible collection, auto-select it."""
         entry = _make_entry()
         mock_discover.return_value = [entry]
@@ -592,8 +605,12 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="default")
     @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
     def test_env_url_default_selection(
-        self, mock_find, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self, mock_resolve, mock_find, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
         """DEVCONTAINER_CATALOG_URL set, user picks 'Default'."""
         entry = _make_entry()
@@ -604,6 +621,7 @@ class TestSelectAndCopyCatalog:
         with patch.dict(os.environ, {"DEVCONTAINER_CATALOG_URL": "https://example.com/cat.git"}):
             _select_and_copy_catalog("/target")
 
+        mock_resolve.assert_called_once()
         mock_source.assert_called_once()
         mock_find.assert_called_once()
         # Verify find was called with "default" name
@@ -639,7 +657,11 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=False)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    def test_no_compatible_collections_exits(self, mock_clone, mock_version, mock_discover, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_no_compatible_collections_exits(self, mock_resolve, mock_clone, mock_version, mock_discover, mock_rmtree):
         """Exits when all collections filtered by min_cli_version."""
         mock_discover.return_value = [_make_entry(min_cli_version="99.0.0")]
 
@@ -656,8 +678,12 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
     def test_filters_incompatible_and_uses_compatible(
-        self, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree, capsys
+        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree, capsys
     ):
         """Warns about incompatible entries and uses compatible ones."""
         compatible = _make_entry(name="compatible")
@@ -675,7 +701,11 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    def test_cleanup_on_exception(self, mock_clone, mock_discover, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_cleanup_on_exception(self, mock_resolve, mock_clone, mock_discover, mock_rmtree):
         """Temp dir cleaned up even on exception."""
         mock_discover.side_effect = RuntimeError("test error")
 
@@ -692,7 +722,13 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    def test_no_min_cli_version_included(self, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree):
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_no_min_cli_version_included(
+        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+    ):
         """Collections without min_cli_version are always included."""
         entry = _make_entry(min_cli_version=None)
         mock_discover.return_value = [entry]
