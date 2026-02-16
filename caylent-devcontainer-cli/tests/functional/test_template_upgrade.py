@@ -78,12 +78,11 @@ class TestUpgradeTemplateSourceInspection:
 
 
 def _base_container_env():
-    """Return a containerEnv dict with all 14 required base keys."""
+    """Return a containerEnv dict with all 13 required base keys."""
     return {
         "AWS_CONFIG_ENABLED": "true",
         "AWS_DEFAULT_OUTPUT": "json",
         "DEFAULT_GIT_BRANCH": "main",
-        "DEFAULT_PYTHON_VERSION": "3.12.9",
         "DEVELOPER_NAME": "Test User",
         "EXTRA_APT_PACKAGES": "",
         "GIT_AUTH_METHOD": "token",

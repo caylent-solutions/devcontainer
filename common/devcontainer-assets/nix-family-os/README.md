@@ -4,7 +4,7 @@
 >
 > For Windows/WSL hosts, see the [wsl-family-os](../wsl-family-os/README.md) directory instead.
 
-This directory contains scripts for managing tinyproxy as a background daemon on your macOS or Linux host, required for devcontainer proxy support with an upstream corporate proxy.
+This directory is a **common catalog asset** — it is automatically copied into every project's `.devcontainer/nix-family-os/` when a devcontainer is set up via `cdevcontainer setup-devcontainer`. It contains scripts for managing tinyproxy as a background daemon on your macOS or Linux host, required for devcontainer proxy support with an upstream corporate proxy.
 
 ## Overview
 

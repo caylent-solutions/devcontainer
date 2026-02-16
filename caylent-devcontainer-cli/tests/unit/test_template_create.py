@@ -319,26 +319,25 @@ class TestCreateTemplateInteractiveTokenFlow:
         pwc_values = [
             "true" if aws_enabled else "false",  # 1. AWS_CONFIG_ENABLED
             "main",  # 2. DEFAULT_GIT_BRANCH
-            "3.12.9",  # 3. DEFAULT_PYTHON_VERSION
-            "Test Developer",  # 4. DEVELOPER_NAME
-            "github.com",  # 5. GIT_PROVIDER_URL
-            "token",  # 6. GIT_AUTH_METHOD
-            "testuser",  # 7. GIT_USER
-            "test@example.com",  # 8. GIT_USER_EMAIL
-            "ghp_test_token_123",  # 9. GIT_TOKEN (password)
-            # Step 10 skipped (token auth, not SSH)
-            "",  # 11. EXTRA_APT_PACKAGES
-            "cat",  # 12. PAGER
+            "Test Developer",  # 3. DEVELOPER_NAME
+            "github.com",  # 4. GIT_PROVIDER_URL
+            "token",  # 5. GIT_AUTH_METHOD
+            "testuser",  # 6. GIT_USER
+            "test@example.com",  # 7. GIT_USER_EMAIL
+            "ghp_test_token_123",  # 8. GIT_TOKEN (password)
+            # Step 9 skipped (token auth, not SSH)
+            "",  # 10. EXTRA_APT_PACKAGES
+            "cat",  # 11. PAGER
         ]
 
         if aws_enabled:
-            pwc_values.append("json")  # 13. AWS_DEFAULT_OUTPUT
+            pwc_values.append("json")  # 12. AWS_DEFAULT_OUTPUT
 
         if host_proxy:
-            pwc_values.append("true")  # 14. HOST_PROXY
-            pwc_values.append("http://host.docker.internal:3128")  # 15. HOST_PROXY_URL
+            pwc_values.append("true")  # 13. HOST_PROXY
+            pwc_values.append("http://host.docker.internal:3128")  # 14. HOST_PROXY_URL
         else:
-            pwc_values.append("false")  # 14. HOST_PROXY
+            pwc_values.append("false")  # 13. HOST_PROXY
 
         return pwc_values, custom_vars or {}, aws_profiles or {}
 
@@ -367,7 +366,6 @@ class TestCreateTemplateInteractiveTokenFlow:
         env = result["containerEnv"]
         assert env["AWS_CONFIG_ENABLED"] == "true"
         assert env["DEFAULT_GIT_BRANCH"] == "main"
-        assert env["DEFAULT_PYTHON_VERSION"] == "3.12.9"
         assert env["DEVELOPER_NAME"] == "Test Developer"
         assert env["GIT_PROVIDER_URL"] == "github.com"
         assert env["GIT_AUTH_METHOD"] == "token"
@@ -477,18 +475,17 @@ class TestCreateTemplateInteractiveSshFlow:
         pwc_values = [
             "true",  # 1. AWS_CONFIG_ENABLED
             "main",  # 2. DEFAULT_GIT_BRANCH
-            "3.12.9",  # 3. DEFAULT_PYTHON_VERSION
-            "Test Developer",  # 4. DEVELOPER_NAME
-            "github.com",  # 5. GIT_PROVIDER_URL
-            "ssh",  # 6. GIT_AUTH_METHOD
-            "testuser",  # 7. GIT_USER
-            "test@example.com",  # 8. GIT_USER_EMAIL
-            # Step 9 skipped (SSH, not token)
-            # Step 10 handled by prompt_ssh_key mock
-            "",  # 11. EXTRA_APT_PACKAGES
-            "cat",  # 12. PAGER
-            "json",  # 13. AWS_DEFAULT_OUTPUT
-            "false",  # 14. HOST_PROXY
+            "Test Developer",  # 3. DEVELOPER_NAME
+            "github.com",  # 4. GIT_PROVIDER_URL
+            "ssh",  # 5. GIT_AUTH_METHOD
+            "testuser",  # 6. GIT_USER
+            "test@example.com",  # 7. GIT_USER_EMAIL
+            # Step 8 skipped (SSH, not token)
+            # Step 9 handled by prompt_ssh_key mock
+            "",  # 10. EXTRA_APT_PACKAGES
+            "cat",  # 11. PAGER
+            "json",  # 12. AWS_DEFAULT_OUTPUT
+            "false",  # 13. HOST_PROXY
         ]
 
         with (

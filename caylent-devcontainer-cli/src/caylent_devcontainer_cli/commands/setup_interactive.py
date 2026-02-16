@@ -123,16 +123,6 @@ def prompt_env_values() -> Dict[str, Any]:
     )
     env_values["DEFAULT_GIT_BRANCH"] = git_branch
 
-    # Python version
-    python_version = ask_or_exit(
-        questionary.text(
-            "Default Python version (e.g., 3.12.9):",
-            default="3.12.9",
-            validate=lambda text: len(text.strip()) > 0 or "You must provide a Python version",
-        )
-    )
-    env_values["DEFAULT_PYTHON_VERSION"] = python_version
-
     # Developer name
     dev_name = ask_or_exit(
         questionary.text(
@@ -491,17 +481,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["DEFAULT_GIT_BRANCH"] = git_branch
 
-    # Step 3: Default Python version
-    python_version = prompt_with_confirmation(
-        lambda: questionary.text(
-            "Default Python version:",
-            default="3.12.9",
-            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
-        )
-    )
-    env_values["DEFAULT_PYTHON_VERSION"] = python_version
-
-    # Step 4: Developer name
+    # Step 3: Developer name
     dev_name = prompt_with_confirmation(
         lambda: questionary.text(
             "Developer name:",
@@ -510,7 +490,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["DEVELOPER_NAME"] = dev_name
 
-    # Step 5: Git provider URL (hostname only, no protocol, must contain dot)
+    # Step 4: Git provider URL (hostname only, no protocol, must contain dot)
     git_provider = prompt_with_confirmation(
         lambda: questionary.text(
             "Git provider URL (hostname only, e.g., github.com):",
@@ -523,7 +503,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["GIT_PROVIDER_URL"] = git_provider
 
-    # Step 6: Git authentication method
+    # Step 5: Git authentication method
     auth_method = prompt_with_confirmation(
         lambda: questionary.select(
             "Git authentication method:",
@@ -533,7 +513,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["GIT_AUTH_METHOD"] = auth_method
 
-    # Step 7: Git username
+    # Step 6: Git username
     git_user = prompt_with_confirmation(
         lambda: questionary.text(
             "Git username:",
@@ -542,7 +522,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["GIT_USER"] = git_user
 
-    # Step 8: Git email
+    # Step 7: Git email
     git_email = prompt_with_confirmation(
         lambda: questionary.text(
             "Git email:",
@@ -551,7 +531,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["GIT_USER_EMAIL"] = git_email
 
-    # Step 9: Git token (only if token method)
+    # Step 8: Git token (only if token method)
     if auth_method == "token":
         git_token = prompt_with_confirmation(
             lambda: questionary.password(
@@ -562,13 +542,13 @@ def create_template_interactive() -> Dict[str, Any]:
         )
         env_values["GIT_TOKEN"] = git_token
 
-    # Step 10: SSH private key (only if SSH method)
+    # Step 9: SSH private key (only if SSH method)
     if auth_method == "ssh":
         log("INFO", "Configuring SSH key authentication...")
         ssh_key_content = prompt_ssh_key()
         template["ssh_private_key"] = ssh_key_content
 
-    # Step 11: Extra APT packages
+    # Step 10: Extra APT packages
     extra_packages = prompt_with_confirmation(
         lambda: questionary.text(
             "Extra APT packages (space-separated, leave empty for none):",
@@ -577,7 +557,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["EXTRA_APT_PACKAGES"] = extra_packages
 
-    # Step 12: Pager
+    # Step 11: Pager
     pager = prompt_with_confirmation(
         lambda: questionary.select(
             "Select default pager:",
@@ -587,7 +567,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["PAGER"] = pager
 
-    # Step 13: AWS output format (only if AWS enabled)
+    # Step 12: AWS output format (only if AWS enabled)
     if aws_config == "true":
         aws_output = prompt_with_confirmation(
             lambda: questionary.select(
@@ -598,7 +578,7 @@ def create_template_interactive() -> Dict[str, Any]:
         )
         env_values["AWS_DEFAULT_OUTPUT"] = aws_output
 
-    # Step 14: Host proxy
+    # Step 13: Host proxy
     host_proxy = prompt_with_confirmation(
         lambda: questionary.select(
             "Enable host proxy?",
@@ -608,7 +588,7 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["HOST_PROXY"] = host_proxy
 
-    # Step 15: Host proxy URL (only if host proxy true)
+    # Step 14: Host proxy URL (only if host proxy true)
     if host_proxy == "true":
         proxy_url = prompt_with_confirmation(
             lambda: questionary.text(
@@ -622,14 +602,14 @@ def create_template_interactive() -> Dict[str, Any]:
     else:
         env_values["HOST_PROXY_URL"] = ""
 
-    # Step 16: Custom environment variables
+    # Step 15: Custom environment variables
     log("INFO", "You can add additional custom environment variables.")
     custom_vars = prompt_custom_env_vars(KNOWN_KEYS)
     env_values.update(custom_vars)
 
     template["containerEnv"] = env_values
 
-    # Step 17: AWS profile map (only if AWS enabled)
+    # Step 16: AWS profile map (only if AWS enabled)
     if aws_config == "true":
         log("INFO", "Configuring AWS profiles...")
         template["aws_profile_map"] = prompt_aws_profile_map()

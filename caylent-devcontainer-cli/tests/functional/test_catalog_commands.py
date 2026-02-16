@@ -61,6 +61,7 @@ class TestCatalogListEndToEnd(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch.dict(os.environ, {}, clear=True):
             with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
@@ -88,6 +89,7 @@ class TestCatalogListEndToEnd(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch.dict(os.environ, {CATALOG_URL_ENV_VAR: custom_url}):
             with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
@@ -120,6 +122,7 @@ class TestCatalogListEndToEnd(TestCase):
 
         args = MagicMock()
         args.tags = "java,react"
+        args.catalog_url = None
 
         with patch.dict(os.environ, {}, clear=True):
             with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
@@ -155,6 +158,7 @@ class TestCatalogListEndToEnd(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch.dict(os.environ, {}, clear=True):
             with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
@@ -249,6 +253,7 @@ class TestCatalogValidateEndToEnd(TestCase):
 
             args = MagicMock()
             args.local = None
+            args.catalog_url = None
 
             with patch.dict(os.environ, {}, clear=True):
                 with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
@@ -374,6 +379,7 @@ class TestErrorHandlingEndToEnd(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(SystemExit) as ctx:
@@ -403,6 +409,7 @@ class TestErrorHandlingEndToEnd(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(SystemExit) as ctx:

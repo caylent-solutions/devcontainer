@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# tinyproxy daemon management script for macOS / Linux host
-# Manages tinyproxy as a background daemon on the HOST OS for devcontainer proxy support
+# tinyproxy daemon management script for Windows / WSL host
+# Manages tinyproxy as a background daemon on the HOST OS (WSL) for devcontainer proxy support
 #
 # Required environment variables:
 #   TINYPROXY_UPSTREAM_HOST       - Upstream proxy hostname (e.g., edge.surepath.ai)
@@ -127,7 +127,7 @@ warn_if_in_container() {
 
     if [[ "${in_container}" == "true" ]]; then
         log_warn "It looks like you are running inside a Docker container."
-        log_warn "This script is intended to run on the HOST operating system (macOS, Linux, or WSL),"
+        log_warn "This script is intended to run on the HOST operating system (Windows/WSL),"
         log_warn "not inside the devcontainer. The devcontainer connects to this proxy via host.docker.internal."
         echo ""
         read -rp "Do you still want to continue? [y/N] " response
@@ -136,7 +136,7 @@ warn_if_in_container() {
                 log_info "Continuing inside container as requested..."
                 ;;
             *)
-                exit_with_error "Aborted. Run this script on your host OS instead."
+                exit_with_error "Aborted. Run this script on your WSL host instead."
                 ;;
         esac
     fi
@@ -148,7 +148,7 @@ mkdir -p "${LOG_DIR}"
 # Check if tinyproxy is installed
 check_tinyproxy() {
     if ! command -v tinyproxy &> /dev/null; then
-        exit_with_error "tinyproxy is not installed. Install it with: brew install tinyproxy (macOS) or sudo apt-get install tinyproxy (Linux)"
+        exit_with_error "tinyproxy is not installed. Install it with: sudo apt-get install tinyproxy"
     fi
 }
 
@@ -194,13 +194,19 @@ get_pid() {
     return 1
 }
 
+# Check if a port is listening using ss (available by default on WSL/Ubuntu)
+check_port_listening() {
+    local port="$1"
+    ss -tlnp 2>/dev/null | grep -q ":${port} " 2>/dev/null
+}
+
 # Wait for process to be ready (PID file exists and port is listening)
 wait_for_ready() {
     local port="$1"
     local elapsed=0
 
     while [[ ${elapsed} -lt ${TINYPROXY_READINESS_TIMEOUT} ]]; do
-        if get_pid > /dev/null 2>&1 && lsof -iTCP:"${port}" -sTCP:LISTEN > /dev/null 2>&1; then
+        if get_pid > /dev/null 2>&1 && check_port_listening "${port}"; then
             return 0
         fi
         sleep 0.5
@@ -322,7 +328,7 @@ show_status() {
         log_success "tinyproxy is RUNNING (PID: ${pid})"
 
         # Check if port is listening
-        if lsof -iTCP:"${TINYPROXY_PORT}" -sTCP:LISTEN -P | grep -q "${pid}"; then
+        if check_port_listening "${TINYPROXY_PORT}"; then
             log_success "Listening on port ${TINYPROXY_PORT}"
         else
             log_warn "Process running but not listening on port ${TINYPROXY_PORT}"

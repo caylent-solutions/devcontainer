@@ -72,7 +72,6 @@ KNOWN_KEYS = frozenset(
         "AWS_CONFIG_ENABLED",
         "AWS_DEFAULT_OUTPUT",
         "DEFAULT_GIT_BRANCH",
-        "DEFAULT_PYTHON_VERSION",
         "DEVELOPER_NAME",
         "EXTRA_APT_PACKAGES",
         "GIT_AUTH_METHOD",

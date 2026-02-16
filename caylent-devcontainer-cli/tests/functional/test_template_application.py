@@ -31,7 +31,6 @@ def _make_template(**overrides):
         "containerEnv": {
             "AWS_CONFIG_ENABLED": "false",
             "DEFAULT_GIT_BRANCH": "main",
-            "DEFAULT_PYTHON_VERSION": "3.12.9",
             "DEVELOPER_NAME": "Test Dev",
             "GIT_PROVIDER_URL": "github.com",
             "GIT_TOKEN": "test-token",
@@ -118,7 +117,6 @@ class TestApplyTemplateConsolidated:
         """apply_template writes aws-profile-map.json when AWS enabled."""
         container_env = {
             "AWS_CONFIG_ENABLED": "true",
-            "DEFAULT_PYTHON_VERSION": "3.12.9",
         }
         aws_map = {"default": {"region": "us-west-2", "account_id": "123456789012"}}
         template = _make_template(containerEnv=container_env, aws_profile_map=aws_map)
@@ -136,7 +134,6 @@ class TestApplyTemplateConsolidated:
         container_env = {
             "GIT_AUTH_METHOD": "ssh",
             "AWS_CONFIG_ENABLED": "false",
-            "DEFAULT_PYTHON_VERSION": "3.12.9",
         }
         template = _make_template(containerEnv=container_env)
         apply_template(template, project_dir)

@@ -101,6 +101,46 @@ class TestCommonAssetsDirectory(TestCase):
         errors = validate_common_assets(self.repo_root)
         self.assertEqual(errors, [], f"Common assets validation errors: {errors}")
 
+    def test_nix_family_os_directory_exists(self):
+        """nix-family-os/ proxy toolkit must exist in common assets."""
+        nix_dir = os.path.join(self.assets_dir, "nix-family-os")
+        self.assertTrue(os.path.isdir(nix_dir))
+
+    def test_wsl_family_os_directory_exists(self):
+        """wsl-family-os/ proxy toolkit must exist in common assets."""
+        wsl_dir = os.path.join(self.assets_dir, "wsl-family-os")
+        self.assertTrue(os.path.isdir(wsl_dir))
+
+    def test_nix_family_os_has_readme(self):
+        """nix-family-os/ must contain README.md."""
+        readme = os.path.join(self.assets_dir, "nix-family-os", "README.md")
+        self.assertTrue(os.path.isfile(readme))
+
+    def test_wsl_family_os_has_readme(self):
+        """wsl-family-os/ must contain README.md."""
+        readme = os.path.join(self.assets_dir, "wsl-family-os", "README.md")
+        self.assertTrue(os.path.isfile(readme))
+
+    def test_nix_family_os_has_tinyproxy_conf_template(self):
+        """nix-family-os/ must contain tinyproxy.conf.template."""
+        conf = os.path.join(self.assets_dir, "nix-family-os", "tinyproxy.conf.template")
+        self.assertTrue(os.path.isfile(conf))
+
+    def test_nix_family_os_has_tinyproxy_daemon(self):
+        """nix-family-os/ must contain tinyproxy-daemon.sh."""
+        daemon = os.path.join(self.assets_dir, "nix-family-os", "tinyproxy-daemon.sh")
+        self.assertTrue(os.path.isfile(daemon))
+
+    def test_wsl_family_os_has_tinyproxy_conf_template(self):
+        """wsl-family-os/ must contain tinyproxy.conf.template."""
+        conf = os.path.join(self.assets_dir, "wsl-family-os", "tinyproxy.conf.template")
+        self.assertTrue(os.path.isfile(conf))
+
+    def test_wsl_family_os_has_tinyproxy_daemon(self):
+        """wsl-family-os/ must contain tinyproxy-daemon.sh."""
+        daemon = os.path.join(self.assets_dir, "wsl-family-os", "tinyproxy-daemon.sh")
+        self.assertTrue(os.path.isfile(daemon))
+
 
 class TestDefaultCollectionStructure(TestCase):
     """Tests for the collections/default/ directory structure."""
@@ -131,36 +171,6 @@ class TestDefaultCollectionStructure(TestCase):
         """validate_collection_structure() must return no errors."""
         errors = validate_collection_structure(self.collection_dir)
         self.assertEqual(errors, [], f"Collection structure validation errors: {errors}")
-
-    def test_nix_family_os_directory_exists(self):
-        """nix-family-os/ proxy toolkit directory must exist in default collection."""
-        nix_dir = os.path.join(self.collection_dir, "nix-family-os")
-        self.assertTrue(os.path.isdir(nix_dir))
-
-    def test_wsl_family_os_directory_exists(self):
-        """wsl-family-os/ proxy toolkit directory must exist in default collection."""
-        wsl_dir = os.path.join(self.collection_dir, "wsl-family-os")
-        self.assertTrue(os.path.isdir(wsl_dir))
-
-    def test_nix_family_os_has_readme(self):
-        """nix-family-os/ must contain README.md."""
-        readme = os.path.join(self.collection_dir, "nix-family-os", "README.md")
-        self.assertTrue(os.path.isfile(readme))
-
-    def test_wsl_family_os_has_readme(self):
-        """wsl-family-os/ must contain README.md."""
-        readme = os.path.join(self.collection_dir, "wsl-family-os", "README.md")
-        self.assertTrue(os.path.isfile(readme))
-
-    def test_nix_family_os_has_tinyproxy_conf(self):
-        """nix-family-os/ must contain tinyproxy.conf."""
-        conf = os.path.join(self.collection_dir, "nix-family-os", "tinyproxy.conf")
-        self.assertTrue(os.path.isfile(conf))
-
-    def test_nix_family_os_has_tinyproxy_daemon(self):
-        """nix-family-os/ must contain tinyproxy-daemon.sh."""
-        daemon = os.path.join(self.collection_dir, "nix-family-os", "tinyproxy-daemon.sh")
-        self.assertTrue(os.path.isfile(daemon))
 
     def test_fix_line_endings_present(self):
         """fix-line-endings.py must be present in default collection."""

@@ -25,7 +25,6 @@ class TestWriteJsonFileEndToEnd:
                 "AWS_DEFAULT_OUTPUT": "json",
                 "CICD": "false",
                 "DEFAULT_GIT_BRANCH": "main",
-                "DEFAULT_PYTHON_VERSION": "3.12.9",
                 "DEVELOPER_NAME": "Test User",
                 "GIT_PROVIDER_URL": "github.com",
                 "GIT_TOKEN": "test-token",

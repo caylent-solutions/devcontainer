@@ -102,7 +102,6 @@ class TestWriteJsonFile:
         data = {
             "containerEnv": {
                 "AWS_CONFIG_ENABLED": "true",
-                "DEFAULT_PYTHON_VERSION": "3.12.9",
             },
             "cli_version": "2.0.0",
         }
@@ -317,7 +316,6 @@ class TestWriteProjectFiles:
                 "GIT_TOKEN": "test-token",
                 "GIT_PROVIDER_URL": "github.com",
                 "DEFAULT_GIT_BRANCH": "main",
-                "DEFAULT_PYTHON_VERSION": "3.12.9",
                 "CICD": "false",
                 "AWS_CONFIG_ENABLED": "false",
                 "EXTRA_APT_PACKAGES": "",

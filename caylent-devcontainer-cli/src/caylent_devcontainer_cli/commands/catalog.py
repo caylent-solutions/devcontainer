@@ -43,6 +43,13 @@ def register_command(subparsers):
         default=None,
         help="Comma-separated tags to filter by (ANY match)",
     )
+    list_parser.add_argument(
+        "--catalog-url",
+        type=str,
+        default=None,
+        metavar="URL",
+        help="Override the catalog repository URL (bypasses tag resolution and DEVCONTAINER_CATALOG_URL)",
+    )
     list_parser.set_defaults(func=handle_catalog_list)
 
     # 'catalog validate' command
@@ -54,12 +61,23 @@ def register_command(subparsers):
         metavar="PATH",
         help="Validate a local catalog directory instead of cloning",
     )
+    validate_parser.add_argument(
+        "--catalog-url",
+        type=str,
+        default=None,
+        metavar="URL",
+        help="Override the catalog repository URL (bypasses tag resolution and DEVCONTAINER_CATALOG_URL)",
+    )
     validate_parser.set_defaults(func=handle_catalog_validate)
 
 
 def handle_catalog_list(args):
     """Handle the 'catalog list' command."""
-    catalog_url, source_label = _get_catalog_url()
+    catalog_url_override = getattr(args, "catalog_url", None)
+    if catalog_url_override:
+        catalog_url, source_label = catalog_url_override, catalog_url_override
+    else:
+        catalog_url, source_label = _get_catalog_url()
 
     temp_dir = clone_catalog_repo(catalog_url)
     try:
@@ -130,7 +148,11 @@ def handle_catalog_validate(args):
             sys.exit(1)
         _run_validation(catalog_path)
     else:
-        catalog_url, _source_label = _get_catalog_url()
+        catalog_url_override = getattr(args, "catalog_url", None)
+        if catalog_url_override:
+            catalog_url = catalog_url_override
+        else:
+            catalog_url, _source_label = _get_catalog_url()
         temp_dir = clone_catalog_repo(catalog_url)
         try:
             _run_validation(temp_dir)

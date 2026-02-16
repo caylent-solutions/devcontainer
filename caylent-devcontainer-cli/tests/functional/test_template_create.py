@@ -152,25 +152,24 @@ class TestCreateTemplateInteractiveEndToEnd:
         pwc_values = [
             "true" if aws_enabled else "false",  # 1. AWS_CONFIG_ENABLED
             "develop",  # 2. DEFAULT_GIT_BRANCH
-            "3.13.0",  # 3. DEFAULT_PYTHON_VERSION
-            "Jane Doe",  # 4. DEVELOPER_NAME
-            "gitlab.com",  # 5. GIT_PROVIDER_URL
-            "token",  # 6. GIT_AUTH_METHOD
-            "jdoe",  # 7. GIT_USER
-            "jane@example.com",  # 8. GIT_USER_EMAIL
-            "glpat-xxxx",  # 9. GIT_TOKEN
-            "vim",  # 11. EXTRA_APT_PACKAGES
-            "less",  # 12. PAGER
+            "Jane Doe",  # 3. DEVELOPER_NAME
+            "gitlab.com",  # 4. GIT_PROVIDER_URL
+            "token",  # 5. GIT_AUTH_METHOD
+            "jdoe",  # 6. GIT_USER
+            "jane@example.com",  # 7. GIT_USER_EMAIL
+            "glpat-xxxx",  # 8. GIT_TOKEN
+            "vim",  # 9. EXTRA_APT_PACKAGES
+            "less",  # 10. PAGER
         ]
 
         if aws_enabled:
-            pwc_values.append("yaml")  # 13. AWS_DEFAULT_OUTPUT
+            pwc_values.append("yaml")  # 11. AWS_DEFAULT_OUTPUT
 
         if host_proxy:
-            pwc_values.append("true")  # 14. HOST_PROXY
-            pwc_values.append("https://proxy.internal:8080")  # 15. HOST_PROXY_URL
+            pwc_values.append("true")  # 12. HOST_PROXY
+            pwc_values.append("https://proxy.internal:8080")  # 13. HOST_PROXY_URL
         else:
-            pwc_values.append("false")  # 14. HOST_PROXY
+            pwc_values.append("false")  # 12. HOST_PROXY
 
         idx = [0]
 
@@ -203,7 +202,6 @@ class TestCreateTemplateInteractiveEndToEnd:
         required_keys = [
             "AWS_CONFIG_ENABLED",
             "DEFAULT_GIT_BRANCH",
-            "DEFAULT_PYTHON_VERSION",
             "DEVELOPER_NAME",
             "GIT_PROVIDER_URL",
             "GIT_AUTH_METHOD",

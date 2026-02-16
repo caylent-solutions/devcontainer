@@ -388,12 +388,13 @@ class TestHandleSetup:
             args = MagicMock()
             args.path = tmpdir
             args.catalog_entry = None
+            args.catalog_url = None
 
             handle_setup(args)
 
             # .tool-versions should be created
             assert os.path.exists(os.path.join(tmpdir, ".tool-versions"))
-            mock_catalog.assert_called_once_with(tmpdir, catalog_entry=None)
+            mock_catalog.assert_called_once_with(tmpdir, catalog_entry=None, catalog_url_override=None)
             mock_interactive.assert_called_once_with(tmpdir)
 
     @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
@@ -419,6 +420,7 @@ class TestHandleSetup:
             args = MagicMock()
             args.path = tmpdir
             args.catalog_entry = None
+            args.catalog_url = None
 
             handle_setup(args)
 
@@ -426,7 +428,7 @@ class TestHandleSetup:
             mock_python_notice.assert_called_once_with(tmpdir)
             mock_replace_decision.assert_called_once()
             mock_replace_notification.assert_called_once()
-            mock_catalog.assert_called_once_with(tmpdir, catalog_entry=None)
+            mock_catalog.assert_called_once_with(tmpdir, catalog_entry=None, catalog_url_override=None)
             mock_interactive.assert_called_once_with(tmpdir)
 
     @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
@@ -451,6 +453,7 @@ class TestHandleSetup:
             args = MagicMock()
             args.path = tmpdir
             args.catalog_entry = None
+            args.catalog_url = None
 
             handle_setup(args)
 
@@ -476,10 +479,11 @@ class TestHandleSetupCatalogEntry:
             args = MagicMock()
             args.path = tmpdir
             args.catalog_entry = "my-collection"
+            args.catalog_url = None
 
             handle_setup(args)
 
-            mock_catalog.assert_called_once_with(tmpdir, catalog_entry="my-collection")
+            mock_catalog.assert_called_once_with(tmpdir, catalog_entry="my-collection", catalog_url_override=None)
 
     @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
     @patch("caylent_devcontainer_cli.commands.setup._run_informational_validation")
@@ -489,10 +493,11 @@ class TestHandleSetupCatalogEntry:
             args = MagicMock()
             args.path = tmpdir
             args.catalog_entry = None
+            args.catalog_url = None
 
             handle_setup(args)
 
-            mock_catalog.assert_called_once_with(tmpdir, catalog_entry=None)
+            mock_catalog.assert_called_once_with(tmpdir, catalog_entry=None, catalog_url_override=None)
 
 
 # ─── _select_and_copy_catalog ───────────────────────────────────────────────
@@ -651,6 +656,94 @@ class TestSelectAndCopyCatalog:
         mock_source.assert_called_once()
         mock_browse.assert_called_once()
         mock_confirm.assert_called_once_with(entry)
+        mock_copy.assert_called_once()
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="browse")
+    @patch("caylent_devcontainer_cli.commands.setup._browse_collections")
+    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_collection")
+    def test_browse_single_collection_shows_ui(
+        self, mock_confirm, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+    ):
+        """Browse with single collection still shows selection UI instead of auto-selecting."""
+        entry = _make_entry(name="java-backend")
+        mock_discover.return_value = [entry]
+        mock_browse.return_value = entry
+
+        with patch.dict(os.environ, {"DEVCONTAINER_CATALOG_URL": "https://example.com/cat.git"}):
+            _select_and_copy_catalog("/target")
+
+        mock_source.assert_called_once()
+        mock_browse.assert_called_once()
+        mock_confirm.assert_called_once_with(entry)
+        mock_copy.assert_called_once()
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    def test_catalog_url_override_bypasses_tag_resolution(
+        self, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+    ):
+        """--catalog-url overrides default tag resolution and env var."""
+        entry = _make_entry()
+        mock_discover.return_value = [entry]
+
+        with patch.dict(os.environ, {}, clear=True):
+            _select_and_copy_catalog("/target", catalog_url_override="https://example.com/repo.git@feature/test")
+
+        mock_clone.assert_called_once_with("https://example.com/repo.git@feature/test")
+        mock_copy.assert_called_once()
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_collection")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    def test_catalog_url_override_with_catalog_entry(
+        self, mock_find, mock_confirm, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+    ):
+        """--catalog-url with --catalog-entry: clone from override, select by name."""
+        entry = _make_entry(name="my-collection")
+        mock_discover.return_value = [entry]
+        mock_find.return_value = entry
+
+        _select_and_copy_catalog(
+            "/target",
+            catalog_entry="my-collection",
+            catalog_url_override="https://example.com/repo.git@v2.0.0",
+        )
+
+        mock_clone.assert_called_once_with("https://example.com/repo.git@v2.0.0")
+        mock_find.assert_called_once()
+        mock_confirm.assert_called_once_with(entry)
+        mock_copy.assert_called_once()
+
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection")
+    def test_catalog_url_override_takes_precedence_over_env(
+        self, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+    ):
+        """--catalog-url takes precedence over DEVCONTAINER_CATALOG_URL — no source prompt shown."""
+        entry = _make_entry()
+        mock_discover.return_value = [entry]
+
+        with patch.dict(os.environ, {"DEVCONTAINER_CATALOG_URL": "https://example.com/env-catalog.git"}):
+            _select_and_copy_catalog("/target", catalog_url_override="https://example.com/repo.git@feature/test")
+
+        mock_clone.assert_called_once_with("https://example.com/repo.git@feature/test")
+        mock_source.assert_not_called()
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
@@ -994,7 +1087,6 @@ def test_prompt_env_values(mock_password, mock_select, mock_text):
     mock_select.return_value.ask.return_value = "true"
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Test User",
         "github.com",
         "testuser",
@@ -1007,7 +1099,6 @@ def test_prompt_env_values(mock_password, mock_select, mock_text):
 
     assert result["AWS_CONFIG_ENABLED"] == "true"
     assert result["DEFAULT_GIT_BRANCH"] == "main"
-    assert result["DEFAULT_PYTHON_VERSION"] == "3.12.9"
     assert result["DEVELOPER_NAME"] == "Test User"
     assert result["GIT_TOKEN"] == "token123"
 
@@ -1038,17 +1129,16 @@ def test_create_template_interactive_with_aws(mock_pwc, mock_custom, mock_aws):
     mock_pwc.side_effect = [
         "true",  # 1. AWS_CONFIG_ENABLED
         "main",  # 2. DEFAULT_GIT_BRANCH
-        "3.12.9",  # 3. DEFAULT_PYTHON_VERSION
-        "Dev Name",  # 4. DEVELOPER_NAME
-        "github.com",  # 5. GIT_PROVIDER_URL
-        "token",  # 6. GIT_AUTH_METHOD
-        "user",  # 7. GIT_USER
-        "e@e.com",  # 8. GIT_USER_EMAIL
-        "tok123",  # 9. GIT_TOKEN
-        "",  # 11. EXTRA_APT_PACKAGES
-        "cat",  # 12. PAGER
-        "json",  # 13. AWS_DEFAULT_OUTPUT
-        "false",  # 14. HOST_PROXY
+        "Dev Name",  # 3. DEVELOPER_NAME
+        "github.com",  # 4. GIT_PROVIDER_URL
+        "token",  # 5. GIT_AUTH_METHOD
+        "user",  # 6. GIT_USER
+        "e@e.com",  # 7. GIT_USER_EMAIL
+        "tok123",  # 8. GIT_TOKEN
+        "",  # 9. EXTRA_APT_PACKAGES
+        "cat",  # 10. PAGER
+        "json",  # 11. AWS_DEFAULT_OUTPUT
+        "false",  # 12. HOST_PROXY
     ]
     mock_custom.return_value = {}
     mock_aws.return_value = {"default": {"region": "us-west-2"}}
@@ -1065,16 +1155,15 @@ def test_create_template_interactive_without_aws(mock_pwc, mock_custom):
     mock_pwc.side_effect = [
         "false",  # 1. AWS_CONFIG_ENABLED
         "main",  # 2. DEFAULT_GIT_BRANCH
-        "3.12.9",  # 3. DEFAULT_PYTHON_VERSION
-        "Dev Name",  # 4. DEVELOPER_NAME
-        "github.com",  # 5. GIT_PROVIDER_URL
-        "token",  # 6. GIT_AUTH_METHOD
-        "user",  # 7. GIT_USER
-        "e@e.com",  # 8. GIT_USER_EMAIL
-        "tok123",  # 9. GIT_TOKEN
-        "",  # 11. EXTRA_APT_PACKAGES
-        "cat",  # 12. PAGER
-        "false",  # 14. HOST_PROXY
+        "Dev Name",  # 3. DEVELOPER_NAME
+        "github.com",  # 4. GIT_PROVIDER_URL
+        "token",  # 5. GIT_AUTH_METHOD
+        "user",  # 6. GIT_USER
+        "e@e.com",  # 7. GIT_USER_EMAIL
+        "tok123",  # 8. GIT_TOKEN
+        "",  # 9. EXTRA_APT_PACKAGES
+        "cat",  # 10. PAGER
+        "false",  # 11. HOST_PROXY
     ]
     mock_custom.return_value = {}
 

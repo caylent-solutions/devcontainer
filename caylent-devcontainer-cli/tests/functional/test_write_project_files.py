@@ -27,7 +27,6 @@ class TestWriteProjectFilesEndToEnd:
             "containerEnv": {
                 "AWS_CONFIG_ENABLED": "false",
                 "DEFAULT_GIT_BRANCH": "main",
-                "DEFAULT_PYTHON_VERSION": "3.12.9",
                 "DEVELOPER_NAME": "Test Dev",
                 "GIT_PROVIDER_URL": "github.com",
                 "GIT_TOKEN": "test-token",

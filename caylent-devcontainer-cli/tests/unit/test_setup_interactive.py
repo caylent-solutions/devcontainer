@@ -154,25 +154,12 @@ def test_prompt_env_values_none_git_branch(mock_select, mock_text):
 
 @patch("questionary.text")
 @patch("questionary.select")
-def test_prompt_env_values_none_python_version(mock_select, mock_text):
-    """Test prompt_env_values with None response for Python version."""
-    from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
-
-    mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", None]
-
-    with pytest.raises(SystemExit):
-        prompt_env_values()
-
-
-@patch("questionary.text")
-@patch("questionary.select")
 def test_prompt_env_values_none_developer_name(mock_select, mock_text):
     """Test prompt_env_values with None response for developer name."""
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
     mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", "3.12.9", None]
+    mock_text.return_value.ask.side_effect = ["main", None]
 
     with pytest.raises(SystemExit):
         prompt_env_values()
@@ -185,7 +172,7 @@ def test_prompt_env_values_none_git_provider(mock_select, mock_text):
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
     mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", "3.12.9", "Developer", None]
+    mock_text.return_value.ask.side_effect = ["main", "Developer", None]
 
     with pytest.raises(SystemExit):
         prompt_env_values()
@@ -198,7 +185,7 @@ def test_prompt_env_values_none_git_user(mock_select, mock_text):
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
     mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", "3.12.9", "Developer", "github.com", None]
+    mock_text.return_value.ask.side_effect = ["main", "Developer", "github.com", None]
 
     with pytest.raises(SystemExit):
         prompt_env_values()
@@ -211,7 +198,7 @@ def test_prompt_env_values_none_git_email(mock_select, mock_text):
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
     mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", "3.12.9", "Developer", "github.com", "user", None]
+    mock_text.return_value.ask.side_effect = ["main", "Developer", "github.com", "user", None]
 
     with pytest.raises(SystemExit):
         prompt_env_values()
@@ -225,7 +212,7 @@ def test_prompt_env_values_none_git_token(mock_select, mock_text, mock_password)
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
     mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", "3.12.9", "Developer", "github.com", "user", "user@example.com"]
+    mock_text.return_value.ask.side_effect = ["main", "Developer", "github.com", "user", "user@example.com"]
     mock_password.return_value.ask.return_value = None
 
     with pytest.raises(SystemExit):
@@ -242,7 +229,6 @@ def test_prompt_env_values_none_extra_packages(mock_select, mock_text, mock_pass
     mock_select.return_value.ask.return_value = "true"
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Developer",
         "github.com",
         "user",
@@ -265,7 +251,6 @@ def test_prompt_env_values_complete_with_aws_enabled(mock_select, mock_text, moc
     mock_select.return_value.ask.side_effect = ["true", "less", "table"]
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Developer",
         "github.com",
         "user",
@@ -279,7 +264,6 @@ def test_prompt_env_values_complete_with_aws_enabled(mock_select, mock_text, moc
     assert result["AWS_CONFIG_ENABLED"] == "true"
     assert result["CICD"] == "false"
     assert result["DEFAULT_GIT_BRANCH"] == "main"
-    assert result["DEFAULT_PYTHON_VERSION"] == "3.12.9"
     assert result["DEVELOPER_NAME"] == "Developer"
     assert result["GIT_PROVIDER_URL"] == "github.com"
     assert result["GIT_USER"] == "user"
@@ -300,7 +284,6 @@ def test_prompt_env_values_complete_with_aws_disabled(mock_select, mock_text, mo
     mock_select.return_value.ask.side_effect = ["false", "cat"]
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Developer",
         "github.com",
         "user",

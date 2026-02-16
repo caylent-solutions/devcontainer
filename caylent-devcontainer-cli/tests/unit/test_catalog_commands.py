@@ -102,6 +102,38 @@ class TestRegisterCommand(TestCase):
         args = parser.parse_args(["catalog", "validate", "--local", "/path/to/catalog"])
         self.assertEqual(args.local, "/path/to/catalog")
 
+    def test_registers_list_with_catalog_url_flag(self):
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers(dest="command")
+        register_command(subparsers)
+
+        args = parser.parse_args(["catalog", "list", "--catalog-url", "https://example.com/repo.git@v2.0.0"])
+        self.assertEqual(args.catalog_url, "https://example.com/repo.git@v2.0.0")
+
+    def test_registers_validate_with_catalog_url_flag(self):
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers(dest="command")
+        register_command(subparsers)
+
+        args = parser.parse_args(["catalog", "validate", "--catalog-url", "https://example.com/repo.git@v2.0.0"])
+        self.assertEqual(args.catalog_url, "https://example.com/repo.git@v2.0.0")
+
+    def test_list_catalog_url_defaults_to_none(self):
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers(dest="command")
+        register_command(subparsers)
+
+        args = parser.parse_args(["catalog", "list"])
+        self.assertIsNone(args.catalog_url)
+
+    def test_validate_catalog_url_defaults_to_none(self):
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers(dest="command")
+        register_command(subparsers)
+
+        args = parser.parse_args(["catalog", "validate"])
+        self.assertIsNone(args.catalog_url)
+
 
 class TestHandleCatalogList(TestCase):
     """Test handle_catalog_list() display and filtering."""
@@ -141,6 +173,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             handle_catalog_list(args)
@@ -172,6 +205,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = "java,python"
+        args.catalog_url = None
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             handle_catalog_list(args)
@@ -199,6 +233,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = "nonexistent-tag"
+        args.catalog_url = None
 
         with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
             handle_catalog_list(args)
@@ -221,6 +256,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with self.assertRaises(SystemExit) as ctx:
             with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
@@ -243,6 +279,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with self.assertRaises(RuntimeError):
             handle_catalog_list(args)
@@ -264,6 +301,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             handle_catalog_list(args)
@@ -282,6 +320,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with self.assertRaises(SystemExit) as ctx:
             with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
@@ -314,6 +353,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
@@ -349,6 +389,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
             handle_catalog_list(args)
@@ -378,6 +419,7 @@ class TestHandleCatalogList(TestCase):
 
         args = MagicMock()
         args.tags = None
+        args.catalog_url = None
 
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
             handle_catalog_list(args)
@@ -385,6 +427,29 @@ class TestHandleCatalogList(TestCase):
         stdout_output = mock_stdout.getvalue()
         self.assertIn("no-version-app", stdout_output)
         mock_check_ver.assert_not_called()
+
+    @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
+    @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
+    def test_list_with_catalog_url_override(self, mock_clone, mock_validate, mock_discover, mock_rmtree):
+        """--catalog-url bypasses _get_catalog_url() and uses the override URL."""
+        mock_clone.return_value = "/tmp/catalog-test"
+        mock_validate.return_value = []
+        mock_discover.return_value = self._make_entries(
+            [("default", "General-purpose dev environment", ["general"])],
+        )
+
+        args = MagicMock()
+        args.tags = None
+        args.catalog_url = "https://example.com/repo.git@feature/test"
+
+        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+            handle_catalog_list(args)
+
+        mock_clone.assert_called_once_with("https://example.com/repo.git@feature/test")
+        output = mock_stdout.getvalue()
+        self.assertIn("https://example.com/repo.git@feature/test", output)
 
 
 class TestHandleCatalogValidate(TestCase):
@@ -400,6 +465,7 @@ class TestHandleCatalogValidate(TestCase):
 
         args = MagicMock()
         args.local = None
+        args.catalog_url = None
 
         handle_catalog_validate(args)
 
@@ -435,10 +501,28 @@ class TestHandleCatalogValidate(TestCase):
 
         args = MagicMock()
         args.local = None
+        args.catalog_url = None
 
         with self.assertRaises(SystemExit):
             handle_catalog_validate(args)
 
+        mock_rmtree.assert_called_once_with("/tmp/catalog-val", ignore_errors=True)
+
+    @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
+    @patch("caylent_devcontainer_cli.commands.catalog._run_validation")
+    @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
+    def test_validate_with_catalog_url_override(self, mock_clone, mock_run_val, mock_rmtree):
+        """--catalog-url bypasses _get_catalog_url() for validate."""
+        mock_clone.return_value = "/tmp/catalog-val"
+
+        args = MagicMock()
+        args.local = None
+        args.catalog_url = "https://example.com/repo.git@feature/test"
+
+        handle_catalog_validate(args)
+
+        mock_clone.assert_called_once_with("https://example.com/repo.git@feature/test")
+        mock_run_val.assert_called_once_with("/tmp/catalog-val")
         mock_rmtree.assert_called_once_with("/tmp/catalog-val", ignore_errors=True)
 
 

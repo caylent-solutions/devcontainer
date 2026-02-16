@@ -1,25 +1,27 @@
-# tinyproxy Daemon for macOS / Linux Host
+# tinyproxy Daemon for Windows / WSL Host
 
-> **Important:** This script runs on your **host operating system** (macOS or Linux), **not** inside the devcontainer. The devcontainer connects to this proxy via `host.docker.internal`.
+> **Important:** This script runs on your **Windows host via WSL** (Windows Subsystem for Linux), **not** inside the devcontainer. The devcontainer connects to this proxy via `host.docker.internal`.
 >
-> For Windows/WSL hosts, see the [wsl-family-os](../wsl-family-os/README.md) directory instead.
+> For macOS or native Linux hosts, see the [nix-family-os](../nix-family-os/README.md) directory instead.
 
-This directory contains scripts for managing tinyproxy as a background daemon on your macOS or Linux host, required for devcontainer proxy support with an upstream corporate proxy.
+This directory is a **common catalog asset** — it is automatically copied into every project's `.devcontainer/wsl-family-os/` when a devcontainer is set up via `cdevcontainer setup-devcontainer`. It contains scripts for managing tinyproxy as a background daemon on your Windows/WSL host, required for devcontainer proxy support with an upstream corporate proxy.
 
 ## Overview
 
 The devcontainer needs to access external resources through an upstream proxy. Since the upstream proxy uses IP-based authentication, the proxy must run on your **host machine** (with the authenticated IP) and the devcontainer connects to it via `host.docker.internal`.
 
+On Windows, you run tinyproxy inside a WSL distribution (e.g., Ubuntu). Docker Desktop for Windows with the WSL 2 backend makes the WSL network accessible to containers via `host.docker.internal`.
+
 ## Prerequisites
 
-**Install tinyproxy** on your host machine:
+1. **Windows with WSL 2** installed and configured
+2. **Docker Desktop for Windows** with WSL 2 backend enabled
+3. **tinyproxy** installed inside your WSL distribution
+
+**Install tinyproxy** inside your WSL terminal:
 
 ```bash
-# macOS
-brew install tinyproxy
-
-# Linux (Debian/Ubuntu)
-sudo apt-get install tinyproxy
+sudo apt-get update && sudo apt-get install -y tinyproxy
 ```
 
 Verify installation:
@@ -39,7 +41,7 @@ All environment variables are **required**. The script will exit with an error i
 | `TINYPROXY_READINESS_TIMEOUT` | Startup readiness timeout (seconds) | `10` |
 | `TINYPROXY_STOP_TIMEOUT` | Graceful stop timeout (seconds) | `10` |
 
-Set these in your shell profile (`~/.zshrc`, `~/.bashrc`) or export them before running the script:
+Set these in your WSL shell profile (`~/.bashrc` or `~/.zshrc`) or export them before running the script:
 
 ```bash
 export TINYPROXY_UPSTREAM_HOST=edge.surepath.ai
@@ -51,29 +53,31 @@ export TINYPROXY_STOP_TIMEOUT=10
 
 ## Quick Start
 
+All commands below are run **inside your WSL terminal**, not in PowerShell or the devcontainer.
+
 ### Make the script executable (first time only)
 ```bash
-chmod +x .devcontainer/nix-family-os/tinyproxy-daemon.sh
+chmod +x .devcontainer/wsl-family-os/tinyproxy-daemon.sh
 ```
 
 ### Start the proxy
 ```bash
-./.devcontainer/nix-family-os/tinyproxy-daemon.sh start
+./.devcontainer/wsl-family-os/tinyproxy-daemon.sh start
 ```
 
 ### Check status
 ```bash
-./.devcontainer/nix-family-os/tinyproxy-daemon.sh status
+./.devcontainer/wsl-family-os/tinyproxy-daemon.sh status
 ```
 
 ### Stop the proxy
 ```bash
-./.devcontainer/nix-family-os/tinyproxy-daemon.sh stop
+./.devcontainer/wsl-family-os/tinyproxy-daemon.sh stop
 ```
 
 ### Restart the proxy
 ```bash
-./.devcontainer/nix-family-os/tinyproxy-daemon.sh restart
+./.devcontainer/wsl-family-os/tinyproxy-daemon.sh restart
 ```
 
 ## Usage
@@ -156,7 +160,10 @@ which tinyproxy
 tinyproxy -h
 ```
 
-If not installed, see [Prerequisites](#prerequisites).
+If not installed:
+```bash
+sudo apt-get update && sudo apt-get install -y tinyproxy
+```
 
 **Check environment variables are set:**
 ```bash
@@ -171,7 +178,7 @@ If any are not set, export them (see [Environment Variables](#environment-variab
 
 **Check if another process is using the listen port:**
 ```bash
-lsof -i :3128
+ss -tlnp | grep :3128
 ```
 
 If port is in use, stop the other process or set `TINYPROXY_PORT` to a different value.
@@ -190,7 +197,7 @@ cat ~/.devcontainer-proxy/tinyproxy.log
 
 Look for: `Listening on port <port>`
 
-**Test from host:**
+**Test from WSL:**
 ```bash
 curl -x http://localhost:3128 -I https://example.com
 ```
@@ -221,7 +228,7 @@ tail -100 ~/.devcontainer-proxy/tinyproxy.log
 
 ### devcontainer build fails with "Cannot reach host proxy"
 
-**Ensure proxy is running:**
+**Ensure proxy is running (in WSL terminal):**
 ```bash
 ./tinyproxy-daemon.sh status
 ```
@@ -232,77 +239,37 @@ tail -100 ~/.devcontainer-proxy/tinyproxy.log
 ```
 
 **Rebuild devcontainer:**
-In VS Code: `Cmd+Shift+P` → "Dev Containers: Rebuild Container"
+In VS Code: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
 
-## Auto-Start on Mac Boot (Optional)
+### WSL-specific issues
 
-To automatically start tinyproxy when your Mac boots, create a LaunchAgent.
-
-### Create LaunchAgent plist
-
-Create file: `~/Library/LaunchAgents/com.devcontainer.tinyproxy.plist`
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.devcontainer.tinyproxy</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/full/path/to/your/project/.devcontainer/nix-family-os/tinyproxy-daemon.sh</string>
-        <string>start</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>TINYPROXY_UPSTREAM_HOST</key>
-        <string>edge.surepath.ai</string>
-        <key>TINYPROXY_UPSTREAM_PORT</key>
-        <string>8080</string>
-        <key>TINYPROXY_PORT</key>
-        <string>3128</string>
-        <key>TINYPROXY_READINESS_TIMEOUT</key>
-        <string>10</string>
-        <key>TINYPROXY_STOP_TIMEOUT</key>
-        <string>10</string>
-    </dict>
-    <key>StandardOutPath</key>
-    <string>/Users/YOUR_USERNAME/.devcontainer-proxy/launchd-stdout.log</string>
-    <key>StandardErrorPath</key>
-    <string>/Users/YOUR_USERNAME/.devcontainer-proxy/launchd-stderr.log</string>
-</dict>
-</plist>
+**WSL networking not bridged properly:**
+```bash
+# Verify host.docker.internal resolves from WSL
+ping -c 1 host.docker.internal
 ```
 
-**Important:** Replace `/full/path/to/your/project`, `YOUR_USERNAME`, and the environment variable values with your actual values.
+**Windows firewall blocking connections:**
+Ensure Windows Firewall allows inbound connections on the tinyproxy listen port from the WSL and Docker networks.
 
-### Load the LaunchAgent
+**Line ending issues:**
+WSL may introduce Windows-style line endings (CRLF). If scripts fail with `\r` errors:
+```bash
+sed -i 's/\r$//' .devcontainer/wsl-family-os/tinyproxy-daemon.sh
+```
+
+## Auto-Start on WSL Login (Optional)
+
+To automatically start tinyproxy when your WSL session starts, add the following to your `~/.bashrc` or `~/.profile`:
 
 ```bash
-# Load and start immediately
-launchctl load ~/Library/LaunchAgents/com.devcontainer.tinyproxy.plist
-
-# Check if loaded
-launchctl list | grep tinyproxy
+# Auto-start tinyproxy daemon if not already running
+if ! pgrep -x tinyproxy > /dev/null 2>&1; then
+    /full/path/to/your/project/.devcontainer/wsl-family-os/tinyproxy-daemon.sh start
+fi
 ```
 
-### Manage LaunchAgent
-
-```bash
-# Unload (stop auto-start)
-launchctl unload ~/Library/LaunchAgents/com.devcontainer.tinyproxy.plist
-
-# Start manually
-launchctl start com.devcontainer.tinyproxy
-
-# Stop manually
-launchctl stop com.devcontainer.tinyproxy
-```
+**Important:** Replace `/full/path/to/your/project` with your actual project path, and ensure all required environment variables are exported above this line in your rc file.
 
 ## Error Handling
 
@@ -337,10 +304,10 @@ The script follows strict error handling:
 
 1. **"TINYPROXY_UPSTREAM_HOST is not set"**
    - Export the variable: `export TINYPROXY_UPSTREAM_HOST=edge.surepath.ai`
-   - Add to `~/.zshrc` or `~/.bashrc` for persistence
+   - Add to `~/.bashrc` for persistence
 
 2. **"tinyproxy is not installed"**
-   - Install tinyproxy: `brew install tinyproxy`
+   - Install tinyproxy: `sudo apt-get install tinyproxy`
 
 3. **"tinyproxy is already running"**
    - Stop first: `./tinyproxy-daemon.sh stop`
@@ -353,7 +320,7 @@ The script follows strict error handling:
 5. **"Port is NOT LISTENING"**
    - Check logs for port conflicts
    - Verify no firewall is blocking the port
-   - Ensure no other process is using the port: `lsof -i :3128`
+   - Ensure no other process is using the port: `ss -tlnp | grep :3128`
 
 ## Security Notes
 

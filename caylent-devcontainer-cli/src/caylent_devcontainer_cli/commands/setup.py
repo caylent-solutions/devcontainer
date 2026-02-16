@@ -20,7 +20,6 @@ EXAMPLE_ENV_VALUES = {
     "AWS_CONFIG_ENABLED": "true",
     "AWS_DEFAULT_OUTPUT": "json",
     "DEFAULT_GIT_BRANCH": "main",
-    "DEFAULT_PYTHON_VERSION": "3.12.9",
     "DEVELOPER_NAME": "Your Name",
     "EXTRA_APT_PACKAGES": "",
     "GIT_AUTH_METHOD": "token",
@@ -45,6 +44,13 @@ def register_command(subparsers):
         metavar="NAME",
         help="Select a specific collection by name from a specialized catalog (requires DEVCONTAINER_CATALOG_URL)",
     )
+    parser.add_argument(
+        "--catalog-url",
+        type=str,
+        default=None,
+        metavar="URL",
+        help="Override the catalog repository URL (bypasses tag resolution and DEVCONTAINER_CATALOG_URL)",
+    )
     parser.set_defaults(func=handle_setup)
 
 
@@ -61,6 +67,7 @@ def handle_setup(args):
     """
     target_path = args.path
     catalog_entry = getattr(args, "catalog_entry", None)
+    catalog_url_override = getattr(args, "catalog_url", None)
 
     if not os.path.isdir(target_path):
         exit_with_error(f"Target path does not exist or is not a directory: {target_path}")
@@ -85,7 +92,7 @@ def handle_setup(args):
 
     # Catalog selection and file copy (when setting up or replacing .devcontainer/)
     if should_copy_catalog:
-        _select_and_copy_catalog(target_path, catalog_entry=catalog_entry)
+        _select_and_copy_catalog(target_path, catalog_entry=catalog_entry, catalog_url_override=catalog_url_override)
 
     # Informational validation (if both project files exist)
     _run_informational_validation(target_path)
@@ -94,17 +101,19 @@ def handle_setup(args):
     interactive_setup(target_path)
 
 
-def _select_and_copy_catalog(target_path, catalog_entry=None):
+def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_override=None):
     """Select a catalog collection and copy its files to the project.
 
-    Handles all 3 catalog flows:
-    1. ``--catalog-entry`` flag: validate env, clone specialized, find by name, confirm, copy
-    2. No ``DEVCONTAINER_CATALOG_URL``: clone default catalog, auto-select, copy
+    Handles catalog URL resolution with the following precedence:
+    1. ``--catalog-url`` override (used as-is, bypasses tag resolution and env var)
+    2. ``--catalog-entry`` flag: validate env, clone specialized, find by name, confirm, copy
     3. ``DEVCONTAINER_CATALOG_URL`` set: prompt source selection, then clone/browse/copy
+    4. No env var: resolve default catalog via semver tag, auto-select, copy
 
     Args:
         target_path: Path to the project root directory.
         catalog_entry: Optional collection name from ``--catalog-entry`` flag.
+        catalog_url_override: Optional catalog URL from ``--catalog-url`` flag.
     """
     from caylent_devcontainer_cli.utils.catalog import (
         check_min_cli_version,
@@ -121,7 +130,11 @@ def _select_and_copy_catalog(target_path, catalog_entry=None):
 
     # Determine which catalog URL to use
     user_chose_default = False
-    if catalog_entry:
+    user_chose_browse = False
+    if catalog_url_override:
+        catalog_url = catalog_url_override
+        log("INFO", f"Using catalog URL override: {catalog_url}")
+    elif catalog_entry:
         catalog_url = validate_catalog_entry_env(catalog_entry)
     elif env_url:
         source = _prompt_source_selection()
@@ -130,6 +143,7 @@ def _select_and_copy_catalog(target_path, catalog_entry=None):
             user_chose_default = True
         else:
             catalog_url = env_url
+            user_chose_browse = True
     else:
         catalog_url = resolve_default_catalog_url()
         user_chose_default = True
@@ -155,6 +169,10 @@ def _select_and_copy_catalog(target_path, catalog_entry=None):
         if catalog_entry:
             selected = find_collection_by_name(compatible, catalog_entry)
             _display_and_confirm_collection(selected)
+        elif user_chose_browse:
+            # User explicitly chose "Browse" — always show selection UI
+            selected = _browse_collections(compatible)
+            _display_and_confirm_collection(selected)
         elif len(compatible) == 1:
             selected = compatible[0]
             log("INFO", f"Auto-selected collection: {selected.entry.name}")
@@ -163,7 +181,6 @@ def _select_and_copy_catalog(target_path, catalog_entry=None):
             selected = find_collection_by_name(compatible, "default")
             log("INFO", f"Selected default collection: {selected.entry.name}")
         else:
-            # Browse specialized catalog
             selected = _browse_collections(compatible)
             _display_and_confirm_collection(selected)
 

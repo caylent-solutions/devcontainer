@@ -129,6 +129,12 @@ cdevcontainer setup-devcontainer /path/to/your/project
 
 # Select a specific collection by name (requires DEVCONTAINER_CATALOG_URL)
 cdevcontainer setup-devcontainer --catalog-entry java-backend /path/to/your/project
+
+# Override catalog URL directly (bypasses tag resolution; useful for testing branches)
+cdevcontainer setup-devcontainer --catalog-url "https://github.com/org/repo.git@feature/branch" /path/to/project
+
+# Combine --catalog-url with --catalog-entry
+cdevcontainer setup-devcontainer --catalog-url "https://github.com/org/repo.git@v2.0.0" --catalog-entry java-backend /path/to/project
 ```
 
 The setup command will:
@@ -137,9 +143,12 @@ The setup command will:
 3. If `.tool-versions` contains a Python entry, recommend managing Python through devcontainer features
 4. Ask whether to replace existing `.devcontainer/` files or keep them
 5. Clone the catalog, discover collections, and copy selected collection files to `.devcontainer/`
-6. Run informational validation on existing project configuration files
-7. Guide you through interactive template selection or creation
-8. Generate project configuration files via `write_project_files()`
+6. Copy common assets from `common/devcontainer-assets/` (shared scripts, host proxy toolkits) into `.devcontainer/`
+7. Run informational validation on existing project configuration files
+8. Guide you through interactive template selection or creation
+9. Generate project configuration files via `write_project_files()`
+
+> **Note**: All files and directories in the catalog's `common/devcontainer-assets/` are automatically included in every project — this is how shared scripts (postcreate, functions) and host-side proxy toolkits (`nix-family-os/`, `wsl-family-os/`) are distributed.
 
 ### Managing Templates
 
@@ -214,6 +223,10 @@ cdevcontainer catalog validate --local /path/to/catalog
 # Use a custom catalog repository
 export DEVCONTAINER_CATALOG_URL="https://github.com/org/custom-catalog.git@v1.0"
 cdevcontainer catalog list
+
+# Override catalog URL directly (bypasses tag resolution and DEVCONTAINER_CATALOG_URL)
+cdevcontainer catalog list --catalog-url "https://github.com/org/repo.git@feature/branch"
+cdevcontainer catalog validate --catalog-url "https://github.com/org/repo.git@feature/branch"
 ```
 
 ### Catalog Tagging
@@ -227,6 +240,8 @@ All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for rele
 - Tag every release with a semver version (`MAJOR.MINOR.PATCH`)
 - Do not rely on the default branch (`main`) for production use
 - Use annotated tags (`git tag -a 2.1.0 -m "Release 2.1.0"`) for provenance
+- Place shared files in `common/devcontainer-assets/` — everything in this directory is automatically copied into every project's `.devcontainer/` regardless of which collection is selected
+- Place collection-specific files (e.g., `devcontainer.json`, `catalog-entry.json`) in `collections/<name>/`
 
 ## Development
 

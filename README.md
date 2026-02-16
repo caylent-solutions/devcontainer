@@ -738,9 +738,9 @@ Organizations can create their own specialized catalogs with custom collections,
 
 ### Key Concepts
 
-- **Catalog** — A Git repository with `common/devcontainer-assets/` (shared scripts) and `collections/` (one or more configurations)
+- **Catalog** — A Git repository with `common/devcontainer-assets/` (shared files) and `collections/` (one or more configurations)
 - **Collection** — A directory containing `catalog-entry.json`, `devcontainer.json`, and `VERSION`
-- **Common assets** — Shared postcreate script, functions, and project-setup template inherited by all collections
+- **Common assets** — Files and directories in `common/devcontainer-assets/` that are **automatically copied into every project's `.devcontainer/`** when a collection is installed. This includes shared scripts (postcreate, functions, project-setup) and host-side proxy toolkits (`nix-family-os/`, `wsl-family-os/`). Any file or directory added to `common/devcontainer-assets/` is distributed to all projects regardless of which collection is selected.
 
 ### Catalog Commands
 
@@ -758,6 +758,26 @@ cdevcontainer catalog validate
 # Validate a catalog (local clone)
 cdevcontainer catalog validate --local /path/to/catalog
 ```
+
+### Catalog Repository Structure
+
+```
+catalog-repo/
+  common/
+    devcontainer-assets/
+      .devcontainer.postcreate.sh      # Shared postcreate hook (required)
+      devcontainer-functions.sh         # Shared shell functions (required)
+      project-setup.sh                 # Project-setup template (required)
+      nix-family-os/                   # Host proxy toolkit for macOS/Linux
+      wsl-family-os/                   # Host proxy toolkit for Windows/WSL
+  collections/
+    <collection-name>/
+      catalog-entry.json               # Collection metadata (required)
+      devcontainer.json                # DevContainer config (required)
+      VERSION                          # Semver version (required)
+```
+
+Everything in `common/devcontainer-assets/` is automatically copied into every project's `.devcontainer/` directory — this is how shared scripts and proxy toolkits are distributed to all projects. Collection-specific files are copied first, then common assets are overlaid (common assets take precedence on name collisions).
 
 ### Creating a Custom Catalog
 

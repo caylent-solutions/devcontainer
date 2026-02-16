@@ -15,7 +15,6 @@ def test_apply_template_with_container_env():
         "containerEnv": {
             "AWS_CONFIG_ENABLED": "true",
             "DEFAULT_GIT_BRANCH": "main",
-            "DEFAULT_PYTHON_VERSION": "3.12.9",
         },
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
@@ -35,7 +34,6 @@ def test_apply_template_with_env_values():
         "env_values": {
             "AWS_CONFIG_ENABLED": "true",
             "DEFAULT_GIT_BRANCH": "main",
-            "DEFAULT_PYTHON_VERSION": "3.12.9",
         },
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
@@ -72,7 +70,6 @@ def test_apply_template_does_not_call_tool_versions():
     template_data = {
         "containerEnv": {
             "AWS_CONFIG_ENABLED": "false",
-            "DEFAULT_PYTHON_VERSION": "3.12.9",
         },
     }
 

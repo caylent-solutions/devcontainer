@@ -19,7 +19,6 @@ def _full_template(**overrides):
             "AWS_CONFIG_ENABLED": "true",
             "AWS_DEFAULT_OUTPUT": "json",
             "DEFAULT_GIT_BRANCH": "main",
-            "DEFAULT_PYTHON_VERSION": "3.12.9",
             "DEVELOPER_NAME": "Functional Test",
             "EXTRA_APT_PACKAGES": "",
             "GIT_AUTH_METHOD": "token",

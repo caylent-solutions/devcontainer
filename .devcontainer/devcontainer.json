@@ -1,7 +1,7 @@
 {
   "name": "caylent-devcontainer",
   "remoteUser": "vscode",
-  "image": "mcr.microsoft.com/devcontainers/base:noble",
+  "image": "public.ecr.aws/g0u3p4x2/caylent-solutions/devcontainer-base:noble",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {

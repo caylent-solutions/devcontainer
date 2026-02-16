@@ -13,7 +13,7 @@ from caylent_devcontainer_cli.commands.setup_interactive import apply_template, 
 def test_apply_template_calls_write_project_files(mock_write_files):
     """Test that apply_template delegates to write_project_files."""
     template_data = {
-        "env_values": {"AWS_CONFIG_ENABLED": "true", "DEFAULT_PYTHON_VERSION": "3.12.9"},
+        "env_values": {"AWS_CONFIG_ENABLED": "true"},
         "aws_profile_map": {"default": {"region": "us-west-2"}},
     }
 
