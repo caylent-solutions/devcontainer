@@ -97,6 +97,15 @@ Create the IAM OIDC identity provider for GitHub Actions and an IAM role with le
 
 **Note:** Story specified AWS CLI commands but Terraform modules were used instead to follow the project's declarative IaC standards (CLAUDE.md).
 
+### Session 2 — 2026-02-13
+
+**Trust policy temporarily broadened for testing, then reverted:**
+- Changed `github_branch = "main"` to `github_branch = "*"` temporarily to test OIDC from the feature branch
+- Applied via `terragrunt apply -auto-approve` — trust policy updated in AWS
+- Manual end-to-end mirror verified (pull from MCR, push to ECR Public — see S2.2.1 Session 2)
+- Reverted `github_branch` back to `"main"` and re-applied — trust policy restored to main-only scope
+- Terragrunt config file in repo remains `github_branch = "main"` (correct final state)
+
 ---
 
 ## General Code Requirements

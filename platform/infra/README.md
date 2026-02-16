@@ -367,6 +367,26 @@ The mirror workflow (`.github/workflows/mirror-devcontainer-image.yml`) authenti
 
 The workflow runs on a semi-monthly schedule (1st and 15th at 6 AM UTC) and supports manual dispatch via the GitHub UI or API.
 
+### Current Image Status
+
+The ECR Public mirror is live with the following tags:
+
+```bash
+# Pull the latest mirrored image
+docker pull public.ecr.aws/g0u3p4x2/caylent-solutions/devcontainer-base:noble
+
+# List available tags
+aws ecr-public describe-images \
+  --repository-name caylent-solutions/devcontainer-base \
+  --region us-east-1 \
+  --query 'imageDetails[].imageTags' \
+  --output text
+```
+
+Tags follow this convention:
+- `:noble` — rolling tag, always points to the latest mirrored image
+- `:noble-<digest-prefix>` — immutable tag tied to a specific upstream digest (e.g., `noble-3dcb059253b2`)
+
 ## Key Values
 
 | Value | How to retrieve |

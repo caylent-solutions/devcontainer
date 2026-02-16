@@ -122,6 +122,41 @@ permissions:
 - Updated `platform/infra/README.md` with GitHub Actions integration section
 - All quality gates passed: `make test`, `make lint`, `make pre-commit-check`, YAML validation
 
+### Session 2 — 2026-02-13
+
+**Manual End-to-End Verification:**
+
+GitHub Actions cannot discover `workflow_dispatch` triggers for workflows that only exist on feature branches (not yet on the default branch). The workflow was manually verified step-by-step to confirm the full pipeline works:
+
+1. **Digest comparison** — `crane digest` successfully fetched upstream MCR digest (`sha256:3dcb059253b2ebb44de3936620e1cff3dadcd2c1c982d579081ca8128c1eb319`), confirmed ECR image did not exist (404)
+2. **ECR Public authentication** — `aws ecr-public get-login-password` + `docker login public.ecr.aws` succeeded
+3. **Image pull** — `docker pull mcr.microsoft.com/devcontainers/base:noble` succeeded
+4. **Image tag + push** — Tagged and pushed both `noble` and `noble-3dcb059253b2` to ECR Public
+5. **Public pull verification** — Logged out of ECR, confirmed `docker pull public.ecr.aws/g0u3p4x2/caylent-solutions/devcontainer-base:noble` works without authentication
+6. **ECR image listing** — `aws ecr-public describe-images` confirmed both tags present, image size 275 MB
+
+**Trust policy tested and reverted:**
+- Temporarily broadened IAM trust policy to `github_branch = "*"` for feature branch testing
+- Reverted to `github_branch = "main"` via `terragrunt apply` after verification
+- `workflow_dispatch` from the GitHub UI will work once the workflow is merged to main
+
+**Note:** The `workflow_dispatch` trigger requires the workflow file to exist on the default branch (main) for GitHub to register it. Once this feature branch is merged, both the scheduled cron and manual dispatch triggers will be active.
+
+## Open Task — Merge Workflow to Main and Validate via GitHub Actions
+
+**Status:** pending
+
+**Objective:** Cherry-pick or merge only `.github/workflows/mirror-devcontainer-image.yml` to `main` so the workflow becomes discoverable by GitHub Actions. Then trigger it via `workflow_dispatch` from the GitHub UI and validate the full pipeline runs end-to-end in GitHub Actions (OIDC auth, image mirror, devcontainer.json PR creation).
+
+**Steps:**
+1. From `feature/devcontainer-v2.0.0`, cherry-pick the commit containing `.github/workflows/mirror-devcontainer-image.yml` onto `main` (or create a minimal PR with just the workflow file)
+2. Wait for GitHub to index the workflow (visible at Actions tab)
+3. Trigger via GitHub UI: Actions → "Mirror DevContainer Base Image" → "Run workflow" → select `main`
+4. Verify all steps pass: digest check, OIDC auth, ECR push, devcontainer.json update, PR creation
+5. If the workflow creates a PR, review and close it (the devcontainer.json image reference update will be handled properly in S2.2.2)
+
+**OIDC trust policy note:** The IAM trust policy is scoped to `main` only (`refs/heads/main`). Dispatching from `main` will work. Dispatching from a feature branch will fail at the AWS OIDC auth step because the `sub` claim won't match. If feature-branch dispatch is needed in the future, broaden `github_branch` in `platform/infra/terragrunt/us-east-1/github-actions-ecr-push/terragrunt.hcl` and apply via `terragrunt apply`.
+
 ---
 
 ## General Code Requirements
