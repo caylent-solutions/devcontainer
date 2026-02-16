@@ -23,6 +23,15 @@ jobs:
     name: Mirror image to ECR Public
     runs-on: ubuntu-latest
     steps:
+      - name: Validate required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${IAM_ROLE_ARN}" ]]; then
+            echo "::error::Repository variable ECR_PUSH_ROLE_ARN is not set. Configure it in Settings → Secrets and variables → Actions → Variables."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
