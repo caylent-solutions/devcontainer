@@ -21,7 +21,7 @@ env:
 jobs:
   mirror:
     name: Mirror image to ECR Public
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Validate required configuration
         shell: bash
@@ -159,8 +159,12 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git push origin --delete "${BRANCH}" 2>/dev/null || true
           git checkout -b "${BRANCH}"
-          git add .devcontainer/devcontainer.json collections/default/devcontainer.json
+          for f in .devcontainer/devcontainer.json collections/default/devcontainer.json; do
+            [[ -f "${f}" ]] && git add "${f}"
+          done
           git commit -m "chore: update devcontainer base image to latest mirror"
           git push origin "${BRANCH}"
 
@@ -183,3 +187,19 @@ jobs:
             --body "${BODY}" \
             --base main \
             --head "${BRANCH}"
+
+      - name: Job summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.check.outputs.changed }}" != "true" ]]; then
+            echo "### Mirror DevContainer Base Image" >> "${GITHUB_STEP_SUMMARY}"
+            echo "No update needed — upstream and ECR digests match." >> "${GITHUB_STEP_SUMMARY}"
+          elif [[ "${{ steps.update.outputs.updated }}" != "true" ]]; then
+            echo "### Mirror DevContainer Base Image" >> "${GITHUB_STEP_SUMMARY}"
+            echo "Image mirrored to ECR Public. devcontainer.json references already up to date — no PR created." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "### Mirror DevContainer Base Image" >> "${GITHUB_STEP_SUMMARY}"
+            echo "Image mirrored to ECR Public and PR created to update devcontainer.json references." >> "${GITHUB_STEP_SUMMARY}"
+          fi
