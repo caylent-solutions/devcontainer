@@ -89,16 +89,6 @@ if [ ! -f "${WORK_DIR}/shell.env" ]; then
   exit_with_error "❌ shell.env not found at ${WORK_DIR}/shell.env"
 fi
 
-# Source shell.env to ensure proxy and environment variables are available in this process.
-# The postCreateCommand sources shell.env before calling sudo, but sudo -E may not
-# preserve all variables depending on sudoers configuration.
-log_info "Sourcing shell.env for environment variables..."
-source "${WORK_DIR}/shell.env"
-log_info "Proxy environment: HTTP_PROXY=${HTTP_PROXY:-unset} http_proxy=${http_proxy:-unset}"
-
-# Configure apt proxy via /etc/apt/apt.conf.d/99proxy when proxy is enabled.
-configure_apt_proxy
-
 # For bash: source in .bashrc (interactive) and via BASH_ENV (non-interactive)
 echo "# Source project shell.env" >> "${BASH_RC}"
 echo "source \"${WORK_DIR}/shell.env\"" >> "${BASH_RC}"

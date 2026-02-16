@@ -142,20 +142,14 @@ class TestPostcreateScript(TestCase):
         self.assertIn("wsl-family-os/README.md", self.content)
         self.assertIn("nix-family-os/README.md", self.content)
 
-    def test_sources_shell_env_for_proxy(self):
-        """Postcreate must source shell.env before network operations for proxy vars."""
-        self.assertIn('source "${WORK_DIR}/shell.env"', self.content)
-        # shell.env sourcing must happen before apt-get
-        source_pos = self.content.index('source "${WORK_DIR}/shell.env"')
-        apt_get_pos = self.content.index("apt-get update")
-        self.assertLess(source_pos, apt_get_pos)
-
-    def test_calls_configure_apt_proxy(self):
-        """Postcreate must call configure_apt_proxy before apt-get."""
-        self.assertIn("configure_apt_proxy", self.content)
-        proxy_pos = self.content.index("configure_apt_proxy")
-        apt_get_pos = self.content.index("apt-get update")
-        self.assertLess(proxy_pos, apt_get_pos)
+    def test_apt_uses_sudo_without_e(self):
+        """Postcreate apt-get must use sudo (not sudo -E) since proxy comes from apt.conf.d."""
+        for i, line in enumerate(self.content.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            if "apt-get" in stripped and "sudo -E" in stripped:
+                self.fail(f"Line {i} uses sudo -E for apt-get (proxy comes from apt.conf.d, not env): {stripped}")
 
     def test_set_euo_pipefail(self):
         """Postcreate must use strict error handling."""
