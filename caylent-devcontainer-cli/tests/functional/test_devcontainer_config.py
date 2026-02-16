@@ -52,13 +52,20 @@ class TestDevcontainerJson(TestCase):
         apt_get_pos = cmd.index("apt-get")
         self.assertLess(shell_env_pos, apt_get_pos)
 
-    def test_post_create_command_uses_sudo_e(self):
-        """postCreateCommand must use sudo -E to preserve environment variables."""
+    def test_post_create_command_configures_apt_proxy(self):
+        """postCreateCommand must configure apt proxy via apt.conf.d before apt-get."""
         cmd = self.config["postCreateCommand"]
-        # Every sudo in the command should be sudo -E
-        self.assertNotIn("sudo apt-get", cmd)
+        # Apt proxy must be configured via /etc/apt/apt.conf.d/99proxy
+        self.assertIn("/etc/apt/apt.conf.d/99proxy", cmd)
+        # Proxy config must appear before first apt-get
+        proxy_conf_pos = cmd.index("/etc/apt/apt.conf.d/99proxy")
+        apt_get_pos = cmd.index("apt-get update")
+        self.assertLess(proxy_conf_pos, apt_get_pos)
+
+    def test_post_create_command_uses_sudo_e_for_postcreate(self):
+        """postCreateCommand must use sudo -E for postcreate.sh to pass env vars."""
+        cmd = self.config["postCreateCommand"]
         self.assertNotIn("sudo bash", cmd)
-        self.assertIn("sudo -E apt-get", cmd)
         self.assertIn("sudo -E bash", cmd)
 
     def test_post_create_command_has_wsl_and_non_wsl_paths(self):
@@ -135,6 +142,21 @@ class TestPostcreateScript(TestCase):
         self.assertIn("wsl-family-os/README.md", self.content)
         self.assertIn("nix-family-os/README.md", self.content)
 
+    def test_sources_shell_env_for_proxy(self):
+        """Postcreate must source shell.env before network operations for proxy vars."""
+        self.assertIn('source "${WORK_DIR}/shell.env"', self.content)
+        # shell.env sourcing must happen before apt-get
+        source_pos = self.content.index('source "${WORK_DIR}/shell.env"')
+        apt_get_pos = self.content.index("apt-get update")
+        self.assertLess(source_pos, apt_get_pos)
+
+    def test_calls_configure_apt_proxy(self):
+        """Postcreate must call configure_apt_proxy before apt-get."""
+        self.assertIn("configure_apt_proxy", self.content)
+        proxy_pos = self.content.index("configure_apt_proxy")
+        apt_get_pos = self.content.index("apt-get update")
+        self.assertLess(proxy_pos, apt_get_pos)
+
     def test_set_euo_pipefail(self):
         """Postcreate must use strict error handling."""
         self.assertIn("set -euo pipefail", self.content)
@@ -199,6 +221,14 @@ class TestDevcontainerFunctions(TestCase):
         """devcontainer-functions.sh must define exit_with_error function."""
         self.assertIn("exit_with_error()", self.content)
         self.assertIn("exit 1", self.content)
+
+    def test_configure_apt_proxy_function_exists(self):
+        """devcontainer-functions.sh must define configure_apt_proxy function."""
+        self.assertIn("configure_apt_proxy()", self.content)
+
+    def test_configure_apt_proxy_writes_apt_conf(self):
+        """configure_apt_proxy must write to /etc/apt/apt.conf.d/99proxy."""
+        self.assertIn("/etc/apt/apt.conf.d/99proxy", self.content)
 
     def test_configure_git_shared_function_exists(self):
         """devcontainer-functions.sh must define configure_git_shared function."""

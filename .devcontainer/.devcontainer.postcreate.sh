@@ -11,6 +11,19 @@ WARNINGS=()
 # Source shared functions
 source "${WORK_DIR}/.devcontainer/devcontainer-functions.sh"
 
+# TEMP DIAGNOSTIC: Check what env vars sudo -E actually passed through
+echo "===== DIAGNOSTIC: env vars BEFORE sourcing shell.env ====="
+echo "  HTTP_PROXY=${HTTP_PROXY:-NOT SET}"
+echo "  HTTPS_PROXY=${HTTPS_PROXY:-NOT SET}"
+echo "  http_proxy=${http_proxy:-NOT SET}"
+echo "  https_proxy=${https_proxy:-NOT SET}"
+echo "  NO_PROXY=${NO_PROXY:-NOT SET}"
+echo "  HOST_PROXY=${HOST_PROXY:-NOT SET}"
+echo "  HOST_PROXY_URL=${HOST_PROXY_URL:-NOT SET}"
+echo "  USER=$(whoami)"
+echo "  EUID=${EUID}"
+echo "============================================================"
+
 # Configure and log CICD environment
 CICD_VALUE="${CICD:-false}"
 if [ "$CICD_VALUE" = "true" ]; then
@@ -76,6 +89,16 @@ if [ ! -f "${WORK_DIR}/shell.env" ]; then
   exit_with_error "❌ shell.env not found at ${WORK_DIR}/shell.env"
 fi
 
+# Source shell.env to ensure proxy and environment variables are available in this process.
+# The postCreateCommand sources shell.env before calling sudo, but sudo -E may not
+# preserve all variables depending on sudoers configuration.
+log_info "Sourcing shell.env for environment variables..."
+source "${WORK_DIR}/shell.env"
+log_info "Proxy environment: HTTP_PROXY=${HTTP_PROXY:-unset} http_proxy=${http_proxy:-unset}"
+
+# Configure apt proxy via /etc/apt/apt.conf.d/99proxy when proxy is enabled.
+configure_apt_proxy
+
 # For bash: source in .bashrc (interactive) and via BASH_ENV (non-interactive)
 echo "# Source project shell.env" >> "${BASH_RC}"
 echo "source \"${WORK_DIR}/shell.env\"" >> "${BASH_RC}"
@@ -95,7 +118,9 @@ echo "alias pip=pip3" >> /home/${CONTAINER_USER}/.zshenv
 ##############################
 log_info "Installing asdf..."
 mkdir -p /home/${CONTAINER_USER}/.asdf
-git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.15.0
+if ! git clone https://github.com/asdf-vm/asdf.git /home/${CONTAINER_USER}/.asdf --branch v0.15.0; then
+  exit_with_error "Failed to clone asdf repository — check network connectivity and proxy settings"
+fi
 
 # Source asdf for the current script
 export ASDF_DIR="/home/${CONTAINER_USER}/.asdf"
@@ -174,7 +199,18 @@ fi
 #################
 if [ ! -d "/home/${CONTAINER_USER}/.oh-my-zsh" ]; then
   log_info "Installing Oh My Zsh..."
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  OMZ_INSTALL_SCRIPT="/tmp/ohmyzsh-install-${RANDOM}.sh"
+  if ! curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -o "${OMZ_INSTALL_SCRIPT}"; then
+    exit_with_error "Failed to download Oh My Zsh install script — check network connectivity and proxy settings"
+  fi
+  if [ ! -s "${OMZ_INSTALL_SCRIPT}" ]; then
+    exit_with_error "Oh My Zsh install script is empty or missing at ${OMZ_INSTALL_SCRIPT}"
+  fi
+  if ! sh "${OMZ_INSTALL_SCRIPT}" --unattended; then
+    rm -f "${OMZ_INSTALL_SCRIPT}"
+    exit_with_error "Oh My Zsh installation failed"
+  fi
+  rm -f "${OMZ_INSTALL_SCRIPT}"
 else
   log_info "Oh My Zsh already installed — skipping"
 fi
@@ -220,15 +256,22 @@ fi
 # Install Base Tools
 #####################
 log_info "Installing core packages..."
-sudo apt-get update -qq
-sudo apt-get install -y -qq curl vim git gh jq yq nmap sipcalc wget unzip zip netcat-openbsd bc
+log_info "Proxy environment: HTTP_PROXY=${HTTP_PROXY:-unset} http_proxy=${http_proxy:-unset}"
+if ! sudo apt-get update -qq; then
+  exit_with_error "apt-get update failed. Check proxy settings and network connectivity. HTTP_PROXY=${HTTP_PROXY:-unset}"
+fi
+if ! sudo apt-get install -y -qq curl vim git gh jq yq nmap sipcalc wget unzip zip netcat-openbsd bc; then
+  exit_with_error "apt-get install failed for core packages"
+fi
 
 ##############################
 # Install Optional Extra Tools
 ##############################
 if [ -n "${EXTRA_APT_PACKAGES:-}" ]; then
   log_info "Installing extra packages: ${EXTRA_APT_PACKAGES}"
-  sudo apt-get install -y ${EXTRA_APT_PACKAGES}
+  if ! sudo apt-get install -y ${EXTRA_APT_PACKAGES}; then
+    exit_with_error "apt-get install failed for extra packages: ${EXTRA_APT_PACKAGES}"
+  fi
 fi
 
 if [ -f "${WORK_DIR}/.tool-versions" ]; then

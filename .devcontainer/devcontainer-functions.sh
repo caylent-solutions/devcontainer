@@ -29,6 +29,30 @@ exit_with_error() {
   exit 1
 }
 
+configure_apt_proxy() {
+  # Configure apt to use proxy from environment variables.
+  # Writes /etc/apt/apt.conf.d/99proxy if HTTP_PROXY or http_proxy is set.
+  # This ensures apt-get works behind proxies regardless of sudo env preservation.
+  local apt_proxy_conf="/etc/apt/apt.conf.d/99proxy"
+  local proxy_url="${HTTP_PROXY:-${http_proxy:-}}"
+
+  if [ -z "${proxy_url}" ]; then
+    log_info "No proxy configured for apt (HTTP_PROXY not set)"
+    return 0
+  fi
+
+  local https_proxy_url="${HTTPS_PROXY:-${https_proxy:-${proxy_url}}}"
+
+  log_info "Configuring apt proxy: http=${proxy_url} https=${https_proxy_url}"
+
+  cat > "${apt_proxy_conf}" <<APT_PROXY_EOF
+Acquire::http::Proxy "${proxy_url}";
+Acquire::https::Proxy "${https_proxy_url}";
+APT_PROXY_EOF
+
+  log_success "Wrote apt proxy configuration to ${apt_proxy_conf}"
+}
+
 asdf_plugin_installed() {
   asdf plugin list | grep -q "^$1$"
 }
