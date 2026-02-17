@@ -1,7 +1,0 @@
-{
-  "name": "proxy",
-  "description": "Caylent development environment with host proxy support. Includes containerEnv with HTTP_PROXY, HTTPS_PROXY, and NO_PROXY for environments behind a corporate proxy.",
-  "tags": ["general", "multi-language", "aws", "kubernetes", "proxy"],
-  "maintainer": "Caylent Platform Team",
-  "min_cli_version": "2.0.0"
-}

@@ -229,6 +229,49 @@ wait_for_stop() {
     ps -p "${pid}" > /dev/null 2>&1
 }
 
+# Check if the listen port is available before starting
+check_port_available() {
+    local port="$1"
+    local listeners
+    listeners=$(ss -tlnp 2>/dev/null | grep ":${port} ") || true
+
+    if [[ -z "${listeners}" ]]; then
+        return 0
+    fi
+
+    log_error "Port ${port} is already in use by another process:"
+    echo "" >&2
+    echo "${listeners}" | while read -r line; do
+        echo "    ${line}" >&2
+    done
+    echo "" >&2
+
+    # Extract PIDs from ss output (format: users:(("process",pid=NNN,...)))
+    local pids
+    pids=$(echo "${listeners}" | grep -oP 'pid=\K[0-9]+' | sort -u) || true
+
+    if [[ -n "${pids}" ]]; then
+        log_warn "Processes using port ${port}:"
+        echo "${pids}" | while read -r pid; do
+            local pname
+            pname=$(ps -p "${pid}" -o comm= 2>/dev/null || echo "unknown")
+            log_warn "  PID ${pid} (${pname})"
+        done
+        echo "" >&2
+    fi
+
+    log_info "To find all processes on port ${port}:"
+    log_info "  ss -tlnp | grep :${port}"
+    echo "" >&2
+    log_info "To kill a specific process:"
+    log_info "  kill <PID>"
+    echo "" >&2
+    log_info "To kill all tinyproxy processes:"
+    log_info "  pkill -9 tinyproxy"
+
+    exit 1
+}
+
 # Start tinyproxy
 start_proxy() {
     warn_if_in_container
@@ -244,6 +287,9 @@ start_proxy() {
         log_warn "tinyproxy is already running (PID: ${pid})"
         return 0
     fi
+
+    # Check port is available before attempting to start
+    check_port_available "${TINYPROXY_PORT}"
 
     # Generate runtime config from template
     generate_config

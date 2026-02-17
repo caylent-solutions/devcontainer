@@ -26,8 +26,12 @@ Allow 10.0.0.0/8
 # Forward ALL traffic to upstream proxy
 Upstream http __UPSTREAM_HOST__:__UPSTREAM_PORT__ "."
 
-# Allow CONNECT for HTTPS tunneling
+# Allow CONNECT for HTTPS tunneling and common service ports
 ConnectPort 443
+ConnectPort 563
+ConnectPort 4318
+ConnectPort 8080
 ConnectPort 8443
+ConnectPort 9418
 
 DisableViaHeader Yes

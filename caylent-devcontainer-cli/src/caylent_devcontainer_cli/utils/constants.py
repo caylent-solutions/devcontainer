@@ -63,12 +63,9 @@ VALID_KEY_VALUES = {
 # GIT_PROVIDER_URL: hostname only — no protocol prefix, must contain at least one dot
 # HOST_PROXY_URL: must start with http:// or https:// — only validated when HOST_PROXY=true
 
-# Default NO_PROXY bypass list — domains that should not be routed through HOST_PROXY.
-# apt ignores the NO_PROXY env var; configure_apt_proxy() in devcontainer-functions.sh
-# translates these into per-host Acquire::http::Proxy::host "DIRECT" directives.
-DEFAULT_NO_PROXY = (
-    "localhost,127.0.0.1,.local," "ports.ubuntu.com,archive.ubuntu.com," "security.ubuntu.com,packages.microsoft.com"
-)
+# Default NO_PROXY bypass list — addresses that should not be routed through HOST_PROXY.
+# All external traffic (including apt repos) goes through the proxy when HOST_PROXY=true.
+DEFAULT_NO_PROXY = "localhost,127.0.0.1,.local"
 
 # All known environment variable keys (used for conflict detection in custom env var loop)
 # This is the union of EXAMPLE_ENV_VALUES keys — defined here to avoid circular imports.
