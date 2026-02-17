@@ -95,6 +95,7 @@
       "Bash(asdf reshim*)",
       "Bash(asdf current*)",
       "Bash(mkdir *)",
+      "Bash(cp *)",
       "Bash(source ~/.bashrc*)"
     ],
     "deny": [
@@ -107,7 +108,6 @@
       "Bash(tee *)",
       "Bash(rm *)",
       "Bash(mv *)",
-      "Bash(cp *)",
       "Bash(git add*)",
       "Bash(git commit*)",
       "Bash(git push*)",
