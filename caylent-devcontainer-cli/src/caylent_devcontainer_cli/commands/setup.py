@@ -171,8 +171,8 @@ def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_overri
             _display_and_confirm_collection(selected)
         elif user_chose_browse:
             # User explicitly chose "Browse" — always show selection UI
+            # _browse_collections already displays metadata and confirms
             selected = _browse_collections(compatible)
-            _display_and_confirm_collection(selected)
         elif len(compatible) == 1:
             selected = compatible[0]
             log("INFO", f"Auto-selected collection: {selected.entry.name}")
@@ -181,8 +181,8 @@ def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_overri
             selected = find_collection_by_name(compatible, "default")
             log("INFO", f"Selected default collection: {selected.entry.name}")
         else:
+            # _browse_collections already displays metadata and confirms
             selected = _browse_collections(compatible)
-            _display_and_confirm_collection(selected)
 
         # Copy files
         common_assets = os.path.join(temp_dir, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)

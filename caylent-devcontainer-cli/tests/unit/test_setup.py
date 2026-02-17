@@ -640,11 +640,10 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="browse")
     @patch("caylent_devcontainer_cli.commands.setup._browse_collections")
-    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_collection")
     def test_env_url_browse_selection(
-        self, mock_confirm, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
-        """DEVCONTAINER_CATALOG_URL set, user picks 'Browse'."""
+        """DEVCONTAINER_CATALOG_URL set, user picks 'Browse'. No duplicate confirm."""
         entry = _make_entry(name="java-backend")
         entry2 = _make_entry(name="angular-frontend")
         mock_discover.return_value = [entry, entry2]
@@ -655,7 +654,6 @@ class TestSelectAndCopyCatalog:
 
         mock_source.assert_called_once()
         mock_browse.assert_called_once()
-        mock_confirm.assert_called_once_with(entry)
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
@@ -665,9 +663,8 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="browse")
     @patch("caylent_devcontainer_cli.commands.setup._browse_collections")
-    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_collection")
     def test_browse_single_collection_shows_ui(
-        self, mock_confirm, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
         """Browse with single collection still shows selection UI instead of auto-selecting."""
         entry = _make_entry(name="java-backend")
@@ -679,7 +676,6 @@ class TestSelectAndCopyCatalog:
 
         mock_source.assert_called_once()
         mock_browse.assert_called_once()
-        mock_confirm.assert_called_once_with(entry)
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
