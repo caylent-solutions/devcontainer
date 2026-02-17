@@ -201,10 +201,15 @@ def _handle_missing_variables(project_root, config_data, result):
             choices=[
                 "Update devcontainer configuration and add missing variables",
                 "Only add the missing variables to existing files",
+                "Open without changes",
             ],
             default="Update devcontainer configuration and add missing variables",
         )
     )
+
+    if "Open without changes" in choice:
+        log("WARN", "Continuing without changes — the environment may not work correctly")
+        return
 
     # Merge missing variables into the template data for write_project_files
     template_data = result.validated_template

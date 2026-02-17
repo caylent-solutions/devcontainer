@@ -538,6 +538,59 @@ def test_missing_vars_option2_adds_vars_only(
     mock_popen.assert_called_once()
 
 
+@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch("os.path.isfile", return_value=True)
+@patch("caylent_devcontainer_cli.commands.code.load_json_config")
+@patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
+@patch("caylent_devcontainer_cli.commands.code.ask_or_exit")
+@patch("caylent_devcontainer_cli.commands.code.write_project_files")
+@patch("shutil.which", return_value="/usr/bin/code")
+@patch("subprocess.Popen")
+def test_missing_vars_open_without_changes_skips_writes(
+    mock_popen, mock_which, mock_write_files, mock_ask, mock_detect, mock_load, mock_isfile, mock_resolve, capsys
+):
+    """Test Step 5 Option 3: open without changes skips write_project_files and launches IDE."""
+    mock_process = MagicMock()
+    mock_process.wait.return_value = 0
+    mock_popen.return_value = mock_process
+    validated_template = {
+        "containerEnv": {"EXISTING": "val", "NEW_KEY": "new_val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_load.return_value = {
+        "containerEnv": {"EXISTING": "val"},
+        "template_name": "test",
+        "template_path": "/path/test.json",
+        "cli_version": "2.0.0",
+    }
+    mock_detect.return_value = ValidationResult(
+        missing_base_keys={},
+        metadata_present=True,
+        template_name="test",
+        template_path="/path/test.json",
+        cli_version="2.0.0",
+        template_found=True,
+        validated_template=validated_template,
+        missing_template_keys={"NEW_KEY": "new_val"},
+    )
+    # User selects option 3 (open without changes)
+    mock_ask.return_value = "Open without changes"
+
+    args = MagicMock()
+    args.project_root = "/test/path"
+    args.ide = "vscode"
+    args.regenerate_shell_env = False
+
+    handle_code(args)
+
+    mock_write_files.assert_not_called()
+    mock_popen.assert_called_once()
+    captured = capsys.readouterr()
+    assert "without changes" in captured.err
+
+
 @patch("caylent_devcontainer_cli.commands.code._replace_devcontainer_files")
 @patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
 @patch("os.path.isfile", return_value=True)
