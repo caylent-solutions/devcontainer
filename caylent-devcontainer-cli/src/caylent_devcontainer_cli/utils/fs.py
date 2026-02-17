@@ -164,17 +164,20 @@ def write_project_files(
         write_json_file(aws_map_path, template_data["aws_profile_map"])
         log("OK", f"AWS profile map saved to {aws_map_path}")
 
-    # --- 4. Write ssh-private-key placeholder if SSH auth ---
+    # --- 4. Write ssh-private-key if SSH auth ---
     if container_env.get("GIT_AUTH_METHOD") == "ssh":
         ssh_key_path = os.path.join(project_root, ".devcontainer", SSH_KEY_FILENAME)
-        if not os.path.exists(ssh_key_path):
-            try:
-                with open(ssh_key_path, "w") as f:
-                    f.write("")
-                os.chmod(ssh_key_path, 0o600)
-                log("OK", f"SSH private key placeholder created at {ssh_key_path}")
-            except Exception as e:
-                exit_with_error(f"Failed to write {ssh_key_path}: {e}")
+        ssh_key_content = template_data.get("ssh_private_key", "")
+        try:
+            with open(ssh_key_path, "w") as f:
+                f.write(ssh_key_content)
+            os.chmod(ssh_key_path, 0o600)
+            if ssh_key_content:
+                log("OK", f"SSH private key written to {ssh_key_path}")
+            else:
+                log("WARN", f"SSH private key file created at {ssh_key_path} but template has no key content")
+        except Exception as e:
+            exit_with_error(f"Failed to write {ssh_key_path}: {e}")
 
     # --- 5. Ensure .gitignore entries ---
     _ensure_gitignore_entries(project_root)

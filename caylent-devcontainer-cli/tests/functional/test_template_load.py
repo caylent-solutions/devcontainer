@@ -195,11 +195,12 @@ class TestLoadTemplateEndToEnd:
             saved = json.load(f)
         assert saved == {"default": {"region": "us-east-1"}}
 
-    def test_load_writes_ssh_key_placeholder(self, tmp_path):
-        """Loading a template with SSH auth creates ssh-private-key placeholder."""
+    def test_load_writes_ssh_key_content(self, tmp_path):
+        """Loading a template with SSH auth writes actual key content to ssh-private-key."""
+        key_content = "-----BEGIN KEY-----\ndata\n-----END KEY-----\n"
         template_data = {
             "containerEnv": self._base_container_env(GIT_AUTH_METHOD="ssh"),
-            "ssh_private_key": "-----BEGIN KEY-----\ndata\n-----END KEY-----\n",
+            "ssh_private_key": key_content,
             "cli_version": "2.0.0",
             "template_name": "ssh-test",
             "template_path": "/tmp/test.json",
@@ -214,6 +215,9 @@ class TestLoadTemplateEndToEnd:
 
         ssh_key_path = os.path.join(project_root, ".devcontainer", "ssh-private-key")
         assert os.path.exists(ssh_key_path)
+        with open(ssh_key_path) as f:
+            written = f.read()
+        assert written == key_content
 
     def test_load_overwrite_prompt_with_questionary(self, tmp_path):
         """Overwrite prompt uses questionary.confirm, not confirm_action."""

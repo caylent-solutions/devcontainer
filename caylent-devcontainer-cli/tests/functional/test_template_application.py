@@ -129,17 +129,21 @@ class TestApplyTemplateConsolidated:
             data = json.load(f)
         assert data["default"]["region"] == "us-west-2"
 
-    def test_ssh_key_when_ssh_auth(self, project_dir):
-        """apply_template writes ssh-private-key when GIT_AUTH_METHOD=ssh."""
+    def test_ssh_key_content_when_ssh_auth(self, project_dir):
+        """apply_template writes actual key content to ssh-private-key when GIT_AUTH_METHOD=ssh."""
         container_env = {
             "GIT_AUTH_METHOD": "ssh",
             "AWS_CONFIG_ENABLED": "false",
         }
-        template = _make_template(containerEnv=container_env)
+        key_content = "-----BEGIN OPENSSH PRIVATE KEY-----\nkeydata\n-----END OPENSSH PRIVATE KEY-----\n"
+        template = _make_template(containerEnv=container_env, ssh_private_key=key_content)
         apply_template(template, project_dir)
 
         ssh_path = os.path.join(project_dir, ".devcontainer", "ssh-private-key")
         assert os.path.isfile(ssh_path)
+        with open(ssh_path) as f:
+            content = f.read()
+        assert content == key_content
         stat = os.stat(ssh_path)
         assert oct(stat.st_mode & 0o777) == "0o600"
 

@@ -457,18 +457,25 @@ class TestWriteProjectFiles:
         aws_file = os.path.join(project_root, ".devcontainer", "aws-profile-map.json")
         assert not os.path.exists(aws_file)
 
-    def test_writes_ssh_key_placeholder_when_ssh_auth(self, tmp_path):
-        """Test that ssh-private-key is written when GIT_AUTH_METHOD=ssh."""
+    def test_writes_ssh_key_content_when_ssh_auth(self, tmp_path):
+        """Test that ssh-private-key is written with actual key content when GIT_AUTH_METHOD=ssh."""
         from caylent_devcontainer_cli.utils.fs import write_project_files
 
         project_root = self._setup_project(tmp_path)
         template_data = self._make_template_data()
         template_data["containerEnv"]["GIT_AUTH_METHOD"] = "ssh"
+        template_data["ssh_private_key"] = (
+            "-----BEGIN OPENSSH PRIVATE KEY-----\nkeydata\n-----END OPENSSH PRIVATE KEY-----\n"
+        )
 
         write_project_files(project_root, template_data, "test", "/path")
 
         ssh_key = os.path.join(project_root, ".devcontainer", "ssh-private-key")
         assert os.path.isfile(ssh_key)
+        with open(ssh_key) as f:
+            content = f.read()
+        assert "-----BEGIN OPENSSH PRIVATE KEY-----" in content
+        assert "keydata" in content
 
     def test_no_ssh_key_when_token_auth(self, tmp_path):
         """Test that ssh-private-key is NOT written when GIT_AUTH_METHOD is not ssh."""
