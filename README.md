@@ -726,21 +726,17 @@ The CLI reads the following environment variables. Run `cdevcontainer <command> 
 
 ### Shell Completion
 
-Enable tab completion for all commands, subcommands, and flags.
-
-> **Bash prerequisite:** Requires the `bash-completion` package (`brew install bash-completion@2` on macOS, `sudo apt install bash-completion` on Ubuntu/Debian). Zsh has built-in completion support.
+Enable tab completion for all commands, subcommands, and flags. Completions stay in sync automatically after `pipx upgrade`.
 
 ```bash
-# Bash (requires bash-completion package)
-cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
+# Bash — add to ~/.bashrc
+eval "$(cdevcontainer completion bash)"
 
-# Zsh
-mkdir -p ~/.zfunc
-cdevcontainer completion zsh > ~/.zfunc/_cdevcontainer
-# Add to ~/.zshrc (before compinit): fpath=(~/.zfunc $fpath)
+# Zsh — add to ~/.zshrc
+eval "$(cdevcontainer completion zsh)"
 ```
 
-See the [Shell Completion Guide](caylent-devcontainer-cli/docs/SHELL_COMPLETION.md) for detailed setup, prerequisites, and troubleshooting.
+See the [Shell Completion Guide](caylent-devcontainer-cli/docs/SHELL_COMPLETION.md) for static file installation, prerequisites, and troubleshooting.
 
 For detailed information about the Caylent Devcontainer CLI, see the [CLI documentation](caylent-devcontainer-cli/README.md).
 

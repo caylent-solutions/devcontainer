@@ -252,21 +252,17 @@ All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for rele
 
 ### Shell Completion
 
-Enable tab completion for all commands, subcommands, and flags.
-
-> **Bash prerequisite:** The persistent method below requires the `bash-completion` package (`brew install bash-completion@2` on macOS, `sudo apt install bash-completion` on Ubuntu/Debian). Zsh has built-in completion support.
+Enable tab completion for all commands, subcommands, and flags. Completions stay in sync automatically after `pipx upgrade`.
 
 ```bash
-# Bash (requires bash-completion package)
-cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
+# Bash — add to ~/.bashrc
+eval "$(cdevcontainer completion bash)"
 
-# Zsh
-mkdir -p ~/.zfunc
-cdevcontainer completion zsh > ~/.zfunc/_cdevcontainer
-# Add to ~/.zshrc (before compinit): fpath=(~/.zfunc $fpath)
+# Zsh — add to ~/.zshrc
+eval "$(cdevcontainer completion zsh)"
 ```
 
-For detailed setup, prerequisites, troubleshooting, and verification steps, see the [Shell Completion Guide](docs/SHELL_COMPLETION.md).
+For static file installation, prerequisites, troubleshooting, and verification steps, see the [Shell Completion Guide](docs/SHELL_COMPLETION.md).
 
 ## Development
 

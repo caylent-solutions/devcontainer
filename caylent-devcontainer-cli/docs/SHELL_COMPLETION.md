@@ -2,11 +2,54 @@
 
 The Caylent Devcontainer CLI supports tab completion for bash and zsh. Completion covers all commands, subcommands, flags, and flag values (e.g. `--ide vscode|cursor`).
 
-## Prerequisites
+## Setup
 
 ### Bash
 
-The persistent completion method (Option 1) requires the `bash-completion` package:
+**Option 1: Auto-updating (recommended)** — always in sync after `pipx upgrade`, no manual steps needed.
+
+```bash
+echo 'eval "$(cdevcontainer completion bash)"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Option 2: Static file** — faster shell startup, but must be regenerated after each CLI upgrade.
+
+> Requires the `bash-completion` package — see [Bash Prerequisites](#bash-prerequisites) below.
+
+```bash
+mkdir -p ~/.local/share/bash-completion/completions
+cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
+```
+
+### Zsh
+
+**Option 1: Auto-updating (recommended)** — always in sync after `pipx upgrade`, no manual steps needed.
+
+```bash
+echo 'eval "$(cdevcontainer completion zsh)"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Option 2: Static file** — faster shell startup, but must be regenerated after each CLI upgrade.
+
+```bash
+mkdir -p ~/.zfunc
+cdevcontainer completion zsh > ~/.zfunc/_cdevcontainer
+```
+
+Add to `~/.zshrc` (before `compinit`):
+
+```bash
+fpath=(~/.zfunc $fpath)
+autoload -Uz compinit && compinit
+```
+
+Then reload: `source ~/.zshrc`
+
+### Bash Prerequisites
+
+Option 2 (static file) for Bash requires the `bash-completion` package:
 
 ```bash
 # macOS (Homebrew)
@@ -26,70 +69,7 @@ Ensure it is sourced in your `~/.bashrc`:
 [[ -r "/usr/share/bash-completion/bash_completion" ]] && source "/usr/share/bash-completion/bash_completion"
 ```
 
-If you prefer not to install `bash-completion`, use Option 2 (eval in `.bashrc`) instead.
-
-### Zsh
-
-Zsh includes built-in completion support. No additional packages are required — just ensure `compinit` is called in your `~/.zshrc` (see setup below).
-
-## Setup
-
-### Bash
-
-**Option 1: Persistent (recommended)**
-
-> Requires `bash-completion` — see [Prerequisites](#prerequisites).
-
-```bash
-# Generate and install the completion script
-cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
-```
-
-If the directory does not exist, create it first:
-
-```bash
-mkdir -p ~/.local/share/bash-completion/completions
-cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
-```
-
-**Option 2: Add to shell profile**
-
-```bash
-echo 'eval "$(cdevcontainer completion bash)"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### Zsh
-
-**Option 1: Persistent (recommended)**
-
-```bash
-# Create a completions directory if it doesn't exist
-mkdir -p ~/.zfunc
-
-# Generate and install the completion script
-cdevcontainer completion zsh > ~/.zfunc/_cdevcontainer
-```
-
-Ensure `~/.zfunc` is in your `fpath` by adding this to `~/.zshrc` (before `compinit`):
-
-```bash
-fpath=(~/.zfunc $fpath)
-autoload -Uz compinit && compinit
-```
-
-Then reload your shell:
-
-```bash
-source ~/.zshrc
-```
-
-**Option 2: Add to shell profile**
-
-```bash
-echo 'eval "$(cdevcontainer completion zsh)"' >> ~/.zshrc
-source ~/.zshrc
-```
+Option 1 (auto-updating) does not require `bash-completion`. Zsh has built-in completion support and requires no additional packages for either option.
 
 ## Dynamic Template Name Completion
 
@@ -123,11 +103,15 @@ cdevcontainer template view <TAB>
 # Shows: my-template  work-profile  ...
 ```
 
-## Updating
+## Updating After CLI Upgrades
 
-When the CLI is upgraded and new commands or flags are added, regenerate the completion script:
+If you used **Option 1 (auto-updating)**, completions stay in sync automatically — no action needed after `pipx upgrade caylent-devcontainer-cli`.
+
+If you used **Option 2 (static file)**, regenerate the completion script after each CLI upgrade:
 
 ```bash
+# After: pipx upgrade caylent-devcontainer-cli
+
 # Bash
 cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
 
@@ -152,8 +136,8 @@ autoload -Uz compinit && compinit
 
 ### Bash: completions directory not loaded
 
-Ensure `bash-completion` is installed and sourced — see [Prerequisites](#prerequisites).
+Only applies to Option 2 (static file). Ensure `bash-completion` is installed and sourced — see [Bash Prerequisites](#bash-prerequisites).
 
 ### Completions are stale after CLI upgrade
 
-Regenerate the completion script using the commands in the [Updating](#updating) section.
+Only applies to Option 2 (static file). Regenerate the completion script — see [Updating After CLI Upgrades](#updating-after-cli-upgrades). To avoid this in the future, switch to Option 1 (auto-updating).

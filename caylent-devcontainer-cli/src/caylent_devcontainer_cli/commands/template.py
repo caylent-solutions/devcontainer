@@ -37,19 +37,25 @@ def register_command(subparsers):
         "zsh": "_cdevcontainer_template_names",
     }
 
+    import shtab
+
     # 'template save' command (new name — no dynamic completion)
     save_parser = template_subparsers.add_parser("save", help="Save current environment as a template")
     save_parser.add_argument("name", help="Template name")
-    save_parser.add_argument("-p", "--project-root", help="Project root directory (default: current directory)")
+    save_project_root = save_parser.add_argument(
+        "-p", "--project-root", help="Project root directory (default: current directory)"
+    )
+    save_project_root.complete = shtab.DIRECTORY
     save_parser.set_defaults(func=handle_template_save)
 
     # 'template load' command
     load_template_parser = template_subparsers.add_parser("load", help="Load a template into current project")
     load_name = load_template_parser.add_argument("name", help="Template name")
     load_name.complete = _template_complete
-    load_template_parser.add_argument(
+    load_project_root = load_template_parser.add_argument(
         "-p", "--project-root", help="Project root directory (default: current directory)"
     )
+    load_project_root.complete = shtab.DIRECTORY
     load_template_parser.set_defaults(func=handle_template_load)
 
     # 'template list' command
@@ -332,6 +338,11 @@ def view_template(template_name):
 
     if not known and not custom:
         print(f"\n{COLORS['YELLOW']}No environment variables defined.{COLORS['RESET']}")
+
+    # Display SSH key path if SSH auth is configured
+    ssh_key = data.get("ssh_private_key", "")
+    if container_env.get("GIT_AUTH_METHOD") == "ssh" and ssh_key:
+        print(f"\n{COLORS['CYAN']}SSH Private Key:{COLORS['RESET']} {ssh_key}")
 
     # Display AWS profiles if present
     aws_profiles = data.get("aws_profile_map", {})

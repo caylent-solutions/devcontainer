@@ -59,12 +59,15 @@ def register_command(subparsers):
         formatter_class=_HelpFormatter,
         epilog=build_env_epilog("code"),
     )
-    code_parser.add_argument(
+    import shtab
+
+    project_root_action = code_parser.add_argument(
         "project_root",
         nargs="?",
         default=None,
         help="Project root directory (default: current directory)",
     )
+    project_root_action.complete = shtab.DIRECTORY
     code_parser.add_argument(
         "--ide", choices=["vscode", "cursor"], default="vscode", help="IDE to launch (default: vscode)"
     )

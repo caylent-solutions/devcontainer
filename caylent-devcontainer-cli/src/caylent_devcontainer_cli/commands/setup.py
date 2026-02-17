@@ -43,7 +43,10 @@ def register_command(subparsers):
         formatter_class=_HelpFormatter,
         epilog=build_env_epilog("setup-devcontainer"),
     )
-    parser.add_argument("path", help="Path to the root of the repository to set up")
+    import shtab
+
+    path_action = parser.add_argument("path", help="Path to the root of the repository to set up")
+    path_action.complete = shtab.DIRECTORY
     parser.add_argument(
         "--catalog-entry",
         type=str,

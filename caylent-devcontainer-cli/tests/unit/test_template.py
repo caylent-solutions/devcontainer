@@ -1061,6 +1061,91 @@ def test_view_template_empty_aws_profiles(capsys):
 
 
 # =============================================================================
+# view_template — SSH key display
+# =============================================================================
+
+
+def test_view_template_shows_ssh_key(capsys):
+    """view_template shows SSH private key path when auth method is ssh."""
+    template_data = {
+        "containerEnv": {"DEVELOPER_NAME": "Alice", "GIT_AUTH_METHOD": "ssh"},
+        "ssh_private_key": "/Users/alice/.ssh/id_rsa",
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("ssh-template")
+
+    output = capsys.readouterr().out
+    assert "SSH Private Key:" in output
+    assert "/Users/alice/.ssh/id_rsa" in output
+
+
+def test_view_template_hides_ssh_key_when_token_auth(capsys):
+    """view_template does not show SSH key when auth method is token."""
+    template_data = {
+        "containerEnv": {"DEVELOPER_NAME": "Alice", "GIT_AUTH_METHOD": "token"},
+        "ssh_private_key": "/Users/alice/.ssh/id_rsa",
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("token-template")
+
+    output = capsys.readouterr().out
+    assert "SSH Private Key:" not in output
+
+
+def test_view_template_hides_ssh_key_when_empty(capsys):
+    """view_template does not show SSH key section when ssh_private_key is empty."""
+    template_data = {
+        "containerEnv": {"DEVELOPER_NAME": "Alice", "GIT_AUTH_METHOD": "ssh"},
+        "ssh_private_key": "",
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("empty-ssh")
+
+    output = capsys.readouterr().out
+    assert "SSH Private Key:" not in output
+
+
+def test_view_template_hides_ssh_key_when_missing(capsys):
+    """view_template does not show SSH key section when ssh_private_key key is absent."""
+    template_data = {
+        "containerEnv": {"DEVELOPER_NAME": "Alice", "GIT_AUTH_METHOD": "ssh"},
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("no-ssh-key")
+
+    output = capsys.readouterr().out
+    assert "SSH Private Key:" not in output
+
+
+# =============================================================================
 # handle_template_edit / edit_template
 # =============================================================================
 
