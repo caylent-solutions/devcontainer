@@ -344,7 +344,10 @@ def prompt_ssh_key() -> str:
         SystemExit: If the user cancels at any point.
     """
     while True:
-        key_path = ask_or_exit(questionary.text("Enter the path to your SSH private key file:"))
+        key_path = ask_or_exit(
+            questionary.text("Enter the absolute path to your SSH private key file (e.g. /Users/you/.ssh/id_rsa):")
+        )
+        key_path = os.path.expanduser(key_path)
 
         success, message = validate_ssh_key_file(key_path)
         if not success:

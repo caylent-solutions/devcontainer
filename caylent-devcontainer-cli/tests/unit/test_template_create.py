@@ -84,6 +84,20 @@ class TestValidateSshKeyFile:
         assert success is False
         assert "passphrase" in message.lower()
 
+    def test_tilde_path_expanded(self, tmp_path):
+        """Path with ~ is expanded to absolute path."""
+        key_file = tmp_path / "test_key"
+        subprocess.run(
+            ["ssh-keygen", "-t", "ed25519", "-f", str(key_file), "-N", "", "-q"],
+            check=True,
+        )
+
+        tilde_path = f"~/../{key_file}"
+        with patch("os.path.expanduser", return_value=str(key_file)):
+            success, message = validate_ssh_key_file(tilde_path)
+        assert success is True
+        assert "SHA256:" in message
+
     def test_carriage_return_normalization(self, tmp_path):
         """Key with \\r line endings is normalized before validation."""
         key_file = tmp_path / "test_key"

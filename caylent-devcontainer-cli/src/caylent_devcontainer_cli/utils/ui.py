@@ -171,6 +171,9 @@ def validate_ssh_key_file(key_path: str) -> tuple:
         On success: (True, fingerprint string)
         On failure: (False, error description)
     """
+    # Expand ~ to absolute path
+    key_path = os.path.expanduser(key_path)
+
     # Check file exists
     if not os.path.exists(key_path):
         return (False, f"File does not exist: {key_path}")
