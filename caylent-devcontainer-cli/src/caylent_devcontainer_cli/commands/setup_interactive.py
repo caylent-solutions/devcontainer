@@ -625,6 +625,264 @@ def create_template_interactive() -> Dict[str, Any]:
     return template
 
 
+def _prompt_edit(key, current_value, prompt_fn, display_fn=None):
+    """Prompt to edit a single template setting.
+
+    Shows the current value and asks whether to change it.  When the user
+    declines, the original value is returned unchanged.
+
+    Args:
+        key: The setting name (shown to the user).
+        current_value: The current value for this setting.
+        prompt_fn: Callable returning a questionary question for the new value.
+        display_fn: Optional display formatter (e.g. ``mask_password``).
+
+    Returns:
+        The new value (or the original if the user declined).
+    """
+    display = display_fn(current_value) if display_fn else current_value
+    log("INFO", f"{key}: {display}")
+    if ask_or_exit(questionary.confirm(f"Change {key}?", default=False)):
+        return prompt_with_confirmation(prompt_fn, display_fn=display_fn)
+    return current_value
+
+
+def edit_template_interactive(template_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Edit an existing template interactively.
+
+    Walks through every template setting in the same order as
+    ``create_template_interactive()``.  For each setting the current value
+    is displayed and the user is asked whether to change it (default: No).
+
+    Args:
+        template_data: Existing template dict (must contain ``containerEnv``).
+
+    Returns:
+        Updated template dict.
+    """
+    env = template_data.get("containerEnv", {})
+    template: Dict[str, Any] = {}
+
+    log("INFO", "Editing template settings...")
+
+    # Step 1: AWS config enabled
+    aws_config = _prompt_edit(
+        "AWS_CONFIG_ENABLED",
+        env.get("AWS_CONFIG_ENABLED", "false"),
+        lambda: questionary.select(
+            "Enable AWS configuration?",
+            choices=["true", "false"],
+            default=env.get("AWS_CONFIG_ENABLED", "false"),
+        ),
+    )
+    env["AWS_CONFIG_ENABLED"] = aws_config
+
+    # Step 2: Default Git branch
+    env["DEFAULT_GIT_BRANCH"] = _prompt_edit(
+        "DEFAULT_GIT_BRANCH",
+        env.get("DEFAULT_GIT_BRANCH", "main"),
+        lambda: questionary.text(
+            "Default Git branch:",
+            default=env.get("DEFAULT_GIT_BRANCH", "main"),
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        ),
+    )
+
+    # Step 3: Developer name
+    env["DEVELOPER_NAME"] = _prompt_edit(
+        "DEVELOPER_NAME",
+        env.get("DEVELOPER_NAME", ""),
+        lambda: questionary.text(
+            "Developer name:",
+            default=env.get("DEVELOPER_NAME", ""),
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        ),
+    )
+
+    # Step 4: Git provider URL
+    env["GIT_PROVIDER_URL"] = _prompt_edit(
+        "GIT_PROVIDER_URL",
+        env.get("GIT_PROVIDER_URL", "github.com"),
+        lambda: questionary.text(
+            "Git provider URL (hostname only, e.g., github.com):",
+            default=env.get("GIT_PROVIDER_URL", "github.com"),
+            validate=lambda t: (
+                (len(t.strip()) > 0 and "." in t and not t.startswith("http://") and not t.startswith("https://"))
+                or "Must be hostname only (no protocol prefix) with at least one dot"
+            ),
+        ),
+    )
+
+    # Step 5: Git authentication method
+    auth_method = _prompt_edit(
+        "GIT_AUTH_METHOD",
+        env.get("GIT_AUTH_METHOD", "token"),
+        lambda: questionary.select(
+            "Git authentication method:",
+            choices=["token", "ssh"],
+            default=env.get("GIT_AUTH_METHOD", "token"),
+        ),
+    )
+    env["GIT_AUTH_METHOD"] = auth_method
+
+    # Step 6: Git username
+    env["GIT_USER"] = _prompt_edit(
+        "GIT_USER",
+        env.get("GIT_USER", ""),
+        lambda: questionary.text(
+            "Git username:",
+            default=env.get("GIT_USER", ""),
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        ),
+    )
+
+    # Step 7: Git email
+    env["GIT_USER_EMAIL"] = _prompt_edit(
+        "GIT_USER_EMAIL",
+        env.get("GIT_USER_EMAIL", ""),
+        lambda: questionary.text(
+            "Git email:",
+            default=env.get("GIT_USER_EMAIL", ""),
+            validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+        ),
+    )
+
+    # Step 8: Git token (only if token method)
+    if auth_method == "token":
+        env["GIT_TOKEN"] = _prompt_edit(
+            "GIT_TOKEN",
+            env.get("GIT_TOKEN", ""),
+            lambda: questionary.password(
+                "Git token (personal access token):",
+                validate=lambda t: len(t.strip()) > 0 or "Must be non-empty",
+            ),
+            display_fn=mask_password,
+        )
+        # Remove SSH key if switching from ssh to token
+        template_data.pop("ssh_private_key", None)
+    else:
+        # Remove token if switching from token to ssh
+        env.pop("GIT_TOKEN", None)
+
+    # Step 9: SSH private key (only if SSH method)
+    if auth_method == "ssh":
+        log("INFO", "Configuring SSH key authentication...")
+        has_existing = "ssh_private_key" in template_data and template_data["ssh_private_key"]
+        if has_existing:
+            log("INFO", "SSH private key: (already configured)")
+            if ask_or_exit(questionary.confirm("Replace SSH private key?", default=False)):
+                template["ssh_private_key"] = prompt_ssh_key()
+            else:
+                template["ssh_private_key"] = template_data["ssh_private_key"]
+        else:
+            template["ssh_private_key"] = prompt_ssh_key()
+
+    # Step 10: Extra APT packages
+    env["EXTRA_APT_PACKAGES"] = _prompt_edit(
+        "EXTRA_APT_PACKAGES",
+        env.get("EXTRA_APT_PACKAGES", ""),
+        lambda: questionary.text(
+            "Extra APT packages (space-separated, leave empty for none):",
+            default=env.get("EXTRA_APT_PACKAGES", ""),
+        ),
+    )
+
+    # Step 11: Pager
+    env["PAGER"] = _prompt_edit(
+        "PAGER",
+        env.get("PAGER", "cat"),
+        lambda: questionary.select(
+            "Select default pager:",
+            choices=["cat", "less", "more", "most"],
+            default=env.get("PAGER", "cat"),
+        ),
+    )
+
+    # Step 12: AWS output format (only if AWS enabled)
+    if aws_config == "true":
+        env["AWS_DEFAULT_OUTPUT"] = _prompt_edit(
+            "AWS_DEFAULT_OUTPUT",
+            env.get("AWS_DEFAULT_OUTPUT", "json"),
+            lambda: questionary.select(
+                "Select default AWS CLI output format:",
+                choices=["json", "table", "text", "yaml"],
+                default=env.get("AWS_DEFAULT_OUTPUT", "json"),
+            ),
+        )
+    else:
+        env.pop("AWS_DEFAULT_OUTPUT", None)
+
+    # Step 13: Host proxy
+    host_proxy = _prompt_edit(
+        "HOST_PROXY",
+        env.get("HOST_PROXY", "false"),
+        lambda: questionary.select(
+            "Enable host proxy?",
+            choices=["true", "false"],
+            default=env.get("HOST_PROXY", "false"),
+        ),
+    )
+    env["HOST_PROXY"] = host_proxy
+
+    # Step 14: Host proxy URL (only if host proxy true)
+    if host_proxy == "true":
+        env["HOST_PROXY_URL"] = _prompt_edit(
+            "HOST_PROXY_URL",
+            env.get("HOST_PROXY_URL", ""),
+            lambda: questionary.text(
+                "Host proxy URL (e.g., http://host.docker.internal:3128):",
+                default=env.get("HOST_PROXY_URL", ""),
+                validate=lambda t: (
+                    (t.startswith("http://") or t.startswith("https://")) or "Must start with http:// or https://"
+                ),
+            ),
+        )
+    else:
+        env["HOST_PROXY_URL"] = ""
+
+    # Step 15: Custom environment variables
+    custom_keys = sorted(k for k in env if k not in KNOWN_KEYS)
+    if custom_keys:
+        log("INFO", "Custom environment variables:")
+        for key in custom_keys:
+            env[key] = _prompt_edit(
+                key,
+                env[key],
+                lambda k=key: questionary.text(f"Enter new value for {k}:", default=env[k]),
+            )
+        # Offer to remove custom vars
+        for key in list(custom_keys):
+            if ask_or_exit(questionary.confirm(f"Remove custom variable '{key}'?", default=False)):
+                del env[key]
+
+    # Offer to add new custom vars
+    log("INFO", "You can add additional custom environment variables.")
+    new_custom = prompt_custom_env_vars(KNOWN_KEYS | set(env.keys()))
+    env.update(new_custom)
+
+    template["containerEnv"] = env
+
+    # Step 16: AWS profile map (only if AWS enabled)
+    if aws_config == "true":
+        existing_profiles = template_data.get("aws_profile_map", {})
+        if existing_profiles:
+            log("INFO", f"AWS profiles configured: {', '.join(sorted(existing_profiles.keys()))}")
+            if ask_or_exit(questionary.confirm("Reconfigure AWS profiles?", default=False)):
+                template["aws_profile_map"] = prompt_aws_profile_map()
+            else:
+                template["aws_profile_map"] = existing_profiles
+        else:
+            log("INFO", "Configuring AWS profiles...")
+            template["aws_profile_map"] = prompt_aws_profile_map()
+    else:
+        template["aws_profile_map"] = {}
+
+    # Preserve CLI version (will be updated by caller)
+    template["cli_version"] = template_data.get("cli_version", __version__)
+
+    return template
+
+
 def save_template_to_file(template_data: Dict[str, Any], name: str) -> None:
     """Save template to file with metadata.
 

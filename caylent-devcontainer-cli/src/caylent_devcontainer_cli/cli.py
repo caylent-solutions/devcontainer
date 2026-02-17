@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.commands import catalog, code, setup, template
+from caylent_devcontainer_cli.commands import catalog, code, completion, setup, template
 from caylent_devcontainer_cli.utils.constants import CLI_ENV_VARS, CLI_NAME
 
 
@@ -38,19 +38,12 @@ def build_env_epilog(command_name=None):
     return "\n".join(lines)
 
 
-def main():
-    """Main entry point for the CLI."""
-    # Lightweight pre-parse for skip-update-check flag
-    skip_update_check = "--skip-update-check" in sys.argv
+def build_parser():
+    """Build and return the fully configured CLI argument parser.
 
-    # Check for updates before main parsing (unless skipped)
-    if not skip_update_check:
-        from caylent_devcontainer_cli.utils.version import check_for_updates
-
-        if not check_for_updates():
-            sys.exit(1)
-
-    # Create the main parser
+    Extracted so that ``shtab`` (and tests) can access the parser
+    without running ``main()``.
+    """
     parser = argparse.ArgumentParser(
         description=f"{CLI_NAME} - Manage devcontainer environments",
         formatter_class=_HelpFormatter,
@@ -67,16 +60,36 @@ def main():
     # Register commands
     catalog.register_command(subparsers)
     code.register_command(subparsers)
+    completion.register_command(subparsers, parent_parser=parser)
     template.register_command(subparsers)
     setup.register_command(subparsers)
+
+    return parser
+
+
+def main():
+    """Main entry point for the CLI."""
+    # Lightweight pre-parse: skip update check for --skip-update-check flag
+    # and for the completion command (which must be fast and side-effect-free)
+    skip_update_check = "--skip-update-check" in sys.argv or (len(sys.argv) > 1 and sys.argv[1] == "completion")
+
+    # Check for updates before main parsing (unless skipped)
+    if not skip_update_check:
+        from caylent_devcontainer_cli.utils.version import check_for_updates
+
+        if not check_for_updates():
+            sys.exit(1)
+
+    parser = build_parser()
 
     # Parse arguments
     args = parser.parse_args()
 
-    # Show banner
-    from caylent_devcontainer_cli.utils.ui import log
+    # Show banner (skip for completion — output must be clean shell script)
+    if args.command != "completion":
+        from caylent_devcontainer_cli.utils.ui import log
 
-    log("INFO", f"Welcome to {CLI_NAME} {__version__}")
+        log("INFO", f"Welcome to {CLI_NAME} {__version__}")
 
     if not hasattr(args, "func"):
         parser.print_help()

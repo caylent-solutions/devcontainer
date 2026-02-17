@@ -706,6 +706,7 @@ cdevcontainer code /path/to/another-project --ide cursor
 # Manage templates
 cdevcontainer template list
 cdevcontainer template view my-template
+cdevcontainer template edit my-template
 cdevcontainer template create my-template
 cdevcontainer template save my-template
 cdevcontainer template load my-template
@@ -722,6 +723,24 @@ The CLI reads the following environment variables. Run `cdevcontainer <command> 
 | `DEVCONTAINER_CATALOG_URL` | Override the default catalog repository URL (supports `@tag` suffix). Used by `setup-devcontainer` and `catalog` commands. |
 | `CDEVCONTAINER_SKIP_UPDATE` | Set to `1` to disable automatic update checks. |
 | `CDEVCONTAINER_DEBUG_UPDATE` | Set to `1` to enable debug logging for update checks. |
+
+### Shell Completion
+
+Enable tab completion for all commands, subcommands, and flags.
+
+> **Bash prerequisite:** Requires the `bash-completion` package (`brew install bash-completion@2` on macOS, `sudo apt install bash-completion` on Ubuntu/Debian). Zsh has built-in completion support.
+
+```bash
+# Bash (requires bash-completion package)
+cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
+
+# Zsh
+mkdir -p ~/.zfunc
+cdevcontainer completion zsh > ~/.zfunc/_cdevcontainer
+# Add to ~/.zshrc (before compinit): fpath=(~/.zfunc $fpath)
+```
+
+See the [Shell Completion Guide](caylent-devcontainer-cli/docs/SHELL_COMPLETION.md) for detailed setup, prerequisites, and troubleshooting.
 
 For detailed information about the Caylent Devcontainer CLI, see the [CLI documentation](caylent-devcontainer-cli/README.md).
 

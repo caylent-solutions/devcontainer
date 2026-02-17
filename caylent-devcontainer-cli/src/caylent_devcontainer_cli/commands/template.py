@@ -31,7 +31,13 @@ def register_command(subparsers):
     )
     template_subparsers = template_parser.add_subparsers(dest="template_command")
 
-    # 'template save' command
+    # Custom completer for existing template names (used by shtab)
+    _template_complete = {
+        "bash": "_cdevcontainer_template_names",
+        "zsh": "_cdevcontainer_template_names",
+    }
+
+    # 'template save' command (new name — no dynamic completion)
     save_parser = template_subparsers.add_parser("save", help="Save current environment as a template")
     save_parser.add_argument("name", help="Template name")
     save_parser.add_argument("-p", "--project-root", help="Project root directory (default: current directory)")
@@ -39,7 +45,8 @@ def register_command(subparsers):
 
     # 'template load' command
     load_template_parser = template_subparsers.add_parser("load", help="Load a template into current project")
-    load_template_parser.add_argument("name", help="Template name")
+    load_name = load_template_parser.add_argument("name", help="Template name")
+    load_name.complete = _template_complete
     load_template_parser.add_argument(
         "-p", "--project-root", help="Project root directory (default: current directory)"
     )
@@ -51,22 +58,31 @@ def register_command(subparsers):
 
     # 'template view' command
     view_parser = template_subparsers.add_parser("view", help="View a template's configuration values")
-    view_parser.add_argument("name", help="Template name")
+    view_name = view_parser.add_argument("name", help="Template name")
+    view_name.complete = _template_complete
     view_parser.set_defaults(func=handle_template_view)
+
+    # 'template edit' command
+    edit_parser = template_subparsers.add_parser("edit", help="Edit an existing template interactively")
+    edit_name = edit_parser.add_argument("name", help="Template name")
+    edit_name.complete = _template_complete
+    edit_parser.set_defaults(func=handle_template_edit)
 
     # 'template delete' command
     delete_parser = template_subparsers.add_parser("delete", help="Delete one or more templates")
-    delete_parser.add_argument("names", nargs="+", help="Template names to delete")
+    delete_names = delete_parser.add_argument("names", nargs="+", help="Template names to delete")
+    delete_names.complete = _template_complete
     delete_parser.set_defaults(func=handle_template_delete)
 
-    # 'template create' command
+    # 'template create' command (new name — no dynamic completion)
     create_parser = template_subparsers.add_parser("create", help="Create a new template interactively")
     create_parser.add_argument("name", help="Template name")
     create_parser.set_defaults(func=handle_template_create)
 
     # 'template upgrade' command
     upgrade_parser = template_subparsers.add_parser("upgrade", help="Upgrade a template to the current CLI version")
-    upgrade_parser.add_argument("name", help="Template name to upgrade")
+    upgrade_name = upgrade_parser.add_argument("name", help="Template name to upgrade")
+    upgrade_name.complete = _template_complete
     upgrade_parser.set_defaults(func=handle_template_upgrade)
 
 
@@ -96,6 +112,34 @@ def handle_template_delete(args):
     """Handle the template delete command."""
     for name in args.names:
         delete_template(name)
+
+
+def handle_template_edit(args):
+    """Handle the template edit command."""
+    edit_template(args.name)
+
+
+def edit_template(template_name):
+    """Edit an existing template interactively.
+
+    Loads the template, validates it, runs the interactive edit flow,
+    updates metadata, and saves.
+    """
+    from caylent_devcontainer_cli.commands.setup_interactive import edit_template_interactive, save_template_to_file
+
+    template_path = get_template_path(template_name)
+
+    if not os.path.exists(template_path):
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
+
+    template_data = load_json_config(template_path)
+    template_data = validate_template(template_data)
+
+    updated = edit_template_interactive(template_data)
+
+    save_template_to_file(updated, template_name)
+
+    log("OK", f"Template '{template_name}' updated successfully")
 
 
 def handle_template_create(args):

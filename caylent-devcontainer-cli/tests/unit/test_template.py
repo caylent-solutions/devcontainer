@@ -13,8 +13,10 @@ from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.template import (
     create_new_template,
     delete_template,
+    edit_template,
     handle_template_create,
     handle_template_delete,
+    handle_template_edit,
     handle_template_list,
     handle_template_load,
     handle_template_save,
@@ -1056,3 +1058,56 @@ def test_view_template_empty_aws_profiles(capsys):
 
     output = capsys.readouterr().out
     assert "AWS Profiles:" not in output
+
+
+# =============================================================================
+# handle_template_edit / edit_template
+# =============================================================================
+
+
+def test_handle_template_edit_calls_edit_template():
+    """handle_template_edit dispatches to edit_template."""
+    args = MagicMock()
+    args.name = "my-template"
+    with patch("caylent_devcontainer_cli.commands.template.edit_template") as mock_edit:
+        handle_template_edit(args)
+        mock_edit.assert_called_once_with("my-template")
+
+
+def test_edit_template_exits_if_not_found():
+    """edit_template exits with error for non-existent template."""
+    with (
+        patch("os.path.exists", return_value=False),
+        pytest.raises(SystemExit),
+    ):
+        edit_template("nonexistent")
+
+
+def test_edit_template_loads_validates_edits_and_saves():
+    """edit_template loads template, validates, calls edit_interactive, and saves."""
+    template_data = {"containerEnv": {"DEVELOPER_NAME": "Alice"}, "cli_version": "2.0.0"}
+    edited_data = {"containerEnv": {"DEVELOPER_NAME": "Bob"}, "cli_version": "2.0.0"}
+
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            return_value=template_data,
+        ) as mock_validate,
+        patch(
+            "caylent_devcontainer_cli.commands.setup_interactive.edit_template_interactive",
+            return_value=edited_data,
+        ) as mock_edit_interactive,
+        patch(
+            "caylent_devcontainer_cli.commands.setup_interactive.save_template_to_file",
+        ) as mock_save,
+    ):
+        edit_template("my-template")
+
+        mock_validate.assert_called_once_with(template_data)
+        mock_edit_interactive.assert_called_once_with(template_data)
+        mock_save.assert_called_once_with(edited_data, "my-template")

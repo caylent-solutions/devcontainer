@@ -14,6 +14,7 @@ A command-line tool for managing Caylent devcontainer environments.
    - [Launching IDEs](#launching-ides)
    - [Browsing and Validating Catalogs](#browsing-and-validating-catalogs)
    - [Catalog Tagging](#catalog-tagging)
+   - [Shell Completion](#shell-completion)
 3. [Development](#development)
    - [Setup](#setup)
    - [Testing](#testing)
@@ -162,6 +163,9 @@ cdevcontainer template list
 # View a template's configuration values
 cdevcontainer template view my-template
 
+# Edit an existing template interactively
+cdevcontainer template edit my-template
+
 # Load a template into a project
 cdevcontainer template load my-template
 
@@ -245,6 +249,24 @@ All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for rele
 - Use annotated tags (`git tag -a 2.1.0 -m "Release 2.1.0"`) for provenance
 - Place shared files in `common/devcontainer-assets/` — everything in this directory is automatically copied into every project's `.devcontainer/` regardless of which entry is selected
 - Place entry-specific files (e.g., `devcontainer.json`, `catalog-entry.json`) in `catalog/<name>/`
+
+### Shell Completion
+
+Enable tab completion for all commands, subcommands, and flags.
+
+> **Bash prerequisite:** The persistent method below requires the `bash-completion` package (`brew install bash-completion@2` on macOS, `sudo apt install bash-completion` on Ubuntu/Debian). Zsh has built-in completion support.
+
+```bash
+# Bash (requires bash-completion package)
+cdevcontainer completion bash > ~/.local/share/bash-completion/completions/cdevcontainer
+
+# Zsh
+mkdir -p ~/.zfunc
+cdevcontainer completion zsh > ~/.zfunc/_cdevcontainer
+# Add to ~/.zshrc (before compinit): fpath=(~/.zfunc $fpath)
+```
+
+For detailed setup, prerequisites, troubleshooting, and verification steps, see the [Shell Completion Guide](docs/SHELL_COMPLETION.md).
 
 ## Development
 
