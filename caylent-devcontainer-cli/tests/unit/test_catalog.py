@@ -32,8 +32,6 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_TAG_PATTERN,
     CATALOG_VERSION_FILENAME,
     DEFAULT_CATALOG_URL,
-    EXAMPLE_AWS_FILE,
-    EXAMPLE_ENV_FILE,
     MIN_CATALOG_TAG_VERSION,
 )
 
@@ -1020,20 +1018,6 @@ class TestCopyCollectionToProject(TestCase):
                 data = json.load(f)
             self.assertEqual(data["catalog_url"], catalog_url)
             self.assertEqual(data["name"], "test-app")
-
-    def test_removes_example_files(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
-            # Add example files to collection
-            with open(os.path.join(collection, EXAMPLE_ENV_FILE), "w") as f:
-                json.dump({"example": True}, f)
-            with open(os.path.join(collection, EXAMPLE_AWS_FILE), "w") as f:
-                json.dump({"example": True}, f)
-
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
-
-            self.assertFalse(os.path.exists(os.path.join(target, EXAMPLE_ENV_FILE)))
-            self.assertFalse(os.path.exists(os.path.join(target, EXAMPLE_AWS_FILE)))
 
     def test_creates_target_directory(self):
         with tempfile.TemporaryDirectory() as tmp:

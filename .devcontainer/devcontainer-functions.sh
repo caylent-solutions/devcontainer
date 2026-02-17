@@ -32,7 +32,8 @@ exit_with_error() {
 configure_apt_proxy() {
   # Configure apt to use proxy from environment variables.
   # Writes /etc/apt/apt.conf.d/99proxy if HTTP_PROXY or http_proxy is set.
-  # This ensures apt-get works behind proxies regardless of sudo env preservation.
+  # Adds per-host DIRECT overrides from NO_PROXY because apt ignores that
+  # environment variable and requires Acquire::http::Proxy::host "DIRECT" syntax.
   local apt_proxy_conf="/etc/apt/apt.conf.d/99proxy"
   local proxy_url="${HTTP_PROXY:-${http_proxy:-}}"
 
@@ -49,6 +50,25 @@ configure_apt_proxy() {
 Acquire::http::Proxy "${proxy_url}";
 Acquire::https::Proxy "${https_proxy_url}";
 APT_PROXY_EOF
+
+  # apt ignores NO_PROXY — add per-host DIRECT overrides for domain entries
+  local no_proxy_val="${NO_PROXY:-${no_proxy:-}}"
+  if [ -n "${no_proxy_val}" ]; then
+    local _old_ifs="${IFS}"
+    IFS=','
+    for _entry in ${no_proxy_val}; do
+      IFS="${_old_ifs}"
+      _entry=$(echo "${_entry}" | tr -d ' ')
+      # Add DIRECT for FQDN entries (start with letter, contain a dot)
+      case "${_entry}" in
+        [a-zA-Z]*.*)
+          echo "Acquire::http::Proxy::${_entry} \"DIRECT\";" >> "${apt_proxy_conf}"
+          echo "Acquire::https::Proxy::${_entry} \"DIRECT\";" >> "${apt_proxy_conf}"
+          ;;
+      esac
+    done
+    IFS="${_old_ifs}"
+  fi
 
   log_success "Wrote apt proxy configuration to ${apt_proxy_conf}"
 }

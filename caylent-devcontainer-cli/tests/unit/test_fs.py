@@ -11,15 +11,13 @@ import pytest
 
 from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ENTRY_FILENAME,
+    DEFAULT_NO_PROXY,
     ENV_VARS_FILENAME,
-    EXAMPLE_AWS_FILE,
-    EXAMPLE_ENV_FILE,
     SHELL_ENV_FILENAME,
     SSH_KEY_FILENAME,
 )
 from caylent_devcontainer_cli.utils.fs import (
     load_json_config,
-    remove_example_files,
     resolve_project_root,
     write_json_file,
 )
@@ -150,66 +148,6 @@ class TestWriteJsonFile:
 
 
 # =============================================================================
-# remove_example_files tests
-# =============================================================================
-
-
-class TestRemoveExampleFiles:
-    """Tests for remove_example_files utility."""
-
-    def test_removes_both_example_files(self, tmp_path):
-        """Test that both example files are removed."""
-        devcontainer_dir = tmp_path / ".devcontainer"
-        devcontainer_dir.mkdir()
-
-        example_env = devcontainer_dir / "example-container-env-values.json"
-        example_aws = devcontainer_dir / "example-aws-profile-map.json"
-        example_env.write_text("{}")
-        example_aws.write_text("{}")
-
-        remove_example_files(str(devcontainer_dir))
-
-        assert not example_env.exists()
-        assert not example_aws.exists()
-
-    def test_handles_missing_files_gracefully(self, tmp_path):
-        """Test that no error occurs when example files don't exist."""
-        devcontainer_dir = tmp_path / ".devcontainer"
-        devcontainer_dir.mkdir()
-
-        # Should not raise any exception
-        remove_example_files(str(devcontainer_dir))
-
-    def test_handles_partial_files(self, tmp_path):
-        """Test removal when only one example file exists."""
-        devcontainer_dir = tmp_path / ".devcontainer"
-        devcontainer_dir.mkdir()
-
-        example_env = devcontainer_dir / "example-container-env-values.json"
-        example_env.write_text("{}")
-
-        remove_example_files(str(devcontainer_dir))
-
-        assert not example_env.exists()
-
-    def test_does_not_remove_other_files(self, tmp_path):
-        """Test that non-example files are not removed."""
-        devcontainer_dir = tmp_path / ".devcontainer"
-        devcontainer_dir.mkdir()
-
-        other_file = devcontainer_dir / "devcontainer.json"
-        other_file.write_text("{}")
-
-        example_env = devcontainer_dir / "example-container-env-values.json"
-        example_env.write_text("{}")
-
-        remove_example_files(str(devcontainer_dir))
-
-        assert other_file.exists()
-        assert not example_env.exists()
-
-
-# =============================================================================
 # File path constants tests
 # =============================================================================
 
@@ -224,14 +162,6 @@ class TestFilePathConstants:
     def test_shell_env_filename(self):
         """Test SHELL_ENV_FILENAME constant value."""
         assert SHELL_ENV_FILENAME == "shell.env"
-
-    def test_example_env_file(self):
-        """Test EXAMPLE_ENV_FILE constant value."""
-        assert EXAMPLE_ENV_FILE == "example-container-env-values.json"
-
-    def test_example_aws_file(self):
-        """Test EXAMPLE_AWS_FILE constant value."""
-        assert EXAMPLE_AWS_FILE == "example-aws-profile-map.json"
 
     def test_catalog_entry_filename(self):
         """Test CATALOG_ENTRY_FILENAME constant value."""
@@ -451,8 +381,8 @@ class TestWriteProjectFiles:
 
         assert "export DEVCONTAINER='true'" in content
         assert "BASH_ENV=" in content and "shell.env" in content
-        assert "export NO_PROXY='localhost,127.0.0.1,.local'" in content
-        assert "export no_proxy='localhost,127.0.0.1,.local'" in content
+        assert "NO_PROXY" not in content
+        assert "no_proxy" not in content
         assert "unset GIT_EDITOR" in content
         assert ".asdf/shims" in content
         assert ".localscripts" in content
@@ -476,6 +406,8 @@ class TestWriteProjectFiles:
         assert "export HTTPS_PROXY='http://proxy.corp:8080'" in content
         assert "export http_proxy='http://proxy.corp:8080'" in content
         assert "export https_proxy='http://proxy.corp:8080'" in content
+        assert f"export NO_PROXY='{DEFAULT_NO_PROXY}'" in content
+        assert f"export no_proxy='{DEFAULT_NO_PROXY}'" in content
 
     def test_shell_env_no_proxy_vars_when_host_proxy_false(self, tmp_path):
         """Test that proxy vars are NOT generated when HOST_PROXY is not true."""

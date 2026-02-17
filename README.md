@@ -45,7 +45,6 @@ This repository provides the **base development container** configuration used a
 - `project-setup.sh` — project-specific setup script for custom initialization
 - `fix-line-endings.py` — automatic Windows line ending conversion for WSL compatibility
 - `cdevcontainer` — Caylent Devcontainer CLI tool for environment management
-- `example-aws-profile-map.json` — declarative AWS SSO profile config template
 - Git, AWS CLI, Docker, Python, `asdf`, aliases, shell profile injection
 - Extension support for Amazon Q and GitHub Copilot
 
@@ -187,13 +186,7 @@ When running `cdevcontainer setup-devcontainer`, you'll be guided through config
 
 The interactive setup will create a `devcontainer-environment-variables.json` file with your settings.
 
-If you prefer to configure manually:
-
-```bash
-cp .devcontainer/example-container-env-values.json devcontainer-environment-variables.json
-```
-
-Then edit `devcontainer-environment-variables.json` with your values:
+The `devcontainer-environment-variables.json` file supports these values:
 - `AWS_CONFIG_ENABLED` (default: `true`) - Set to `false` to disable AWS configuration
 - `DEFAULT_GIT_BRANCH` (e.g. `main`)
 - `DEFAULT_PYTHON_VERSION` (e.g. `3.12.9`)
@@ -333,12 +326,7 @@ The setup will:
 - Automatically convert to the expected JSON format
 
 #### Manual Configuration
-If configuring manually, copy the example:
-```bash
-cp .devcontainer/example-aws-profile-map.json .devcontainer/aws-profile-map.json
-```
-
-Edit `.devcontainer/aws-profile-map.json` to define your AWS SSO accounts using the JSON format shown above.
+Create `.devcontainer/aws-profile-map.json` and define your AWS SSO accounts using the JSON format shown above.
 
 > ⚠️ This file is required only when AWS configuration is enabled (`AWS_CONFIG_ENABLED=true`).
 >
@@ -655,9 +643,7 @@ JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](http
 | `.devcontainer/.devcontainer.postcreate.sh` | Container provisioning logic |
 | `.devcontainer/project-setup.sh` | Project-specific setup commands |
 | `.devcontainer/fix-line-endings.py` | Windows line ending conversion for WSL compatibility |
-| `.devcontainer/example-aws-profile-map.json` | AWS profile template |
 | `.devcontainer/aws-profile-map.json` | Your active AWS profiles |
-| `.devcontainer/example-container-env-values.json` | Developer config example |
 
 ---
 

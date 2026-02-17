@@ -177,16 +177,6 @@ class TestDefaultCollectionStructure(TestCase):
         filepath = os.path.join(self.collection_dir, "fix-line-endings.py")
         self.assertTrue(os.path.isfile(filepath))
 
-    def test_example_env_values_present(self):
-        """example-container-env-values.json must be present."""
-        filepath = os.path.join(self.collection_dir, "example-container-env-values.json")
-        self.assertTrue(os.path.isfile(filepath))
-
-    def test_example_aws_profile_present(self):
-        """example-aws-profile-map.json must be present."""
-        filepath = os.path.join(self.collection_dir, "example-aws-profile-map.json")
-        self.assertTrue(os.path.isfile(filepath))
-
     def test_version_file_content(self):
         """VERSION file must contain a valid semver string."""
         filepath = os.path.join(self.collection_dir, "VERSION")

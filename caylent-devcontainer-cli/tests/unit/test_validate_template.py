@@ -208,6 +208,31 @@ class TestBaseKeyCompleteness:
             result = validate_template(template)
         assert result["containerEnv"]["GIT_TOKEN"] == "new-token"
 
+    def test_aws_default_output_not_required_when_aws_disabled(self):
+        """AWS_DEFAULT_OUTPUT is not required when AWS_CONFIG_ENABLED=false."""
+        template = _valid_template()
+        template["containerEnv"]["AWS_CONFIG_ENABLED"] = "false"
+        del template["containerEnv"]["AWS_DEFAULT_OUTPUT"]
+
+        with patch("questionary.text") as mock_text:
+            result = validate_template(template)
+            # Should NOT prompt for AWS_DEFAULT_OUTPUT
+            for call in mock_text.call_args_list:
+                assert "AWS_DEFAULT_OUTPUT" not in str(call)
+        assert "AWS_DEFAULT_OUTPUT" not in result["containerEnv"]
+
+    def test_aws_default_output_required_when_aws_enabled(self):
+        """AWS_DEFAULT_OUTPUT is required when AWS_CONFIG_ENABLED=true."""
+        template = _valid_template()
+        template["containerEnv"]["AWS_CONFIG_ENABLED"] = "true"
+        del template["containerEnv"]["AWS_DEFAULT_OUTPUT"]
+
+        mock_question = MagicMock()
+        mock_question.ask.return_value = "json"
+        with patch("questionary.text", return_value=mock_question):
+            result = validate_template(template)
+        assert result["containerEnv"]["AWS_DEFAULT_OUTPUT"] == "json"
+
     def test_multiple_missing_keys_all_prompted(self):
         """Multiple missing keys each prompt the user."""
         template = _valid_template()

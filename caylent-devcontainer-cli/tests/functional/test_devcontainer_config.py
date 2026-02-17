@@ -62,6 +62,12 @@ class TestDevcontainerJson(TestCase):
         apt_get_pos = cmd.index("apt-get update")
         self.assertLess(proxy_conf_pos, apt_get_pos)
 
+    def test_post_create_command_adds_no_proxy_direct_overrides(self):
+        """postCreateCommand must add DIRECT overrides for NO_PROXY domains."""
+        cmd = self.config["postCreateCommand"]
+        self.assertIn("NO_PROXY", cmd)
+        self.assertIn("DIRECT", cmd)
+
     def test_post_create_command_uses_sudo_e_for_postcreate(self):
         """postCreateCommand must use sudo -E for postcreate.sh to pass env vars."""
         cmd = self.config["postCreateCommand"]
@@ -223,6 +229,11 @@ class TestDevcontainerFunctions(TestCase):
     def test_configure_apt_proxy_writes_apt_conf(self):
         """configure_apt_proxy must write to /etc/apt/apt.conf.d/99proxy."""
         self.assertIn("/etc/apt/apt.conf.d/99proxy", self.content)
+
+    def test_configure_apt_proxy_handles_no_proxy(self):
+        """configure_apt_proxy must parse NO_PROXY and add DIRECT overrides."""
+        self.assertIn("NO_PROXY", self.content)
+        self.assertIn('"DIRECT"', self.content)
 
     def test_configure_git_shared_function_exists(self):
         """devcontainer-functions.sh must define configure_git_shared function."""

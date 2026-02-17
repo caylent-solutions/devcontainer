@@ -7,9 +7,8 @@ from typing import Any, Dict, List, Union
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
+    DEFAULT_NO_PROXY,
     ENV_VARS_FILENAME,
-    EXAMPLE_AWS_FILE,
-    EXAMPLE_ENV_FILE,
     SHELL_ENV_FILENAME,
     SSH_KEY_FILENAME,
 )
@@ -29,22 +28,6 @@ def write_json_file(path: str, data: Union[Dict[str, Any], List[Any]]) -> None:
             f.write("\n")
     except Exception as e:
         exit_with_error(f"Failed to write JSON file {path}: {e}")
-
-
-def remove_example_files(target_devcontainer: str) -> None:
-    """Remove example JSON files from a .devcontainer directory.
-
-    Args:
-        target_devcontainer: Path to the .devcontainer directory.
-    """
-    example_files = [
-        os.path.join(target_devcontainer, EXAMPLE_ENV_FILE),
-        os.path.join(target_devcontainer, EXAMPLE_AWS_FILE),
-    ]
-
-    for file_path in example_files:
-        if os.path.exists(file_path):
-            os.remove(file_path)
 
 
 def load_json_config(file_path: str) -> Dict[str, Any]:
@@ -104,8 +87,6 @@ def write_shell_env(
     static_vars = {
         "BASH_ENV": f"/workspaces/{project_folder}/shell.env",
         "DEVCONTAINER": "true",
-        "NO_PROXY": "localhost,127.0.0.1,.local",
-        "no_proxy": "localhost,127.0.0.1,.local",
     }
 
     # Proxy variables when HOST_PROXY=true
@@ -115,6 +96,8 @@ def write_shell_env(
         static_vars["HTTPS_PROXY"] = proxy_url
         static_vars["http_proxy"] = proxy_url
         static_vars["https_proxy"] = proxy_url
+        static_vars["NO_PROXY"] = DEFAULT_NO_PROXY
+        static_vars["no_proxy"] = DEFAULT_NO_PROXY
 
     for key in sorted(static_vars.keys()):
         export_lines.append(f"export {key}='{static_vars[key]}'")

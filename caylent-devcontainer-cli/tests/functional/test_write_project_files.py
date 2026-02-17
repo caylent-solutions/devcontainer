@@ -7,6 +7,7 @@ import os
 import pytest
 
 from caylent_devcontainer_cli import __version__
+from caylent_devcontainer_cli.utils.constants import DEFAULT_NO_PROXY
 from caylent_devcontainer_cli.utils.fs import write_project_files
 
 
@@ -105,8 +106,8 @@ class TestWriteProjectFilesEndToEnd:
             content = f.read()
 
         assert "export DEVCONTAINER='true'" in content
-        assert "export NO_PROXY='localhost,127.0.0.1,.local'" in content
-        assert "export no_proxy='localhost,127.0.0.1,.local'" in content
+        assert "NO_PROXY" not in content
+        assert "no_proxy" not in content
         assert "BASH_ENV=" in content
         assert "unset GIT_EDITOR" in content
 
@@ -128,6 +129,8 @@ class TestWriteProjectFilesEndToEnd:
         assert "export HTTPS_PROXY='http://proxy.example.com:8080'" in content
         assert "export http_proxy='http://proxy.example.com:8080'" in content
         assert "export https_proxy='http://proxy.example.com:8080'" in content
+        assert f"export NO_PROXY='{DEFAULT_NO_PROXY}'" in content
+        assert f"export no_proxy='{DEFAULT_NO_PROXY}'" in content
 
     def test_no_proxy_vars_when_host_proxy_false(self, project_dir):
         """No proxy variables when HOST_PROXY is not true."""

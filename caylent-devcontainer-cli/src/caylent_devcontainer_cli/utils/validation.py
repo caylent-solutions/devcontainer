@@ -165,10 +165,15 @@ def detect_validation_issues(project_root: str, config_data: Dict[str, Any]) -> 
 
     # --- Step 0: Check base keys in both files ---
     auth_method = container_env.get("GIT_AUTH_METHOD", "token")
+    aws_enabled = container_env.get("AWS_CONFIG_ENABLED", "true")
 
     for key, default_value in EXAMPLE_ENV_VALUES.items():
         # GIT_TOKEN is conditional on auth method
         if key == "GIT_TOKEN" and auth_method == "ssh":
+            continue
+
+        # AWS_DEFAULT_OUTPUT is conditional on AWS being enabled
+        if key == "AWS_DEFAULT_OUTPUT" and aws_enabled != "true":
             continue
 
         in_json = key in container_env

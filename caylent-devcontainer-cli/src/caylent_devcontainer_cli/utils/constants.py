@@ -12,8 +12,6 @@ CLI_NAME = "Caylent Devcontainer CLI"
 # File path constants
 ENV_VARS_FILENAME = "devcontainer-environment-variables.json"
 SHELL_ENV_FILENAME = "shell.env"
-EXAMPLE_ENV_FILE = "example-container-env-values.json"
-EXAMPLE_AWS_FILE = "example-aws-profile-map.json"
 CATALOG_ENTRY_FILENAME = "catalog-entry.json"
 SSH_KEY_FILENAME = "ssh-private-key"
 
@@ -64,6 +62,13 @@ VALID_KEY_VALUES = {
 # Keys whose values are validated only under certain conditions
 # GIT_PROVIDER_URL: hostname only — no protocol prefix, must contain at least one dot
 # HOST_PROXY_URL: must start with http:// or https:// — only validated when HOST_PROXY=true
+
+# Default NO_PROXY bypass list — domains that should not be routed through HOST_PROXY.
+# apt ignores the NO_PROXY env var; configure_apt_proxy() in devcontainer-functions.sh
+# translates these into per-host Acquire::http::Proxy::host "DIRECT" directives.
+DEFAULT_NO_PROXY = (
+    "localhost,127.0.0.1,.local," "ports.ubuntu.com,archive.ubuntu.com," "security.ubuntu.com,packages.microsoft.com"
+)
 
 # All known environment variable keys (used for conflict detection in custom env var loop)
 # This is the union of EXAMPLE_ENV_VALUES keys — defined here to avoid circular imports.

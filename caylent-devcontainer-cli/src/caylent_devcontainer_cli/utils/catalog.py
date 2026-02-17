@@ -30,8 +30,6 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_TAG_PATTERN,
     DEFAULT_CATALOG_URL,
-    EXAMPLE_AWS_FILE,
-    EXAMPLE_ENV_FILE,
     MIN_CATALOG_TAG_VERSION,
 )
 
@@ -421,12 +419,6 @@ def copy_collection_to_project(
         with open(entry_path, "w") as f:
             json.dump(entry_data, f, indent=2)
             f.write("\n")
-
-    # 4. Remove example files
-    for example_file in (EXAMPLE_ENV_FILE, EXAMPLE_AWS_FILE):
-        example_path = os.path.join(target_path, example_file)
-        if os.path.exists(example_path):
-            os.remove(example_path)
 
 
 def validate_catalog_entry(data: Dict[str, Any]) -> List[str]:

@@ -17,8 +17,6 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ENTRY_FILENAME,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_VERSION_FILENAME,
-    EXAMPLE_AWS_FILE,
-    EXAMPLE_ENV_FILE,
 )
 
 
@@ -195,12 +193,6 @@ class TestCopyCollectionToProjectEndToEnd(TestCase):
         with open(os.path.join(collection, CATALOG_VERSION_FILENAME), "w") as f:
             f.write("2.0.0")
 
-        # Example files that should be removed
-        with open(os.path.join(collection, EXAMPLE_ENV_FILE), "w") as f:
-            json.dump({"example": "values"}, f)
-        with open(os.path.join(collection, EXAMPLE_AWS_FILE), "w") as f:
-            json.dump({"example": "aws"}, f)
-
         # Subdirectory in collection
         nix_dir = os.path.join(collection, "nix-family-os")
         os.makedirs(nix_dir)
@@ -243,10 +235,6 @@ class TestCopyCollectionToProjectEndToEnd(TestCase):
             self.assertEqual(entry_data["catalog_url"], catalog_url)
             self.assertEqual(entry_data["name"], "test-app")
             self.assertEqual(entry_data["tags"], ["python", "aws"])
-
-            # Verify example files removed
-            self.assertFalse(os.path.exists(os.path.join(target, EXAMPLE_ENV_FILE)))
-            self.assertFalse(os.path.exists(os.path.join(target, EXAMPLE_AWS_FILE)))
 
     def test_common_assets_take_precedence(self):
         with tempfile.TemporaryDirectory() as tmp:

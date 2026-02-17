@@ -244,6 +244,58 @@ class TestStep0BaseKeyCheck:
 
     @patch(
         "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
+        {"KEY_A": "a", "AWS_DEFAULT_OUTPUT": "json"},
+    )
+    def test_aws_default_output_not_required_when_aws_disabled(self):
+        """Test Step 0 skips AWS_DEFAULT_OUTPUT when AWS_CONFIG_ENABLED is false."""
+        config_data = {
+            "containerEnv": {"KEY_A": "value", "AWS_CONFIG_ENABLED": "false"},
+            "template_name": "test",
+            "template_path": "/path/test.json",
+            "cli_version": "2.0.0",
+        }
+        shell_env_content = "export KEY_A='value'\nexport AWS_CONFIG_ENABLED='false'\n"
+        template_data = {"containerEnv": {"KEY_A": "value", "AWS_CONFIG_ENABLED": "false"}}
+
+        with (
+            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._step2_locate_template",
+                return_value=(True, template_data),
+            ),
+        ):
+            result = detect_validation_issues("/test/path", config_data)
+
+        assert "AWS_DEFAULT_OUTPUT" not in result.missing_base_keys
+
+    @patch(
+        "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
+        {"KEY_A": "a", "AWS_DEFAULT_OUTPUT": "json"},
+    )
+    def test_aws_default_output_required_when_aws_enabled(self):
+        """Test Step 0 flags AWS_DEFAULT_OUTPUT when AWS_CONFIG_ENABLED is true and key absent."""
+        config_data = {
+            "containerEnv": {"KEY_A": "value", "AWS_CONFIG_ENABLED": "true"},
+            "template_name": "test",
+            "template_path": "/path/test.json",
+            "cli_version": "2.0.0",
+        }
+        shell_env_content = "export KEY_A='value'\nexport AWS_CONFIG_ENABLED='true'\n"
+        template_data = {"containerEnv": {"KEY_A": "value", "AWS_CONFIG_ENABLED": "true"}}
+
+        with (
+            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._step2_locate_template",
+                return_value=(True, template_data),
+            ),
+        ):
+            result = detect_validation_issues("/test/path", config_data)
+
+        assert "AWS_DEFAULT_OUTPUT" in result.missing_base_keys
+
+    @patch(
+        "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
         {"KEY_A": "a", "KEY_B": "b"},
     )
     def test_no_missing_keys_when_all_present(self):

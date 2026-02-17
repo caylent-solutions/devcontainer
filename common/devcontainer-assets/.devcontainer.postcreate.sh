@@ -11,19 +11,6 @@ WARNINGS=()
 # Source shared functions
 source "${WORK_DIR}/.devcontainer/devcontainer-functions.sh"
 
-# TEMP DIAGNOSTIC: Check what env vars sudo -E actually passed through
-echo "===== DIAGNOSTIC: env vars BEFORE sourcing shell.env ====="
-echo "  HTTP_PROXY=${HTTP_PROXY:-NOT SET}"
-echo "  HTTPS_PROXY=${HTTPS_PROXY:-NOT SET}"
-echo "  http_proxy=${http_proxy:-NOT SET}"
-echo "  https_proxy=${https_proxy:-NOT SET}"
-echo "  NO_PROXY=${NO_PROXY:-NOT SET}"
-echo "  HOST_PROXY=${HOST_PROXY:-NOT SET}"
-echo "  HOST_PROXY_URL=${HOST_PROXY_URL:-NOT SET}"
-echo "  USER=$(whoami)"
-echo "  EUID=${EUID}"
-echo "============================================================"
-
 # Configure and log CICD environment
 CICD_VALUE="${CICD:-false}"
 if [ "$CICD_VALUE" = "true" ]; then
