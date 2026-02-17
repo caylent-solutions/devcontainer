@@ -1,0 +1,7 @@
+{
+  "name": "no-proxy",
+  "description": "Caylent development environment for direct internet access (no corporate proxy). Same tooling as default without proxy configuration.",
+  "tags": ["general", "multi-language", "aws", "kubernetes", "no-proxy"],
+  "maintainer": "Caylent Platform Team",
+  "min_cli_version": "2.0.0"
+}
