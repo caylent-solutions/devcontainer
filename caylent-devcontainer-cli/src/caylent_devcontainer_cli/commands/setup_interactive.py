@@ -9,21 +9,9 @@ import semver
 from questionary import ValidationError, Validator
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.utils.constants import (
-    ENV_VARS_FILENAME,
-    KNOWN_KEYS,
-    SHELL_ENV_FILENAME,
-)
-from caylent_devcontainer_cli.utils.fs import (
-    load_json_config,
-    write_json_file,
-    write_project_files,
-)
-from caylent_devcontainer_cli.utils.template import (
-    ensure_templates_dir,
-    get_template_names,
-    get_template_path,
-)
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, KNOWN_KEYS, SHELL_ENV_FILENAME
+from caylent_devcontainer_cli.utils.fs import load_json_config, write_json_file, write_project_files
+from caylent_devcontainer_cli.utils.template import ensure_templates_dir, get_template_names, get_template_path
 from caylent_devcontainer_cli.utils.ui import (
     ask_or_exit,
     exit_cancelled,
@@ -93,7 +81,10 @@ def select_template() -> Optional[str]:
 def prompt_save_template() -> bool:
     """Ask if the user wants to save the template."""
     return ask_or_exit(
-        questionary.confirm("Do you want to save this configuration as a reusable template?", default=False)
+        questionary.confirm(
+            "Do you want to save this configuration as a reusable template?",
+            default=False,
+        )
     )
 
 
@@ -190,7 +181,11 @@ def prompt_env_values() -> Dict[str, Any]:
 
     # Pager selection
     pager_choice = ask_or_exit(
-        questionary.select("Select default pager:", choices=["cat", "less", "more", "most"], default="cat")
+        questionary.select(
+            "Select default pager:",
+            choices=["cat", "less", "more", "most"],
+            default="cat",
+        )
     )
     env_values["PAGER"] = pager_choice
 
@@ -198,7 +193,9 @@ def prompt_env_values() -> Dict[str, Any]:
     if aws_config == "true":
         aws_output = ask_or_exit(
             questionary.select(
-                "Select default AWS CLI output format:", choices=["json", "table", "text", "yaml"], default="json"
+                "Select default AWS CLI output format:",
+                choices=["json", "table", "text", "yaml"],
+                default="json",
             )
         )
         env_values["AWS_DEFAULT_OUTPUT"] = aws_output
@@ -223,7 +220,14 @@ def parse_standard_profile(profile_text: str) -> Dict[str, str]:
 
 def validate_standard_profile(profile: Dict[str, str]) -> Optional[str]:
     """Validate standard profile has required fields."""
-    required_fields = ["sso_start_url", "sso_region", "sso_account_name", "sso_account_id", "sso_role_name", "region"]
+    required_fields = [
+        "sso_start_url",
+        "sso_region",
+        "sso_account_name",
+        "sso_account_id",
+        "sso_role_name",
+        "region",
+    ]
     missing = [field for field in required_fields if field not in profile]
     if missing:
         return f"Missing required fields: {', '.join(missing)}"
@@ -259,7 +263,10 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
     input_method = ask_or_exit(
         questionary.select(
             "How would you like to provide your AWS profiles?",
-            choices=["Standard format (enter profiles one by one)", "JSON format (paste complete configuration)"],
+            choices=[
+                "Standard format (enter profiles one by one)",
+                "JSON format (paste complete configuration)",
+            ],
         )
     )
 
@@ -277,7 +284,10 @@ def prompt_aws_profile_map() -> Dict[str, Any]:
 
         while True:
             profile_name = ask_or_exit(
-                questionary.text("Enter profile name (e.g., 'default'):", validate=lambda text: len(text.strip()) > 0)
+                questionary.text(
+                    "Enter profile name (e.g., 'default'):",
+                    validate=lambda text: len(text.strip()) > 0,
+                )
             )
 
             while True:
@@ -406,10 +416,16 @@ def prompt_custom_env_vars(known_keys: set) -> Dict[str, str]:
             )
 
             if key in known_keys:
-                log("WARN", f"The key '{key}' already exists (built-in key). Please enter a different key name.")
+                log(
+                    "WARN",
+                    f"The key '{key}' already exists (built-in key). Please enter a different key name.",
+                )
                 continue
             if key in entered_keys:
-                log("WARN", f"The key '{key}' already exists (already entered). Please enter a different key name.")
+                log(
+                    "WARN",
+                    f"The key '{key}' already exists (already entered). Please enter a different key name.",
+                )
                 continue
             break
 
@@ -866,7 +882,10 @@ def edit_template_interactive(template_data: Dict[str, Any]) -> Dict[str, Any]:
     if aws_config == "true":
         existing_profiles = template_data.get("aws_profile_map", {})
         if existing_profiles:
-            log("INFO", f"AWS profiles configured: {', '.join(sorted(existing_profiles.keys()))}")
+            log(
+                "INFO",
+                f"AWS profiles configured: {', '.join(sorted(existing_profiles.keys()))}",
+            )
             if ask_or_exit(questionary.confirm("Reconfigure AWS profiles?", default=False)):
                 template["aws_profile_map"] = prompt_aws_profile_map()
             else:
@@ -945,7 +964,8 @@ def load_template_from_file(name: str) -> Dict[str, Any]:
 
                 choice = ask_or_exit(
                     questionary.select(
-                        "The template format may be incompatible. What would you like to do?", choices=choices
+                        "The template format may be incompatible. What would you like to do?",
+                        choices=choices,
                     )
                 )
 
@@ -989,7 +1009,10 @@ def upgrade_template(template_data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         # If AWS is enabled, prompt for profile map
         if new_template["containerEnv"].get("AWS_CONFIG_ENABLED") == "true":
-            log("INFO", "AWS is enabled but no profile map found, prompting for AWS configuration")
+            log(
+                "INFO",
+                "AWS is enabled but no profile map found, prompting for AWS configuration",
+            )
             new_template["aws_profile_map"] = prompt_aws_profile_map()
         else:
             new_template["aws_profile_map"] = {}

@@ -402,7 +402,10 @@ class TestHandleSetup:
     @patch("caylent_devcontainer_cli.commands.setup._run_informational_validation")
     @patch("caylent_devcontainer_cli.commands.setup._select_and_copy_catalog")
     @patch("caylent_devcontainer_cli.commands.setup._show_replace_notification")
-    @patch("caylent_devcontainer_cli.commands.setup._prompt_replace_decision", return_value=True)
+    @patch(
+        "caylent_devcontainer_cli.commands.setup._prompt_replace_decision",
+        return_value=True,
+    )
     @patch("caylent_devcontainer_cli.commands.setup._show_python_notice")
     @patch("caylent_devcontainer_cli.commands.setup._show_existing_config")
     def test_existing_config_replace_flow(
@@ -435,7 +438,10 @@ class TestHandleSetup:
     @patch("caylent_devcontainer_cli.commands.setup.interactive_setup")
     @patch("caylent_devcontainer_cli.commands.setup._run_informational_validation")
     @patch("caylent_devcontainer_cli.commands.setup._select_and_copy_catalog")
-    @patch("caylent_devcontainer_cli.commands.setup._prompt_replace_decision", return_value=False)
+    @patch(
+        "caylent_devcontainer_cli.commands.setup._prompt_replace_decision",
+        return_value=False,
+    )
     @patch("caylent_devcontainer_cli.commands.setup._show_python_notice")
     @patch("caylent_devcontainer_cli.commands.setup._show_existing_config")
     def test_existing_config_no_replace_flow(
@@ -523,14 +529,26 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
     )
     def test_default_flow_no_env_url(
-        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_resolve,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """No DEVCONTAINER_CATALOG_URL → resolve default tag, clone, auto-select single entry."""
         entry = _make_entry()
@@ -548,14 +566,26 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
     )
     def test_auto_select_single_entry(
-        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_resolve,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """When only one compatible entry, auto-select it."""
         entry = _make_entry()
@@ -572,8 +602,14 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch(
         "caylent_devcontainer_cli.utils.catalog.validate_catalog_entry_env",
         return_value="https://example.com/catalog.git",
@@ -607,16 +643,33 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="default")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
+    @patch(
+        "caylent_devcontainer_cli.commands.setup._prompt_source_selection",
+        return_value="default",
+    )
     @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
     )
     def test_env_url_default_selection(
-        self, mock_resolve, mock_find, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_resolve,
+        mock_find,
+        mock_source,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """DEVCONTAINER_CATALOG_URL set, user picks 'Default'."""
         entry = _make_entry()
@@ -637,12 +690,28 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="browse")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
+    @patch(
+        "caylent_devcontainer_cli.commands.setup._prompt_source_selection",
+        return_value="browse",
+    )
     @patch("caylent_devcontainer_cli.commands.setup._browse_entries")
     def test_env_url_browse_selection(
-        self, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_browse,
+        mock_source,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """DEVCONTAINER_CATALOG_URL set, user picks 'Browse'. No duplicate confirm."""
         entry = _make_entry(name="java-backend")
@@ -660,12 +729,28 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="browse")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
+    @patch(
+        "caylent_devcontainer_cli.commands.setup._prompt_source_selection",
+        return_value="browse",
+    )
     @patch("caylent_devcontainer_cli.commands.setup._browse_entries")
     def test_browse_single_entry_shows_ui(
-        self, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_browse,
+        mock_source,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """Browse with single entry still shows selection UI instead of auto-selecting."""
         entry = _make_entry(name="java-backend")
@@ -682,8 +767,14 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     def test_catalog_url_override_bypasses_tag_resolution(
         self, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
@@ -692,7 +783,10 @@ class TestSelectAndCopyCatalog:
         mock_discover.return_value = [entry]
 
         with patch.dict(os.environ, {}, clear=True):
-            _select_and_copy_catalog("/target", catalog_url_override="https://example.com/repo.git@feature/test")
+            _select_and_copy_catalog(
+                "/target",
+                catalog_url_override="https://example.com/repo.git@feature/test",
+            )
 
         mock_clone.assert_called_once_with("https://example.com/repo.git@feature/test")
         mock_copy.assert_called_once()
@@ -700,12 +794,25 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_entry")
     @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
     def test_catalog_url_override_with_catalog_entry(
-        self, mock_find, mock_confirm, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_find,
+        mock_confirm,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """--catalog-url with --catalog-entry: clone from override, select by name."""
         entry = _make_entry(name="my-collection")
@@ -726,18 +833,36 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection")
     def test_catalog_url_override_takes_precedence_over_env(
-        self, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_source,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """--catalog-url takes precedence over DEVCONTAINER_CATALOG_URL — no source prompt shown."""
         entry = _make_entry()
         mock_discover.return_value = [entry]
 
-        with patch.dict(os.environ, {"DEVCONTAINER_CATALOG_URL": "https://example.com/env-catalog.git"}):
-            _select_and_copy_catalog("/target", catalog_url_override="https://example.com/repo.git@feature/test")
+        with patch.dict(
+            os.environ,
+            {"DEVCONTAINER_CATALOG_URL": "https://example.com/env-catalog.git"},
+        ):
+            _select_and_copy_catalog(
+                "/target",
+                catalog_url_override="https://example.com/repo.git@feature/test",
+            )
 
         mock_clone.assert_called_once_with("https://example.com/repo.git@feature/test")
         mock_source.assert_not_called()
@@ -745,8 +870,14 @@ class TestSelectAndCopyCatalog:
 
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=False)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=False,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
@@ -767,13 +898,23 @@ class TestSelectAndCopyCatalog:
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version")
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
     )
     def test_filters_incompatible_and_uses_compatible(
-        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree, capsys
+        self,
+        mock_resolve,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
+        capsys,
     ):
         """Warns about incompatible entries and uses compatible ones."""
         compatible = _make_entry(name="compatible")
@@ -790,7 +931,10 @@ class TestSelectAndCopyCatalog:
 
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
@@ -810,14 +954,26 @@ class TestSelectAndCopyCatalog:
     @patch("shutil.rmtree")
     @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
     @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
-    @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
-    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
     )
     def test_no_min_cli_version_included(
-        self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
+        self,
+        mock_resolve,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy,
+        mock_rmtree,
     ):
         """Entries without min_cli_version are always included."""
         entry = _make_entry(min_cli_version=None)
@@ -1021,7 +1177,10 @@ def test_json_validator_empty():
 
 
 @patch("os.path.exists", return_value=True)
-@patch("os.listdir", return_value=["template1.json", "template2.json", "not-a-template.txt"])
+@patch(
+    "os.listdir",
+    return_value=["template1.json", "template2.json", "not-a-template.txt"],
+)
 def test_list_templates(mock_listdir, mock_exists):
     templates = list_templates()
     assert "template1" in templates
@@ -1037,7 +1196,10 @@ def test_list_templates_no_dir(mock_makedirs, mock_exists):
     mock_makedirs.assert_called_once()
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.list_templates",
+    return_value=["template1"],
+)
 @patch("questionary.confirm")
 def test_prompt_use_template_with_templates(mock_confirm, mock_list):
     mock_confirm.return_value.ask.return_value = True
@@ -1046,13 +1208,19 @@ def test_prompt_use_template_with_templates(mock_confirm, mock_list):
     mock_confirm.assert_called_once()
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=[])
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.list_templates",
+    return_value=[],
+)
 def test_prompt_use_template_no_templates(mock_list):
     result = prompt_use_template()
     assert result is False
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1", "template2"])
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.list_templates",
+    return_value=["template1", "template2"],
+)
 @patch("questionary.select")
 def test_select_template(mock_select, mock_list):
     mock_select.return_value.ask.return_value = "template1"
@@ -1332,8 +1500,14 @@ def test_upgrade_template_with_aws_enabled_no_profile_real():
 # ─── interactive_setup tests ────────────────────────────────────────────────
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=True)
-@patch("caylent_devcontainer_cli.commands.setup_interactive.select_template", return_value="test-template")
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template",
+    return_value=True,
+)
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.select_template",
+    return_value="test-template",
+)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.load_template_from_file")
 @patch("caylent_devcontainer_cli.utils.template.validate_template", side_effect=lambda d: d)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template")
@@ -1349,9 +1523,15 @@ def test_interactive_setup_with_template(mock_apply, mock_validate, mock_load, m
     mock_apply.assert_called_once()
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=False)
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template",
+    return_value=False,
+)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive")
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_save_template", return_value=False)
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.prompt_save_template",
+    return_value=False,
+)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template")
 def test_interactive_setup_without_template(mock_apply, mock_save_prompt, mock_create, mock_prompt):
     mock_create.return_value = {"env_values": {}, "aws_profile_map": {}}
@@ -1364,10 +1544,19 @@ def test_interactive_setup_without_template(mock_apply, mock_save_prompt, mock_c
     mock_apply.assert_called_once()
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", return_value=False)
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template",
+    return_value=False,
+)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive")
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_save_template", return_value=True)
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_template_name", return_value="new-template")
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.prompt_save_template",
+    return_value=True,
+)
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.prompt_template_name",
+    return_value="new-template",
+)
 @patch("caylent_devcontainer_cli.commands.setup_interactive.save_template_to_file")
 @patch("caylent_devcontainer_cli.commands.setup_interactive.apply_template")
 def test_interactive_setup_save_new_template(
@@ -1381,7 +1570,10 @@ def test_interactive_setup_save_new_template(
     mock_apply.assert_called_once()
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template", side_effect=KeyboardInterrupt)
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.prompt_use_template",
+    side_effect=KeyboardInterrupt,
+)
 def test_interactive_setup_keyboard_interrupt(mock_prompt):
     with pytest.raises(SystemExit):
         interactive_setup("/target")

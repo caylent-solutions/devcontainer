@@ -8,10 +8,7 @@ import questionary
 import semver
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.utils.constants import (
-    TEMPLATES_DIR,
-    VALID_KEY_VALUES,
-)
+from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR, VALID_KEY_VALUES
 from caylent_devcontainer_cli.utils.ui import ask_or_exit, exit_with_error, log
 
 
@@ -165,7 +162,10 @@ def _validate_base_key_completeness(data: Dict[str, Any]) -> None:
             continue
 
         if key not in container_env:
-            log("WARN", f"Missing environment variable: {key} (default: {default_value})")
+            log(
+                "WARN",
+                f"Missing environment variable: {key} (default: {default_value})",
+            )
             answer = ask_or_exit(
                 questionary.text(
                     f"Enter value for {key}:",

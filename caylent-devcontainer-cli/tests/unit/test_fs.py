@@ -16,11 +16,7 @@ from caylent_devcontainer_cli.utils.constants import (
     SHELL_ENV_FILENAME,
     SSH_KEY_FILENAME,
 )
-from caylent_devcontainer_cli.utils.fs import (
-    load_json_config,
-    resolve_project_root,
-    write_json_file,
-)
+from caylent_devcontainer_cli.utils.fs import load_json_config, resolve_project_root, write_json_file
 
 
 @patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST_VAR": "test_value"}}'))
@@ -182,7 +178,10 @@ class TestResolveProjectRoot:
 
     def test_defaults_to_cwd_when_path_is_none(self):
         """Test that resolve_project_root defaults to os.getcwd() when path is None."""
-        with patch("os.getcwd", return_value="/current/dir"), patch("os.path.isdir", return_value=True):
+        with (
+            patch("os.getcwd", return_value="/current/dir"),
+            patch("os.path.isdir", return_value=True),
+        ):
             result = resolve_project_root()
             assert result == "/current/dir"
 
@@ -214,7 +213,10 @@ class TestResolveProjectRoot:
             patch("os.path.isdir", return_value=False),
             patch("os.path.isfile", return_value=False),
             patch("caylent_devcontainer_cli.utils.fs.log") as mock_log,
-            patch("caylent_devcontainer_cli.utils.fs.exit_with_error", side_effect=SystemExit(1)) as mock_exit_error,
+            patch(
+                "caylent_devcontainer_cli.utils.fs.exit_with_error",
+                side_effect=SystemExit(1),
+            ) as mock_exit_error,
         ):
             with pytest.raises(SystemExit):
                 resolve_project_root("/bad/path")
@@ -223,7 +225,10 @@ class TestResolveProjectRoot:
 
     def test_empty_string_defaults_to_cwd(self):
         """Test that empty string path defaults to cwd."""
-        with patch("os.getcwd", return_value="/cwd/path"), patch("os.path.isdir", return_value=True):
+        with (
+            patch("os.getcwd", return_value="/cwd/path"),
+            patch("os.path.isdir", return_value=True),
+        ):
             result = resolve_project_root("")
             assert result == "/cwd/path"
 
@@ -290,7 +295,12 @@ class TestWriteProjectFiles:
         project_root = self._setup_project(tmp_path)
         template_data = self._make_template_data()
 
-        write_project_files(project_root, template_data, "my-template", "/home/user/.templates/my-template.json")
+        write_project_files(
+            project_root,
+            template_data,
+            "my-template",
+            "/home/user/.templates/my-template.json",
+        )
 
         env_file = os.path.join(project_root, "devcontainer-environment-variables.json")
         with open(env_file, "r") as f:

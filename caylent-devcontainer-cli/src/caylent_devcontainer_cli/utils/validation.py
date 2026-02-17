@@ -196,7 +196,10 @@ def detect_validation_issues(project_root: str, config_data: Dict[str, Any]) -> 
         result.cli_version = config_data.get("cli_version")
     else:
         # Cannot proceed to Steps 2-3 without metadata
-        log("WARN", "Project files are missing required metadata (template_name, template_path, cli_version)")
+        log(
+            "WARN",
+            "Project files are missing required metadata (template_name, template_path, cli_version)",
+        )
         return result
 
     # --- Step 2: Locate and validate template ---

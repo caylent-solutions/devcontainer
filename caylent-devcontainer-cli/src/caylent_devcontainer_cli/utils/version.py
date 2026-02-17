@@ -108,17 +108,32 @@ def _is_installed_with_pipx():
             data = json.loads(result.stdout)
             if "caylent-devcontainer-cli" in data.get("venvs", {}):
                 return True
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        json.JSONDecodeError,
+        FileNotFoundError,
+    ):
         pass
 
     # Try python -m pipx
     try:
-        result = subprocess.run(["python", "-m", "pipx", "list", "--json"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            ["python", "-m", "pipx", "list", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
         if result.returncode == 0:
             data = json.loads(result.stdout)
             if "caylent-devcontainer-cli" in data.get("venvs", {}):
                 return True
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
+    except (
+        subprocess.TimeoutExpired,
+        subprocess.CalledProcessError,
+        json.JSONDecodeError,
+        FileNotFoundError,
+    ):
         pass
 
     return False

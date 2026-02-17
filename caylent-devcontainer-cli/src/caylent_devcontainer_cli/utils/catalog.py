@@ -524,12 +524,18 @@ def validate_postcreate_command(devcontainer_json_path: str) -> List[str]:
 
     post_create = config.get("postCreateCommand", "")
     if isinstance(post_create, str):
-        if ".devcontainer.postcreate.sh" not in post_create:
-            errors.append("postCreateCommand must call .devcontainer/.devcontainer.postcreate.sh")
+        if ".devcontainer.postcreate.sh" not in post_create and "postcreate-wrapper.sh" not in post_create:
+            errors.append(
+                "postCreateCommand must call .devcontainer/.devcontainer.postcreate.sh "
+                "or .devcontainer/postcreate-wrapper.sh"
+            )
     elif isinstance(post_create, list):
         joined = " ".join(str(item) for item in post_create)
-        if ".devcontainer.postcreate.sh" not in joined:
-            errors.append("postCreateCommand must call .devcontainer/.devcontainer.postcreate.sh")
+        if ".devcontainer.postcreate.sh" not in joined and "postcreate-wrapper.sh" not in joined:
+            errors.append(
+                "postCreateCommand must call .devcontainer/.devcontainer.postcreate.sh "
+                "or .devcontainer/postcreate-wrapper.sh"
+            )
     else:
         errors.append("postCreateCommand must be a string or array")
 

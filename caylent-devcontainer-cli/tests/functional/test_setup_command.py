@@ -82,7 +82,13 @@ def test_catalog_entry_without_env_var_exits():
 
         env = {k: v for k, v in os.environ.items() if k != "DEVCONTAINER_CATALOG_URL"}
         result = subprocess.run(
-            ["cdevcontainer", "setup-devcontainer", "--catalog-entry", "my-collection", temp_dir],
+            [
+                "cdevcontainer",
+                "setup-devcontainer",
+                "--catalog-entry",
+                "my-collection",
+                temp_dir,
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

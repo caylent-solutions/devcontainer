@@ -43,7 +43,9 @@ def register_command(subparsers):
     save_parser = template_subparsers.add_parser("save", help="Save current environment as a template")
     save_parser.add_argument("name", help="Template name")
     save_project_root = save_parser.add_argument(
-        "-p", "--project-root", help="Project root directory (default: current directory)"
+        "-p",
+        "--project-root",
+        help="Project root directory (default: current directory)",
     )
     save_project_root.complete = shtab.DIRECTORY
     save_parser.set_defaults(func=handle_template_save)
@@ -53,7 +55,9 @@ def register_command(subparsers):
     load_name = load_template_parser.add_argument("name", help="Template name")
     load_name.complete = _template_complete
     load_project_root = load_template_parser.add_argument(
-        "-p", "--project-root", help="Project root directory (default: current directory)"
+        "-p",
+        "--project-root",
+        help="Project root directory (default: current directory)",
     )
     load_project_root.complete = shtab.DIRECTORY
     load_template_parser.set_defaults(func=handle_template_load)
@@ -393,7 +397,10 @@ def upgrade_template_file(template_name):
 
     # Already at current version — no changes needed
     if template_data.get("cli_version") == __version__:
-        log("INFO", f"Template '{template_name}' is already at CLI v{__version__}. No changes needed.")
+        log(
+            "INFO",
+            f"Template '{template_name}' is already at CLI v{__version__}. No changes needed.",
+        )
         return
 
     # validate_template() handles all issues:

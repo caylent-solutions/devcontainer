@@ -9,11 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from caylent_devcontainer_cli.utils.ui import (
-    mask_password,
-    prompt_with_confirmation,
-    ssh_fingerprint,
-)
+from caylent_devcontainer_cli.utils.ui import mask_password, prompt_with_confirmation, ssh_fingerprint
 
 
 class TestPromptWithConfirmationEndToEnd:

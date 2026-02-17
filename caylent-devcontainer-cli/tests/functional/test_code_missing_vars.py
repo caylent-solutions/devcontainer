@@ -46,7 +46,15 @@ def test_code_command_fails_when_shell_env_missing():
             json.dump({"containerEnv": {"EXISTING_VAR": "value"}}, f)
 
         with pytest.raises(SystemExit) as exc_info:
-            args = type("Args", (), {"project_root": temp_dir, "ide": "vscode", "regenerate_shell_env": False})()
+            args = type(
+                "Args",
+                (),
+                {
+                    "project_root": temp_dir,
+                    "ide": "vscode",
+                    "regenerate_shell_env": False,
+                },
+            )()
             handle_code(args)
 
         assert exc_info.value.code == 1
@@ -69,7 +77,10 @@ def test_code_command_launches_with_both_files():
             f.write("export EXISTING_VAR=value\n")
 
         with (
-            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
+            patch(
+                "caylent_devcontainer_cli.commands.code.detect_validation_issues",
+                return_value=_NO_ISSUES,
+            ),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):
@@ -77,7 +88,15 @@ def test_code_command_launches_with_both_files():
             mock_process.wait.return_value = 0
             mock_popen.return_value = mock_process
 
-            args = type("Args", (), {"project_root": temp_dir, "ide": "vscode", "regenerate_shell_env": False})()
+            args = type(
+                "Args",
+                (),
+                {
+                    "project_root": temp_dir,
+                    "ide": "vscode",
+                    "regenerate_shell_env": False,
+                },
+            )()
             handle_code(args)
 
             mock_popen.assert_called_once()
@@ -100,7 +119,10 @@ def test_code_command_launches_without_sourcing():
             f.write("export TEST=value\n")
 
         with (
-            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
+            patch(
+                "caylent_devcontainer_cli.commands.code.detect_validation_issues",
+                return_value=_NO_ISSUES,
+            ),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):
@@ -108,7 +130,15 @@ def test_code_command_launches_without_sourcing():
             mock_process.wait.return_value = 0
             mock_popen.return_value = mock_process
 
-            args = type("Args", (), {"project_root": temp_dir, "ide": "vscode", "regenerate_shell_env": False})()
+            args = type(
+                "Args",
+                (),
+                {
+                    "project_root": temp_dir,
+                    "ide": "vscode",
+                    "regenerate_shell_env": False,
+                },
+            )()
             handle_code(args)
 
             # Verify the launch command is a list [ide_command, project_root]
@@ -204,7 +234,10 @@ def test_regenerate_shell_env_creates_shell_env_from_json():
         assert not os.path.exists(shell_env_path)
 
         with (
-            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
+            patch(
+                "caylent_devcontainer_cli.commands.code.detect_validation_issues",
+                return_value=_NO_ISSUES,
+            ),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):
@@ -212,7 +245,15 @@ def test_regenerate_shell_env_creates_shell_env_from_json():
             mock_process.wait.return_value = 0
             mock_popen.return_value = mock_process
 
-            args = type("Args", (), {"project_root": temp_dir, "ide": "vscode", "regenerate_shell_env": True})()
+            args = type(
+                "Args",
+                (),
+                {
+                    "project_root": temp_dir,
+                    "ide": "vscode",
+                    "regenerate_shell_env": True,
+                },
+            )()
             handle_code(args)
 
         # Verify shell.env was created
@@ -264,7 +305,10 @@ def test_regenerate_shell_env_with_proxy_vars():
             )
 
         with (
-            patch("caylent_devcontainer_cli.commands.code.detect_validation_issues", return_value=_NO_ISSUES),
+            patch(
+                "caylent_devcontainer_cli.commands.code.detect_validation_issues",
+                return_value=_NO_ISSUES,
+            ),
             patch("shutil.which", return_value="/usr/bin/code"),
             patch("subprocess.Popen") as mock_popen,
         ):
@@ -272,7 +316,15 @@ def test_regenerate_shell_env_with_proxy_vars():
             mock_process.wait.return_value = 0
             mock_popen.return_value = mock_process
 
-            args = type("Args", (), {"project_root": temp_dir, "ide": "vscode", "regenerate_shell_env": True})()
+            args = type(
+                "Args",
+                (),
+                {
+                    "project_root": temp_dir,
+                    "ide": "vscode",
+                    "regenerate_shell_env": True,
+                },
+            )()
             handle_code(args)
 
         shell_env_path = os.path.join(temp_dir, "shell.env")

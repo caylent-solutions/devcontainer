@@ -43,41 +43,42 @@ class TestDevcontainerJson(TestCase):
         """containerEnv block must be removed — all env vars come from shell.env."""
         self.assertNotIn("containerEnv", self.config)
 
-    def test_post_create_command_sources_shell_env_first(self):
-        """postCreateCommand must source shell.env before all other operations."""
+    def test_post_create_command_calls_postcreate_wrapper(self):
+        """postCreateCommand must call postcreate-wrapper.sh."""
         cmd = self.config["postCreateCommand"]
-        # After the log tee redirect, shell.env must be sourced before apt-get
-        self.assertIn("source shell.env", cmd)
-        shell_env_pos = cmd.index("source shell.env")
-        apt_get_pos = cmd.index("apt-get")
+        self.assertIn("postcreate-wrapper.sh", cmd)
+
+    def test_postcreate_wrapper_sources_shell_env_first(self):
+        """postcreate-wrapper.sh must source shell.env before all other operations."""
+        wrapper = _read_file("postcreate-wrapper.sh")
+        self.assertIn("source shell.env", wrapper)
+        shell_env_pos = wrapper.index("source shell.env")
+        apt_get_pos = wrapper.index("apt-get")
         self.assertLess(shell_env_pos, apt_get_pos)
 
-    def test_post_create_command_configures_apt_proxy(self):
-        """postCreateCommand must configure apt proxy via apt.conf.d before apt-get."""
-        cmd = self.config["postCreateCommand"]
-        # Apt proxy must be configured via /etc/apt/apt.conf.d/99proxy
-        self.assertIn("/etc/apt/apt.conf.d/99proxy", cmd)
-        # Proxy config must appear before first apt-get
-        proxy_conf_pos = cmd.index("/etc/apt/apt.conf.d/99proxy")
-        apt_get_pos = cmd.index("apt-get update")
+    def test_postcreate_wrapper_configures_apt_proxy(self):
+        """postcreate-wrapper.sh must configure apt proxy via apt.conf.d before apt-get."""
+        wrapper = _read_file("postcreate-wrapper.sh")
+        self.assertIn("/etc/apt/apt.conf.d/99proxy", wrapper)
+        proxy_conf_pos = wrapper.index("/etc/apt/apt.conf.d/99proxy")
+        apt_get_pos = wrapper.index("apt-get update")
         self.assertLess(proxy_conf_pos, apt_get_pos)
 
-    def test_post_create_command_adds_no_proxy_direct_overrides(self):
-        """postCreateCommand must add DIRECT overrides for NO_PROXY domains."""
-        cmd = self.config["postCreateCommand"]
-        self.assertIn("NO_PROXY", cmd)
-        self.assertIn("DIRECT", cmd)
+    def test_postcreate_wrapper_adds_no_proxy_direct_overrides(self):
+        """postcreate-wrapper.sh must add DIRECT overrides for NO_PROXY domains."""
+        wrapper = _read_file("postcreate-wrapper.sh")
+        self.assertIn("NO_PROXY", wrapper)
+        self.assertIn("DIRECT", wrapper)
 
-    def test_post_create_command_uses_sudo_e_for_postcreate(self):
-        """postCreateCommand must use sudo -E for postcreate.sh to pass env vars."""
-        cmd = self.config["postCreateCommand"]
-        self.assertNotIn("sudo bash", cmd)
-        self.assertIn("sudo -E bash", cmd)
+    def test_postcreate_wrapper_uses_sudo_e_for_postcreate(self):
+        """postcreate-wrapper.sh must use sudo -E for postcreate.sh to pass env vars."""
+        wrapper = _read_file("postcreate-wrapper.sh")
+        self.assertIn("sudo -E bash", wrapper)
 
-    def test_post_create_command_has_wsl_and_non_wsl_paths(self):
-        """postCreateCommand must handle both WSL and non-WSL environments."""
-        cmd = self.config["postCreateCommand"]
-        self.assertIn("uname -r | grep -i microsoft", cmd)
+    def test_postcreate_wrapper_has_wsl_and_non_wsl_paths(self):
+        """postcreate-wrapper.sh must handle both WSL and non-WSL environments."""
+        wrapper = _read_file("postcreate-wrapper.sh")
+        self.assertIn("microsoft", wrapper)
 
     def test_post_create_command_has_log_tee(self):
         """postCreateCommand must tee output to setup log file."""

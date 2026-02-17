@@ -54,8 +54,16 @@ class TestCatalogListEndToEnd(TestCase):
         mock_validate.return_value = []
         mock_discover.return_value = self._make_entries(
             [
-                ("default", "General-purpose Caylent development environment", ["general"]),
-                ("airflow-data-eng", "Apache Airflow with Python 3.12", ["data", "airflow"]),
+                (
+                    "default",
+                    "General-purpose Caylent development environment",
+                    ["general"],
+                ),
+                (
+                    "airflow-data-eng",
+                    "Apache Airflow with Python 3.12",
+                    ["data", "airflow"],
+                ),
             ]
         )
 

@@ -4,11 +4,7 @@ import unittest.mock as mock
 from io import StringIO
 from unittest import TestCase
 
-from caylent_devcontainer_cli.utils.version import (
-    EXIT_OK,
-    EXIT_UPGRADE_REQUESTED_ABORT,
-    _show_update_prompt,
-)
+from caylent_devcontainer_cli.utils.version import EXIT_OK, EXIT_UPGRADE_REQUESTED_ABORT, _show_update_prompt
 
 
 class TestInteractiveUpgradeFlow(TestCase):

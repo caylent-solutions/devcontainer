@@ -115,7 +115,14 @@ class TestRegisterCommand(TestCase):
         subparsers = parser.add_subparsers(dest="command")
         register_command(subparsers)
 
-        args = parser.parse_args(["catalog", "validate", "--catalog-url", "https://example.com/repo.git@v2.0.0"])
+        args = parser.parse_args(
+            [
+                "catalog",
+                "validate",
+                "--catalog-url",
+                "https://example.com/repo.git@v2.0.0",
+            ]
+        )
         self.assertEqual(args.catalog_url, "https://example.com/repo.git@v2.0.0")
 
     def test_list_catalog_url_defaults_to_none(self):
@@ -292,7 +299,10 @@ class TestHandleCatalogList(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
     def test_list_uses_env_var_source_label(self, mock_get_url, mock_clone, mock_validate, mock_discover, mock_rmtree):
-        mock_get_url.return_value = ("https://custom.com/catalog.git", "https://custom.com/catalog.git")
+        mock_get_url.return_value = (
+            "https://custom.com/catalog.git",
+            "https://custom.com/catalog.git",
+        )
         mock_clone.return_value = "/tmp/catalog-test"
         mock_validate.return_value = []
         mock_discover.return_value = self._make_entries(
@@ -337,7 +347,13 @@ class TestHandleCatalogList(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
     def test_list_skips_incompatible_min_cli_version(
-        self, mock_get_url, mock_clone, mock_validate, mock_discover, mock_check_ver, mock_rmtree
+        self,
+        mock_get_url,
+        mock_clone,
+        mock_validate,
+        mock_discover,
+        mock_check_ver,
+        mock_rmtree,
     ):
         mock_get_url.return_value = ("https://example.com/repo.git", "default catalog")
         mock_clone.return_value = "/tmp/catalog-test"
@@ -373,7 +389,13 @@ class TestHandleCatalogList(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
     def test_list_all_incompatible_shows_info(
-        self, mock_get_url, mock_clone, mock_validate, mock_discover, mock_check_ver, mock_rmtree
+        self,
+        mock_get_url,
+        mock_clone,
+        mock_validate,
+        mock_discover,
+        mock_check_ver,
+        mock_rmtree,
     ):
         """When all entries are filtered by min_cli_version, show info message."""
         mock_get_url.return_value = ("https://example.com/repo.git", "default catalog")
@@ -404,7 +426,13 @@ class TestHandleCatalogList(TestCase):
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
     def test_list_no_min_cli_version_included(
-        self, mock_get_url, mock_clone, mock_validate, mock_discover, mock_check_ver, mock_rmtree
+        self,
+        mock_get_url,
+        mock_clone,
+        mock_validate,
+        mock_discover,
+        mock_check_ver,
+        mock_rmtree,
     ):
         """Entries without min_cli_version are always included."""
         mock_get_url.return_value = ("https://example.com/repo.git", "default catalog")

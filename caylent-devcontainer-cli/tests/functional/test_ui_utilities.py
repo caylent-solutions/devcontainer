@@ -9,12 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from caylent_devcontainer_cli.utils.ui import (
-    ask_or_exit,
-    confirm_action,
-    exit_cancelled,
-    exit_with_error,
-)
+from caylent_devcontainer_cli.utils.ui import ask_or_exit, confirm_action, exit_cancelled, exit_with_error
 
 
 class TestExitWithErrorEndToEnd:

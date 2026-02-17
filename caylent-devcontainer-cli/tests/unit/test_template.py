@@ -42,7 +42,10 @@ def test_ensure_templates_dir():
 def test_handle_template_save():
     with (
         patch("caylent_devcontainer_cli.commands.template.save_template") as mock_save,
-        patch("caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/test/path"),
+        patch(
+            "caylent_devcontainer_cli.commands.template.resolve_project_root",
+            return_value="/test/path",
+        ),
     ):
         args = MagicMock()
         args.project_root = "/test/path"
@@ -56,7 +59,10 @@ def test_handle_template_save():
 def test_handle_template_load():
     with (
         patch("caylent_devcontainer_cli.commands.template.load_template") as mock_load,
-        patch("caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/test/path"),
+        patch(
+            "caylent_devcontainer_cli.commands.template.resolve_project_root",
+            return_value="/test/path",
+        ),
     ):
         args = MagicMock()
         args.project_root = "/test/path"
@@ -85,7 +91,10 @@ def test_save_template():
         patch("os.path.exists", return_value=True),
         patch("json.load", return_value=mock_env_data),
         patch("json.dump") as mock_dump,
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=True,
+        ),
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
     ):
 
@@ -106,7 +115,10 @@ def test_load_template_no_existing_file():
         patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
 
@@ -130,7 +142,10 @@ def test_load_template_overwrite_accepted():
         patch("questionary.confirm", return_value=mock_confirm),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
 
@@ -155,13 +170,19 @@ def test_load_template_overwrite_declined():
 def test_load_template_calls_validate_template():
     """Test that load_template calls validate_template before write_project_files."""
     mock_template_data = {"containerEnv": {"K": "v"}, "cli_version": "2.0.0"}
-    validated_data = {"containerEnv": {"K": "v", "ADDED": "by_validate"}, "cli_version": "2.0.0"}
+    validated_data = {
+        "containerEnv": {"K": "v", "ADDED": "by_validate"},
+        "cli_version": "2.0.0",
+    }
 
     with (
         patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", return_value=validated_data),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            return_value=validated_data,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
 
@@ -180,9 +201,15 @@ def test_load_template_passes_name_and_path_to_write():
         patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
-        patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/home/.devcontainer-templates"),
+        patch(
+            "caylent_devcontainer_cli.utils.template.TEMPLATES_DIR",
+            "/home/.devcontainer-templates",
+        ),
     ):
 
         load_template("/test/path", "my-template")
@@ -192,10 +219,16 @@ def test_load_template_passes_name_and_path_to_write():
         assert call_args[3] == "/home/.devcontainer-templates/my-template.json"
 
 
-@patch("os.listdir", return_value=["template1.json", "template2.json", "not-a-template.txt"])
+@patch(
+    "os.listdir",
+    return_value=["template1.json", "template2.json", "not-a-template.txt"],
+)
 @patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir")
 def test_list_templates(mock_ensure, mock_listdir, capsys):
-    with patch("builtins.open", MagicMock()), patch("json.load", return_value={"cli_version": "1.0.0"}):
+    with (
+        patch("builtins.open", MagicMock()),
+        patch("json.load", return_value={"cli_version": "1.0.0"}),
+    ):
         list_templates()
 
     mock_ensure.assert_called_once()
@@ -245,7 +278,10 @@ def test_handle_template_create():
 @patch("os.path.exists", return_value=False)
 def test_create_new_template(mock_exists, mock_ensure_dir, mock_create_interactive, mock_save):
     """Test creating a new template."""
-    mock_create_interactive.return_value = {"containerEnv": {"TEST": "value"}, "cli_version": "1.0.0"}
+    mock_create_interactive.return_value = {
+        "containerEnv": {"TEST": "value"},
+        "cli_version": "1.0.0",
+    }
 
     create_new_template("test-template")
 
@@ -285,7 +321,10 @@ def test_delete_template():
     with (
         patch("os.path.exists", return_value=True),
         patch("os.remove") as mock_remove,
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=True,
+        ),
         patch("caylent_devcontainer_cli.utils.ui.log"),
         patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"),
     ):
@@ -318,7 +357,10 @@ def test_delete_template_cancel():
     with (
         patch("os.path.exists", return_value=True),
         patch("os.remove") as mock_remove,
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=False),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=False,
+        ),
         patch("caylent_devcontainer_cli.utils.ui.log"),
         patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"),
     ):
@@ -363,7 +405,10 @@ def test_upgrade_already_current_version(capsys):
 def test_upgrade_calls_validate_template():
     """Test that upgrade_template_file calls validate_template."""
     mock_data = {"containerEnv": {"K": "v"}, "cli_version": "2.0.0-alpha.1"}
-    validated = {"containerEnv": {"K": "v", "ADDED": "by_validate"}, "cli_version": "2.0.0-alpha.1"}
+    validated = {
+        "containerEnv": {"K": "v", "ADDED": "by_validate"},
+        "cli_version": "2.0.0-alpha.1",
+    }
 
     with (
         patch("os.path.exists", return_value=True),
@@ -389,7 +434,10 @@ def test_upgrade_updates_cli_version():
         patch("os.path.exists", return_value=True),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_data))),
         patch("json.load", return_value=mock_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_json_file") as mock_write,
         patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"),
     ):
@@ -408,7 +456,10 @@ def test_upgrade_saves_template_file():
         patch("os.path.exists", return_value=True),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_data))),
         patch("json.load", return_value=mock_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_json_file") as mock_write,
         patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"),
     ):
@@ -426,7 +477,10 @@ def test_upgrade_success_message(capsys):
         patch("os.path.exists", return_value=True),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_data))),
         patch("json.load", return_value=mock_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_json_file"),
         patch("caylent_devcontainer_cli.utils.template.TEMPLATES_DIR", "/templates"),
     ):
@@ -465,7 +519,10 @@ def test_handle_template_save_no_project_root():
 
     with (
         patch("caylent_devcontainer_cli.commands.template.save_template") as mock_save,
-        patch("caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/current/dir"),
+        patch(
+            "caylent_devcontainer_cli.commands.template.resolve_project_root",
+            return_value="/current/dir",
+        ),
     ):
         handle_template_save(args)
         mock_save.assert_called_once_with("/current/dir", "test-template")
@@ -479,7 +536,10 @@ def test_handle_template_load_no_project_root():
 
     with (
         patch("caylent_devcontainer_cli.commands.template.load_template") as mock_load,
-        patch("caylent_devcontainer_cli.commands.template.resolve_project_root", return_value="/current/dir"),
+        patch(
+            "caylent_devcontainer_cli.commands.template.resolve_project_root",
+            return_value="/current/dir",
+        ),
     ):
         handle_template_load(args)
         mock_load.assert_called_once_with("/current/dir", "test-template")
@@ -500,7 +560,10 @@ def test_list_templates_with_no_templates():
     with (
         patch("os.path.exists", return_value=True),
         patch("os.listdir", return_value=[]),
-        patch("caylent_devcontainer_cli.commands.template.COLORS", {"YELLOW": "", "RESET": ""}),
+        patch(
+            "caylent_devcontainer_cli.commands.template.COLORS",
+            {"YELLOW": "", "RESET": ""},
+        ),
         patch("builtins.print") as mock_print,
     ):
         list_templates()
@@ -514,7 +577,10 @@ def test_list_templates_with_templates():
         patch("os.listdir", return_value=["template1.json", "template2.json"]),
         patch("builtins.open", mock_open()),
         patch("json.load", side_effect=[{"cli_version": "1.0.0"}, {}]),
-        patch("caylent_devcontainer_cli.commands.template.COLORS", {"CYAN": "", "GREEN": "", "RESET": ""}),
+        patch(
+            "caylent_devcontainer_cli.commands.template.COLORS",
+            {"CYAN": "", "GREEN": "", "RESET": ""},
+        ),
         patch("builtins.print") as mock_print,
     ):
         list_templates()
@@ -528,7 +594,10 @@ def test_save_template_error():
     with (
         patch("os.path.exists", return_value=True),
         patch("builtins.open", side_effect=Exception("Test error")),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=True,
+        ),
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
         patch("sys.exit", side_effect=SystemExit(1)),
     ):
@@ -572,7 +641,10 @@ def test_save_template_adds_version():
         patch("os.path.exists", return_value=True),
         patch("json.load", return_value=mock_env_data),
         patch("json.dump") as mock_dump,
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=True,
+        ),
     ):
 
         save_template("/test/path", "test-template")
@@ -621,7 +693,10 @@ def test_save_template_confirm_cancel():
     """Test save_template when user cancels confirmation."""
     with (
         patch("os.path.exists", side_effect=[True, False]),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=False),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=False,
+        ),
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
         patch("sys.exit", side_effect=SystemExit(1)),
     ):
@@ -638,7 +713,10 @@ def test_load_template_success_message(capsys):
         patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_template_data))),
         patch("json.load", return_value=mock_template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files"),
     ):
 
@@ -653,7 +731,10 @@ def test_delete_template_exception():
     with (
         patch("os.path.exists", return_value=True),
         patch("os.remove", side_effect=Exception("Delete error")),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=True,
+        ),
     ):
 
         delete_template("test-template")
@@ -699,7 +780,10 @@ def test_load_template_create_new_env_file():
         patch("os.path.exists", side_effect=lambda p: "templates" in p),
         patch("builtins.open", mock_open(read_data=json.dumps(template_data))),
         patch("json.load", return_value=template_data),
-        patch("caylent_devcontainer_cli.commands.template.validate_template", side_effect=lambda d: d),
+        patch(
+            "caylent_devcontainer_cli.commands.template.validate_template",
+            side_effect=lambda d: d,
+        ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write,
     ):
 
@@ -714,7 +798,10 @@ def test_save_template_create_new_template():
 
     with (
         patch("os.path.exists", side_effect=[True, False]),
-        patch("caylent_devcontainer_cli.commands.template.confirm_action", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.confirm_action",
+            return_value=True,
+        ),
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
         patch("builtins.open", mock_open(read_data=json.dumps(mock_env_data))),
         patch("json.load", return_value=mock_env_data),
@@ -1170,7 +1257,10 @@ def test_edit_template_exits_if_not_found():
 
 def test_edit_template_loads_validates_edits_and_saves():
     """edit_template loads template, validates, calls edit_interactive, and saves."""
-    template_data = {"containerEnv": {"DEVELOPER_NAME": "Alice"}, "cli_version": "2.0.0"}
+    template_data = {
+        "containerEnv": {"DEVELOPER_NAME": "Alice"},
+        "cli_version": "2.0.0",
+    }
     edited_data = {"containerEnv": {"DEVELOPER_NAME": "Bob"}, "cli_version": "2.0.0"}
 
     with (

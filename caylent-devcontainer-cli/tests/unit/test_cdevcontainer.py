@@ -94,9 +94,15 @@ def test_main_code(mock_handle_code, mock_log, mock_parse_args):
 
 # Test the handle_code function
 @patch("shutil.which", return_value="/usr/bin/code")
-@patch("caylent_devcontainer_cli.commands.code.resolve_project_root", return_value="/test/path")
+@patch(
+    "caylent_devcontainer_cli.commands.code.resolve_project_root",
+    return_value="/test/path",
+)
 @patch("os.path.isfile", return_value=True)
-@patch("caylent_devcontainer_cli.commands.code.load_json_config", return_value={"containerEnv": {}})
+@patch(
+    "caylent_devcontainer_cli.commands.code.load_json_config",
+    return_value={"containerEnv": {}},
+)
 @patch("caylent_devcontainer_cli.commands.code.detect_validation_issues")
 @patch("subprocess.Popen")
 def test_handle_code(

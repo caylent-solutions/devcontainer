@@ -175,7 +175,10 @@ def write_project_files(
             if ssh_key_content:
                 log("OK", f"SSH private key written to {ssh_key_path}")
             else:
-                log("WARN", f"SSH private key file created at {ssh_key_path} but template has no key content")
+                log(
+                    "WARN",
+                    f"SSH private key file created at {ssh_key_path} but template has no key content",
+                )
         except Exception as e:
             exit_with_error(f"Failed to write {ssh_key_path}: {e}")
 

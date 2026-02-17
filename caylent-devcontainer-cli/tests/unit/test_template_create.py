@@ -76,7 +76,16 @@ class TestValidateSshKeyFile:
         """Passphrase-protected key returns error with guidance."""
         key_file = tmp_path / "protected_key"
         subprocess.run(
-            ["ssh-keygen", "-t", "ed25519", "-f", str(key_file), "-N", "mypassphrase", "-q"],
+            [
+                "ssh-keygen",
+                "-t",
+                "ed25519",
+                "-f",
+                str(key_file),
+                "-N",
+                "mypassphrase",
+                "-q",
+            ],
             check=True,
         )
 
@@ -138,7 +147,10 @@ class TestPromptSshKey:
         mock_confirm = MagicMock()
         mock_confirm.ask.return_value = True
 
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             result = prompt_ssh_key()
 
         assert "-----BEGIN" in result
@@ -159,7 +171,10 @@ class TestPromptSshKey:
         mock_confirm = MagicMock()
         mock_confirm.ask.return_value = True
 
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             result = prompt_ssh_key()
 
         assert "-----BEGIN" in result
@@ -199,7 +214,10 @@ class TestPromptSshKey:
         mock_confirm = MagicMock()
         mock_confirm.ask.side_effect = [False, True]
 
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             result = prompt_ssh_key()
 
         assert "-----BEGIN" in result
@@ -236,7 +254,10 @@ class TestPromptCustomEnvVars:
         # First: "Add custom vars?", "Is this correct?", "Add another?"
         mock_confirm.ask.side_effect = [True, True, False]
 
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             result = prompt_custom_env_vars(set())
 
         assert result == {"MY_CUSTOM_KEY": "my-value"}
@@ -251,7 +272,10 @@ class TestPromptCustomEnvVars:
         # "Add custom?", "Is correct?", "Add another?", "Is correct?", "Add another?"
         mock_confirm.ask.side_effect = [True, True, True, True, False]
 
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             result = prompt_custom_env_vars(set())
 
         assert result == {"KEY_ONE": "value1", "KEY_TWO": "value2"}
@@ -267,7 +291,10 @@ class TestPromptCustomEnvVars:
         mock_confirm.ask.side_effect = [True, True, False]
 
         known = {"GIT_TOKEN", "GIT_USER"}
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             result = prompt_custom_env_vars(known)
 
         assert result == {"MY_VALID_KEY": "my-value"}
@@ -285,7 +312,10 @@ class TestPromptCustomEnvVars:
         # "Add?", "Is correct?", "Add another?", "Is correct?", "Add another?"
         mock_confirm.ask.side_effect = [True, True, True, True, False]
 
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             result = prompt_custom_env_vars(set())
 
         assert result == {"KEY_A": "val_a", "KEY_B": "val_b"}
@@ -302,7 +332,10 @@ class TestPromptCustomEnvVars:
         mock_text = MagicMock()
         mock_text.ask.return_value = None
 
-        with patch("questionary.text", return_value=mock_text), patch("questionary.confirm", return_value=mock_confirm):
+        with (
+            patch("questionary.text", return_value=mock_text),
+            patch("questionary.confirm", return_value=mock_confirm),
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 prompt_custom_env_vars(set())
 
@@ -549,7 +582,11 @@ class TestCreateNewTemplateMetadata:
         with (
             patch(
                 "caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive",
-                return_value={"containerEnv": {}, "cli_version": "2.0.0", "aws_profile_map": {}},
+                return_value={
+                    "containerEnv": {},
+                    "cli_version": "2.0.0",
+                    "aws_profile_map": {},
+                },
             ),
             patch(
                 "caylent_devcontainer_cli.commands.setup_interactive.save_template_to_file",
@@ -577,7 +614,11 @@ class TestCreateNewTemplateMetadata:
         """save_template_to_file adds template_name and template_path."""
         from caylent_devcontainer_cli.commands.setup_interactive import save_template_to_file
 
-        template_data = {"containerEnv": {}, "cli_version": "2.0.0", "aws_profile_map": {}}
+        template_data = {
+            "containerEnv": {},
+            "cli_version": "2.0.0",
+            "aws_profile_map": {},
+        }
 
         with (
             patch(
@@ -613,7 +654,11 @@ class TestCreateNewTemplateMetadata:
         with (
             patch(
                 "caylent_devcontainer_cli.commands.setup_interactive.create_template_interactive",
-                return_value={"containerEnv": {}, "cli_version": "2.0.0", "aws_profile_map": {}},
+                return_value={
+                    "containerEnv": {},
+                    "cli_version": "2.0.0",
+                    "aws_profile_map": {},
+                },
             ),
             patch(
                 "caylent_devcontainer_cli.commands.setup_interactive.save_template_to_file",

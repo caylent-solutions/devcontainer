@@ -31,6 +31,7 @@ CATALOG_VERSION_FILENAME = "VERSION"
 CATALOG_REQUIRED_COMMON_ASSETS = (
     ".devcontainer.postcreate.sh",
     "devcontainer-functions.sh",
+    "postcreate-wrapper.sh",
     "project-setup.sh",
 )
 
@@ -48,7 +49,12 @@ CATALOG_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]*[a-z0-9]$")
 CATALOG_TAG_PATTERN = re.compile(r"^[a-z][a-z0-9-]*[a-z0-9]$")
 
 # Template structural requirements — top-level keys that must exist
-REQUIRED_TEMPLATE_KEYS = ("containerEnv", "cli_version", "template_name", "template_path")
+REQUIRED_TEMPLATE_KEYS = (
+    "containerEnv",
+    "cli_version",
+    "template_name",
+    "template_path",
+)
 
 # Known key value constraints — maps key name to valid choices
 VALID_KEY_VALUES = {

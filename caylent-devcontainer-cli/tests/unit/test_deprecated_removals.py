@@ -23,7 +23,10 @@ class TestEnvCommandRemoved:
         from caylent_devcontainer_cli.cli import main
 
         with patch("sys.argv", ["cdevcontainer", "env", "export", "test.json", "-o", "out.sh"]):
-            with patch("caylent_devcontainer_cli.utils.version.check_for_updates", return_value=True):
+            with patch(
+                "caylent_devcontainer_cli.utils.version.check_for_updates",
+                return_value=True,
+            ):
                 with pytest.raises(SystemExit) as exc_info:
                     main()
                 # argparse exits with code 2 for unrecognized commands
@@ -43,7 +46,10 @@ class TestInstallCommandRemoved:
         from caylent_devcontainer_cli.cli import main
 
         with patch("sys.argv", ["cdevcontainer", "install"]):
-            with patch("caylent_devcontainer_cli.utils.version.check_for_updates", return_value=True):
+            with patch(
+                "caylent_devcontainer_cli.utils.version.check_for_updates",
+                return_value=True,
+            ):
                 with pytest.raises(SystemExit) as exc_info:
                     main()
                 assert exc_info.value.code == 2
@@ -53,7 +59,10 @@ class TestInstallCommandRemoved:
         from caylent_devcontainer_cli.cli import main
 
         with patch("sys.argv", ["cdevcontainer", "uninstall"]):
-            with patch("caylent_devcontainer_cli.utils.version.check_for_updates", return_value=True):
+            with patch(
+                "caylent_devcontainer_cli.utils.version.check_for_updates",
+                return_value=True,
+            ):
                 with pytest.raises(SystemExit) as exc_info:
                     main()
                 assert exc_info.value.code == 2
@@ -77,7 +86,10 @@ class TestYesFlagRemoved:
         from caylent_devcontainer_cli.cli import main
 
         with patch("sys.argv", ["cdevcontainer", "-y"]):
-            with patch("caylent_devcontainer_cli.utils.version.check_for_updates", return_value=True):
+            with patch(
+                "caylent_devcontainer_cli.utils.version.check_for_updates",
+                return_value=True,
+            ):
                 with pytest.raises(SystemExit) as exc_info:
                     main()
                 # argparse exits with 2 for unrecognized args

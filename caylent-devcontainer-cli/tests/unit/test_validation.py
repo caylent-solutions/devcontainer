@@ -173,7 +173,10 @@ class TestValidationResult:
 class TestStep0BaseKeyCheck:
     """Tests for Step 0: base key checking."""
 
-    @patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {"KEY_A": "a", "KEY_B": "b"})
+    @patch(
+        "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
+        {"KEY_A": "a", "KEY_B": "b"},
+    )
     def test_detects_missing_base_keys_in_json(self):
         """Test Step 0 flags base keys missing from JSON containerEnv."""
         config_data = {
@@ -186,7 +189,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "value_a"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -196,7 +202,10 @@ class TestStep0BaseKeyCheck:
 
         assert "KEY_B" in result.missing_base_keys
 
-    @patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {"KEY_A": "a", "KEY_B": "b"})
+    @patch(
+        "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
+        {"KEY_A": "a", "KEY_B": "b"},
+    )
     def test_detects_missing_base_keys_in_shell_env(self):
         """Test Step 0 flags base keys missing from shell.env."""
         config_data = {
@@ -209,7 +218,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "value_a", "KEY_B": "value_b"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -219,7 +231,10 @@ class TestStep0BaseKeyCheck:
 
         assert "KEY_B" in result.missing_base_keys
 
-    @patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {"KEY_A": "a", "GIT_TOKEN": "tok"})
+    @patch(
+        "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
+        {"KEY_A": "a", "GIT_TOKEN": "tok"},
+    )
     def test_git_token_not_required_for_ssh(self):
         """Test Step 0 skips GIT_TOKEN when GIT_AUTH_METHOD is ssh."""
         config_data = {
@@ -232,7 +247,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "value", "GIT_AUTH_METHOD": "ssh"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -258,7 +276,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "value", "AWS_CONFIG_ENABLED": "false"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -284,7 +305,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "value", "AWS_CONFIG_ENABLED": "true"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -310,7 +334,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "value", "HOST_PROXY": "false"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -336,7 +363,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "value", "HOST_PROXY": "true"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -362,7 +392,10 @@ class TestStep0BaseKeyCheck:
         template_data = {"containerEnv": {"KEY_A": "x", "KEY_B": "y"}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value=shell_env_content,
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
                 return_value=(True, template_data),
@@ -391,7 +424,10 @@ class TestStep1MetadataValidation:
         }
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=""),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value="",
+            ),
             patch(
                 "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
                 {},
@@ -414,7 +450,10 @@ class TestStep1MetadataValidation:
         }
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=""),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value="",
+            ),
             patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {}),
         ):
             result = detect_validation_issues("/test/path", config_data)
@@ -430,7 +469,10 @@ class TestStep1MetadataValidation:
         }
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=""),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value="",
+            ),
             patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {}),
         ):
             result = detect_validation_issues("/test/path", config_data)
@@ -442,7 +484,10 @@ class TestStep1MetadataValidation:
         config_data = {"containerEnv": {}}
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=""),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value="",
+            ),
             patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {}),
         ):
             result = detect_validation_issues("/test/path", config_data)
@@ -477,7 +522,10 @@ class TestStep2LocateTemplate:
         }
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value="export KEY='val'\n"),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value="export KEY='val'\n",
+            ),
             patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {}),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
@@ -498,7 +546,10 @@ class TestStep2LocateTemplate:
         }
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=""),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value="",
+            ),
             patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {}),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",
@@ -591,7 +642,10 @@ class TestStep3TemplateComparison:
         }
 
         with (
-            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value="export KEY='val'\n"),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._read_shell_env",
+                return_value="export KEY='val'\n",
+            ),
             patch("caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES", {}),
             patch(
                 "caylent_devcontainer_cli.utils.validation._step2_locate_template",

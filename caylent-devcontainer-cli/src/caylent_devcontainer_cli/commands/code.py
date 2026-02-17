@@ -69,7 +69,10 @@ def register_command(subparsers):
     )
     project_root_action.complete = shtab.DIRECTORY
     code_parser.add_argument(
-        "--ide", choices=["vscode", "cursor"], default="vscode", help="IDE to launch (default: vscode)"
+        "--ide",
+        choices=["vscode", "cursor"],
+        default="vscode",
+        help="IDE to launch (default: vscode)",
     )
     code_parser.add_argument(
         "--regenerate-shell-env",
@@ -171,7 +174,10 @@ def _handle_missing_metadata(project_root):
     )
 
     if "No" in choice:
-        log("WARN", "Continuing without regeneration — the environment may not work correctly")
+        log(
+            "WARN",
+            "Continuing without regeneration — the environment may not work correctly",
+        )
         return True
 
     # User chose Yes — run interactive setup to regenerate project files
@@ -203,7 +209,10 @@ def _handle_missing_variables(project_root, config_data, result):
     print()
 
     # Step 5: User confirmation
-    log("INFO", "Missing variables indicate the devcontainer configuration may need to be upgraded.")
+    log(
+        "INFO",
+        "Missing variables indicate the devcontainer configuration may need to be upgraded.",
+    )
 
     choice = ask_or_exit(
         questionary.select(
@@ -218,7 +227,10 @@ def _handle_missing_variables(project_root, config_data, result):
     )
 
     if "Open without changes" in choice:
-        log("WARN", "Continuing without changes — the environment may not work correctly")
+        log(
+            "WARN",
+            "Continuing without changes — the environment may not work correctly",
+        )
         return
 
     # Merge missing variables into the template data for write_project_files
@@ -255,10 +267,7 @@ def _replace_devcontainer_files(project_root):
     Args:
         project_root: Path to the project root directory.
     """
-    from caylent_devcontainer_cli.commands.setup import (
-        _select_and_copy_catalog,
-        _show_replace_notification,
-    )
+    from caylent_devcontainer_cli.commands.setup import _select_and_copy_catalog, _show_replace_notification
 
     _show_replace_notification()
 
@@ -342,6 +351,9 @@ def _launch_ide(ide_key, project_root):
     try:
         process = subprocess.Popen([ide_command, project_root])
         process.wait()
-        log("OK", f"{ide_name} launched. Accept the prompt to reopen in container when it appears.")
+        log(
+            "OK",
+            f"{ide_name} launched. Accept the prompt to reopen in container when it appears.",
+        )
     except Exception as e:
         exit_with_error(f"Failed to launch {ide_name}: {e}")

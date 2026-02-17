@@ -329,25 +329,31 @@ class TestDefaultEntryDevcontainerJson(TestCase):
         """devcontainer.json must be valid JSON."""
         self.assertIsInstance(self.config, dict)
 
-    def test_postcreate_command_calls_postcreate_script(self):
-        """postCreateCommand must call .devcontainer.postcreate.sh."""
+    def test_postcreate_command_calls_postcreate_wrapper(self):
+        """postCreateCommand must call postcreate-wrapper.sh."""
         post_create = self.config.get("postCreateCommand", "")
-        self.assertIn(".devcontainer.postcreate.sh", str(post_create))
+        self.assertIn("postcreate-wrapper.sh", str(post_create))
 
     def test_validate_postcreate_command_passes(self):
         """validate_postcreate_command() must return no errors."""
         errors = validate_postcreate_command(self.devcontainer_path)
         self.assertEqual(errors, [], f"postCreateCommand validation errors: {errors}")
 
-    def test_postcreate_sources_shell_env(self):
-        """postCreateCommand must source shell.env."""
-        post_create = str(self.config.get("postCreateCommand", ""))
-        self.assertIn("source shell.env", post_create)
+    def test_postcreate_wrapper_sources_shell_env(self):
+        """postcreate-wrapper.sh (called by postCreateCommand) must source shell.env."""
+        assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
+        wrapper_path = os.path.join(assets_dir, "postcreate-wrapper.sh")
+        with open(wrapper_path) as f:
+            wrapper = f.read()
+        self.assertIn("source shell.env", wrapper)
 
-    def test_uses_sudo_e(self):
-        """postCreateCommand must use sudo -E for environment propagation."""
-        post_create = str(self.config.get("postCreateCommand", ""))
-        self.assertIn("sudo -E", post_create)
+    def test_postcreate_wrapper_uses_sudo_e(self):
+        """postcreate-wrapper.sh must use sudo -E for environment propagation."""
+        assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
+        wrapper_path = os.path.join(assets_dir, "postcreate-wrapper.sh")
+        with open(wrapper_path) as f:
+            wrapper = f.read()
+        self.assertIn("sudo -E", wrapper)
 
 
 class TestFullCatalogValidation(TestCase):

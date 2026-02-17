@@ -315,6 +315,21 @@ class TestValidatePostcreateCommand(TestCase):
             errors = validate_postcreate_command(path)
             self.assertEqual(errors, [])
 
+    def test_valid_wrapper_command(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            cmd = (
+                "bash -c 'set -o pipefail; bash .devcontainer/"
+                "postcreate-wrapper.sh 2>&1 | tee /tmp/devcontainer-setup.log'"
+            )
+            config = {"postCreateCommand": cmd}
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_postcreate_command(path)
+            self.assertEqual(errors, [])
+
     def test_missing_postcreate_reference(self):
         import tempfile
 
@@ -331,7 +346,12 @@ class TestValidatePostcreateCommand(TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "devcontainer.json")
-            config = {"postCreateCommand": ["bash", ".devcontainer/.devcontainer.postcreate.sh"]}
+            config = {
+                "postCreateCommand": [
+                    "bash",
+                    ".devcontainer/.devcontainer.postcreate.sh",
+                ]
+            }
             with open(path, "w") as f:
                 json.dump(config, f)
             errors = validate_postcreate_command(path)
@@ -568,7 +588,10 @@ class TestValidateCatalog(TestCase):
             with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump(entry, f)
             with open(os.path.join(col_dir, "devcontainer.json"), "w") as f:
-                json.dump({"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh"}, f)
+                json.dump(
+                    {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh"},
+                    f,
+                )
             with open(os.path.join(col_dir, CATALOG_VERSION_FILENAME), "w") as f:
                 f.write("1.0.0")
             errors = validate_catalog(tmp)
@@ -758,7 +781,17 @@ class TestCloneCatalogRepo(TestCase):
         self.assertEqual(result, "/tmp/catalog-abc")
         mock_run.assert_called_once()
         cmd = mock_run.call_args[0][0]
-        self.assertEqual(cmd, ["git", "clone", "--depth", "1", "https://github.com/org/repo.git", "/tmp/catalog-abc"])
+        self.assertEqual(
+            cmd,
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "https://github.com/org/repo.git",
+                "/tmp/catalog-abc",
+            ],
+        )
 
     @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
     @patch("caylent_devcontainer_cli.utils.catalog.tempfile.mkdtemp")
@@ -772,7 +805,16 @@ class TestCloneCatalogRepo(TestCase):
         cmd = mock_run.call_args[0][0]
         self.assertEqual(
             cmd,
-            ["git", "clone", "--depth", "1", "--branch", "v2.0", "https://github.com/org/repo.git", "/tmp/catalog-xyz"],
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "--branch",
+                "v2.0",
+                "https://github.com/org/repo.git",
+                "/tmp/catalog-xyz",
+            ],
         )
 
     @patch("caylent_devcontainer_cli.utils.catalog.shutil.rmtree")
@@ -922,7 +964,10 @@ class TestDiscoverEntries(TestCase):
             incomplete = os.path.join(tmp, "catalog", "incomplete")
             os.makedirs(incomplete)
             with open(os.path.join(incomplete, CATALOG_ENTRY_FILENAME), "w") as f:
-                json.dump({"name": "incomplete", "description": "Missing devcontainer.json"}, f)
+                json.dump(
+                    {"name": "incomplete", "description": "Missing devcontainer.json"},
+                    f,
+                )
 
             # Without skip_incomplete: both returned
             entries_all = discover_entries(tmp, skip_incomplete=False)
@@ -939,7 +984,10 @@ class TestDiscoverEntries(TestCase):
             col = os.path.join(tmp, "catalog", "no-devcontainer")
             os.makedirs(col)
             with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
-                json.dump({"name": "no-devcontainer", "description": "No devcontainer.json"}, f)
+                json.dump(
+                    {"name": "no-devcontainer", "description": "No devcontainer.json"},
+                    f,
+                )
 
             entries = discover_entries(tmp)
             self.assertEqual(len(entries), 1)
@@ -1073,7 +1121,11 @@ class TestResolveLatestCatalogTag(TestCase):
         mock_run.return_value = type(
             "Result",
             (),
-            {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["2.0.0", "2.1.0", "2.0.1"])},
+            {
+                "returncode": 0,
+                "stderr": "",
+                "stdout": self._make_ls_remote_output(["2.0.0", "2.1.0", "2.0.1"]),
+            },
         )()
         result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
         self.assertEqual(result, "2.1.0")
@@ -1083,7 +1135,11 @@ class TestResolveLatestCatalogTag(TestCase):
         mock_run.return_value = type(
             "Result",
             (),
-            {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["1.0.0", "1.9.9", "2.0.0"])},
+            {
+                "returncode": 0,
+                "stderr": "",
+                "stdout": self._make_ls_remote_output(["1.0.0", "1.9.9", "2.0.0"]),
+            },
         )()
         result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
         self.assertEqual(result, "2.0.0")
@@ -1091,7 +1147,13 @@ class TestResolveLatestCatalogTag(TestCase):
     @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
     def test_includes_exact_min_version(self, mock_run):
         mock_run.return_value = type(
-            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["2.0.0"])}
+            "Result",
+            (),
+            {
+                "returncode": 0,
+                "stderr": "",
+                "stdout": self._make_ls_remote_output(["2.0.0"]),
+            },
         )()
         result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
         self.assertEqual(result, "2.0.0")
@@ -1115,7 +1177,13 @@ class TestResolveLatestCatalogTag(TestCase):
     @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
     def test_no_compatible_tags_raises_system_exit(self, mock_run):
         mock_run.return_value = type(
-            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["1.0.0", "1.5.0"])}
+            "Result",
+            (),
+            {
+                "returncode": 0,
+                "stderr": "",
+                "stdout": self._make_ls_remote_output(["1.0.0", "1.5.0"]),
+            },
         )()
         with self.assertRaises(SystemExit) as ctx:
             resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
@@ -1134,7 +1202,9 @@ class TestResolveLatestCatalogTag(TestCase):
     @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
     def test_git_failure_raises_system_exit(self, mock_run):
         mock_run.return_value = type(
-            "Result", (), {"returncode": 128, "stderr": "fatal: repository not found", "stdout": ""}
+            "Result",
+            (),
+            {"returncode": 128, "stderr": "fatal: repository not found", "stdout": ""},
         )()
         with self.assertRaises(SystemExit) as ctx:
             resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
@@ -1156,7 +1226,13 @@ class TestResolveLatestCatalogTag(TestCase):
     def test_semver_sorting_across_major_minor_patch(self, mock_run):
         tags = ["2.0.0", "3.0.0", "2.10.0", "2.9.0", "2.1.0", "10.0.0"]
         mock_run.return_value = type(
-            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(tags)}
+            "Result",
+            (),
+            {
+                "returncode": 0,
+                "stderr": "",
+                "stdout": self._make_ls_remote_output(tags),
+            },
         )()
         result = resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
         self.assertEqual(result, "10.0.0")
@@ -1171,7 +1247,13 @@ class TestResolveLatestCatalogTag(TestCase):
     @patch("caylent_devcontainer_cli.utils.catalog.subprocess.run")
     def test_calls_git_ls_remote_with_correct_args(self, mock_run):
         mock_run.return_value = type(
-            "Result", (), {"returncode": 0, "stderr": "", "stdout": self._make_ls_remote_output(["2.0.0"])}
+            "Result",
+            (),
+            {
+                "returncode": 0,
+                "stderr": "",
+                "stdout": self._make_ls_remote_output(["2.0.0"]),
+            },
         )()
         resolve_latest_catalog_tag("https://example.com/repo.git", "2.0.0")
         mock_run.assert_called_once()

@@ -35,7 +35,18 @@ class TestValidateSshKeyFileEndToEnd:
         """Real RSA key passes all validation stages."""
         key_file = tmp_path / "test_rsa_key"
         subprocess.run(
-            ["ssh-keygen", "-t", "rsa", "-b", "2048", "-f", str(key_file), "-N", "", "-q"],
+            [
+                "ssh-keygen",
+                "-t",
+                "rsa",
+                "-b",
+                "2048",
+                "-f",
+                str(key_file),
+                "-N",
+                "",
+                "-q",
+            ],
             check=True,
         )
 
@@ -47,7 +58,16 @@ class TestValidateSshKeyFileEndToEnd:
         """Passphrase-protected key is rejected with guidance message."""
         key_file = tmp_path / "protected_key"
         subprocess.run(
-            ["ssh-keygen", "-t", "ed25519", "-f", str(key_file), "-N", "testpass", "-q"],
+            [
+                "ssh-keygen",
+                "-t",
+                "ed25519",
+                "-f",
+                str(key_file),
+                "-N",
+                "testpass",
+                "-q",
+            ],
             check=True,
         )
 
@@ -189,7 +209,7 @@ class TestCreateTemplateInteractiveEndToEnd:
             ),
             patch(
                 "caylent_devcontainer_cli.commands.setup_interactive.prompt_aws_profile_map",
-                return_value={"default": {"region": "us-east-1"}} if aws_enabled else {},
+                return_value=({"default": {"region": "us-east-1"}} if aws_enabled else {}),
             ),
         ):
             return create_template_interactive()

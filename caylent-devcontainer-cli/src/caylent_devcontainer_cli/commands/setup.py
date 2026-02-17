@@ -98,11 +98,18 @@ def handle_setup(args):
             _show_replace_notification()
         else:
             should_copy_catalog = False
-            log("INFO", "Keeping existing .devcontainer/ files. Continuing with environment file setup only.")
+            log(
+                "INFO",
+                "Keeping existing .devcontainer/ files. Continuing with environment file setup only.",
+            )
 
     # Catalog selection and file copy (when setting up or replacing .devcontainer/)
     if should_copy_catalog:
-        _select_and_copy_catalog(target_path, catalog_entry=catalog_entry, catalog_url_override=catalog_url_override)
+        _select_and_copy_catalog(
+            target_path,
+            catalog_entry=catalog_entry,
+            catalog_url_override=catalog_url_override,
+        )
 
     # Informational validation (if both project files exist)
     _run_informational_validation(target_path)
@@ -168,7 +175,10 @@ def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_overri
         for entry_info in entries:
             min_ver = entry_info.entry.min_cli_version
             if min_ver and not check_min_cli_version(min_ver):
-                log("WARN", f"Skipping '{entry_info.entry.name}': requires CLI version >= {min_ver}")
+                log(
+                    "WARN",
+                    f"Skipping '{entry_info.entry.name}': requires CLI version >= {min_ver}",
+                )
                 continue
             compatible.append(entry_info)
 
@@ -462,7 +472,10 @@ def _run_informational_validation(target_path: str) -> None:
     )
 
     if result.missing_base_keys:
-        log("INFO", f"  Missing base keys: {', '.join(sorted(result.missing_base_keys.keys()))}")
+        log(
+            "INFO",
+            f"  Missing base keys: {', '.join(sorted(result.missing_base_keys.keys()))}",
+        )
 
     if not result.metadata_present:
         log("INFO", "  Missing metadata (template_name, template_path, cli_version)")
@@ -471,7 +484,10 @@ def _run_informational_validation(target_path: str) -> None:
         log("INFO", f"  Template '{result.template_name}' not found on disk")
 
     if result.missing_template_keys:
-        log("INFO", f"  Missing template keys: {', '.join(sorted(result.missing_template_keys.keys()))}")
+        log(
+            "INFO",
+            f"  Missing template keys: {', '.join(sorted(result.missing_template_keys.keys()))}",
+        )
 
 
 def create_version_file(target_path: str) -> None:

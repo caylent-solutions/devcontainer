@@ -10,7 +10,10 @@ import pytest
 
 
 # Tests for KeyboardInterrupt and None response handling
-@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.list_templates",
+    return_value=["template1"],
+)
 @patch("questionary.confirm")
 @patch("sys.exit")
 def test_prompt_use_template_keyboard_interrupt(mock_exit, mock_confirm, mock_list_templates):
@@ -23,7 +26,10 @@ def test_prompt_use_template_keyboard_interrupt(mock_exit, mock_confirm, mock_li
     mock_exit.assert_called_once_with(0)
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.list_templates",
+    return_value=["template1"],
+)
 @patch("questionary.confirm")
 @patch("sys.exit")
 def test_prompt_use_template_none_response(mock_exit, mock_confirm, mock_list_templates):
@@ -36,7 +42,10 @@ def test_prompt_use_template_none_response(mock_exit, mock_confirm, mock_list_te
     mock_exit.assert_called_once_with(0)
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.list_templates",
+    return_value=["template1"],
+)
 @patch("questionary.select")
 @patch("sys.exit")
 def test_select_template_keyboard_interrupt(mock_exit, mock_select, mock_list_templates):
@@ -49,7 +58,10 @@ def test_select_template_keyboard_interrupt(mock_exit, mock_select, mock_list_te
     mock_exit.assert_called_once_with(0)
 
 
-@patch("caylent_devcontainer_cli.commands.setup_interactive.list_templates", return_value=["template1"])
+@patch(
+    "caylent_devcontainer_cli.commands.setup_interactive.list_templates",
+    return_value=["template1"],
+)
 @patch("questionary.select")
 @patch("sys.exit")
 def test_select_template_none_response(mock_exit, mock_select, mock_list_templates):
@@ -198,7 +210,13 @@ def test_prompt_env_values_none_git_email(mock_select, mock_text):
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
     mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", "Developer", "github.com", "user", None]
+    mock_text.return_value.ask.side_effect = [
+        "main",
+        "Developer",
+        "github.com",
+        "user",
+        None,
+    ]
 
     with pytest.raises(SystemExit):
         prompt_env_values()
@@ -212,7 +230,13 @@ def test_prompt_env_values_none_git_token(mock_select, mock_text, mock_password)
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
     mock_select.return_value.ask.return_value = "true"
-    mock_text.return_value.ask.side_effect = ["main", "Developer", "github.com", "user", "user@example.com"]
+    mock_text.return_value.ask.side_effect = [
+        "main",
+        "Developer",
+        "github.com",
+        "user",
+        "user@example.com",
+    ]
     mock_password.return_value.ask.return_value = None
 
     with pytest.raises(SystemExit):
@@ -307,7 +331,10 @@ def test_load_template_version_mismatch_upgrade(mock_select):
 
     mock_select.return_value.ask.return_value = "Upgrade the template to the current format"
 
-    with patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}')):
+    with patch(
+        "builtins.open",
+        mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}'),
+    ):
         with patch("os.path.exists", return_value=True):
             result = load_template_from_file("test-template")
 
@@ -324,7 +351,10 @@ def test_load_template_version_mismatch_create_new(mock_create, mock_select):
     mock_select.return_value.ask.return_value = "Create a new template from scratch"
     mock_create.return_value = {"containerEnv": {"NEW": "value"}}
 
-    with patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}')):
+    with patch(
+        "builtins.open",
+        mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}'),
+    ):
         with patch("os.path.exists", return_value=True):
             result = load_template_from_file("test-template")
 
@@ -339,7 +369,10 @@ def test_load_template_version_mismatch_exit(mock_select):
 
     mock_select.return_value.ask.return_value = "Exit without making changes"
 
-    with patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}')):
+    with patch(
+        "builtins.open",
+        mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}'),
+    ):
         with patch("os.path.exists", return_value=True):
             with pytest.raises(SystemExit):
                 load_template_from_file("test-template")
@@ -352,7 +385,10 @@ def test_load_template_version_mismatch_use_anyway(mock_select):
 
     mock_select.return_value.ask.return_value = "Use the template anyway (may cause issues)"
 
-    with patch("builtins.open", mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}')):
+    with patch(
+        "builtins.open",
+        mock_open(read_data='{"containerEnv": {"TEST": "value"}, "cli_version": "0.1.0"}'),
+    ):
         with patch("os.path.exists", return_value=True):
             result = load_template_from_file("test-template")
 
@@ -388,7 +424,10 @@ def test_validate_standard_profile_missing_fields():
     """Test validate_standard_profile with missing fields."""
     from caylent_devcontainer_cli.commands.setup_interactive import validate_standard_profile
 
-    profile = {"sso_start_url": "https://example.awsapps.com/start", "sso_region": "us-west-2"}
+    profile = {
+        "sso_start_url": "https://example.awsapps.com/start",
+        "sso_region": "us-west-2",
+    }
 
     result = validate_standard_profile(profile)
 
