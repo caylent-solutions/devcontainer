@@ -1,0 +1,256 @@
+{
+  "name": "caylent-devcontainer",
+  "remoteUser": "vscode",
+  "image": "public.ecr.aws/g0u3p4x2/caylent-solutions/devcontainer-base:noble",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "features": {
+    "ghcr.io/devcontainers/features/aws-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "os-provided",
+      "installTools": "true"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "25",
+      "npmVersion": "^11.0.0",
+      "nodeGypDependencies": true
+    },
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "minikube": "latest"
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "aws-scripting-guy.cform",
+        "amazonwebservices.aws-toolkit-vscode",
+        "eamodio.gitlens",
+        "GitHub.vscode-pull-request-github",
+        "GitHub.vscode-github-actions",
+        "ms-azuretools.vscode-docker",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml",
+        "streetsidesoftware.code-spell-checker",
+        "wayou.vscode-todo-highlight",
+        "dbaeumer.vscode-eslint",
+        "Angular.ng-template",
+        "anthropic.claude-code",
+        "wholroyd.jinja"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "gitlens.currentLine.enabled": false,
+        "gitlens.codeLens.enabled": false,
+        "gitlens.hovers.enabled": false,
+        "gitlens.statusBar.enabled": false,
+        "gitlens.blame.line.enabled": false,
+        "gitlens.blame.file.enabled": false,
+        "makefile.extensionOutputFolder": ".vscode",
+        "python.linting.enabled": true,
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.defaultFormatter": "charliermarsh.ruff",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        },
+        "editor.formatOnSave": true,
+        "files.associations": {
+          "*.yml": "yaml",
+          "*.yaml": "yaml",
+          "Dockerfile*": "dockerfile",
+          "*.sql": "sql"
+        },
+        "docker.attachShellCommand.linuxContainer": "/bin/bash",
+        "[typescript]": {
+          "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+          }
+        },
+        "[javascript]": {
+          "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+          }
+        },
+        "eslint.validate": [
+          "javascript",
+          "typescript"
+        ],
+        "aws.profile": "default",
+        "aws.telemetry": false,
+        "aws.suppressPrompts": {
+          "regionAddAutomatically": true,
+          "credentialsCreateAutomatically": true,
+          "connectionWizard": true
+        },
+        "aws.codeWhisperer.shareCodeWhispererContentWithAWS": false,
+        "aws.experiments.jsonResourceModification": true,
+        "aws.toolkit.useConnectionWizard": false,
+        "claude-code.disableLoginPrompt": true,
+        "claude-code.telemetry.enabled": false,
+        "claude-code.shareCodeContext": false,
+        "chat.agent.enabled": true,
+        "chat.agent.maxRequests": 50,
+        "chat.tools.edits.autoApprove": {
+          "**/*": true,
+          "**/.vscode/*.json": false,
+          "**/.git/**": false,
+          "**/.devcontainer/**": false,
+          "**/.github/workflows/*.yml": false,
+          "**/cd/k8s/**/*.yaml": false,
+          "**/.tool-versions": false,
+          "**/devcontainer-environment-variables.json": false,
+          "**/shell.env": false
+        },
+        "chat.tools.terminal.enableAutoApprove": true,
+        "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+        "chat.tools.terminal.autoApprove": {
+          "git status": true,
+          "git log": true,
+          "git show": true,
+          "git diff": true,
+          "git branch": true,
+          "git remote": true,
+          "/^git (status|log|show|diff|describe|branch|remote|config --list|tag --list)/": true,
+          "/^aws sso login/": true,
+          "/^aws sts get-caller-identity/": true,
+          "/^aws .* (describe|list|get)-/": true,
+          "/^aws s3 ls/": true,
+          "/^argocd login/": true,
+          "/^argocd .* (list|get|diff|logs|manifests)/": true,
+          "/^fly.*login/": true,
+          "/^fly (pipelines|jobs|builds|workers|targets|status)/": true,
+          "/^gh auth (login|status)/": true,
+          "/^gh .* (view|list|diff)/": true,
+          "/^jfrog config (add|show)/": true,
+          "/^jfrog rt search/": true,
+          "/^jf config (add|show)/": true,
+          "/^jf rt search/": true,
+          "/^snyk (auth|config|test|monitor|--version)/": true,
+          "/^crane (ls|manifest|config|digest|version)/": true,
+          "/^kubectl (get|describe|logs|explain|api-resources|cluster-info|top|config view)/": true,
+          "/^helm (list|status|get|history|show|search|repo list)/": true,
+          "/^ls( |$)/": true,
+          "/^(cat|head|tail|grep|find|tree|wc|diff|file|stat|pwd|which|env|printenv|xargs)( |$)/": true,
+          "/^while read /": true,
+          "/^code --list-extensions/": true,
+          "/^asdf plugin (list|add)/": true,
+          "/^asdf list all/": true,
+          "/^asdf (install|reshim|current)/": true,
+          "/^which (fly|docker|snyk|crane|jf|jfrog)/": true,
+          "/^(fly|docker|snyk|crane|jf) --version/": true,
+          "/^source ~\\/.bashrc/": true,
+          "mkdir": true,
+          "sed": false,
+          "awk": false,
+          "/^(vi|vim|nano|emacs)/": false,
+          "/^echo .* >/": false,
+          "tee": false,
+          "rm": false,
+          "mv": false,
+          "cp": false,
+          "/^git (add|commit|push|merge|rebase)/": false,
+          "/^docker (build|run|push)/": false,
+          "/^kubectl (apply|delete|edit|patch)/": false,
+          "/^helm (install|upgrade|delete)/": false,
+          "/^aws s3 (cp|sync|rm)/": false
+        },
+        "chat.tools.terminal.blockDetectedFileWrites": "outsideWorkspace",
+        "chat.tools.terminal.preventShellHistory": false,
+        "chat.tools.terminal.terminalProfile.linux": "zsh",
+        "chat.tools.terminal.autoReplyToPrompts": true,
+        "chat.implicitContext.enabled": {
+          "panel": "always"
+        },
+        "chat.instructionsFilesLocations": {
+          ".github/instructions": true
+        },
+        "chat.promptFilesLocations": {
+          ".github/prompts": true
+        },
+        "chat.useNestedClaudeMdFiles": true,
+        "chat.promptFilesRecommendations": [],
+        "chat.edits2.enabled": true,
+        "chat.checkpoints.enabled": true,
+        "chat.math.enabled": true,
+        "chat.mcp.discovery.enabled": false,
+        "chat.mcp.autostart": "newAndOutdated",
+        "chat.mcp.gallery.enabled": true,
+        "chat.mcp.assisted.nuget.enabled": false,
+        "chat.mcp.serverSampling": true,
+        "chat.customAgentInSubagent.enabled": true,
+        "chat.detectParticipant.enabled": true,
+        "chat.tools.eligibleForAutoApproval": [
+          "Read",
+          "Glob",
+          "Grep",
+          "WebFetch"
+        ],
+        "chat.tools.urls.autoApprove": {
+          "https://**": true
+        },
+        "inlineChat.enableV2": true,
+        "inlineChat.notebookAgent": false,
+        "chat.sendElementsToChat.enabled": true,
+        "chat.sendElementsToChat.attachCss": true,
+        "chat.sendElementsToChat.attachImages": true,
+        "chat.allowAnonymousAccess": false,
+        "chat.agent.thinkingStyle": "fixedScrolling",
+        "chat.agent.codeBlockProgress": true,
+        "chat.agent.thinking.collapsedTools": "always",
+        "chat.agent.thinking.generateTitles": true,
+        "chat.implicitContext.suggestedContext": true,
+        "chat.renderRelatedFiles": true,
+        "chat.editing.autoAcceptDelay": 0,
+        "chat.editing.confirmEditRequestRemoval": false,
+        "chat.editing.confirmEditRequestRetry": false,
+        "chat.editor.wordWrap": "on",
+        "chat.editRequests": "inline",
+        "chat.checkpoints.showFileChanges": true,
+        "chat.restoreLastPanelSession": true,
+        "chat.viewSessions.enabled": true,
+        "chat.viewSessions.orientation": "sideBySide",
+        "chat.exitAfterDelegation": true,
+        "chat.commandCenter.enabled": true,
+        "chat.viewTitle.enabled": true,
+        "chat.viewWelcome.enabled": false,
+        "chat.notifyWindowOnConfirmation": true,
+        "chat.notifyWindowOnResponseReceived": true,
+        "chat.tools.todos.showWidget": true,
+        "chat.undoRequests.restoreInput": true,
+        "inlineChat.finishOnType": true,
+        "inlineChat.holdToSpeech": true,
+        "telemetry.telemetryLevel": "off"
+      }
+    }
+  },
+  "forwardPorts": [
+    5678,
+    9229
+  ],
+  "portsAttributes": {
+    "5678": {
+      "label": "Python Debug (debugpy)"
+    },
+    "9229": {
+      "label": "Node.js Debug"
+    }
+  },
+  "userEnvProbe": "loginInteractiveShell",
+  "postCreateCommand": "bash -c 'set -euo pipefail; exec > >(tee /tmp/devcontainer-setup.log) 2>&1; if [ ! -f shell.env ]; then echo \"ERROR: shell.env not found in $(pwd). Run: cdevcontainer setup-devcontainer\" >&2; exit 1; fi; source shell.env; echo \"[INFO] HOST_PROXY=${HOST_PROXY:-false} HTTP_PROXY=${HTTP_PROXY:-unset}\"; if [ \"${HOST_PROXY:-false}\" = \"true\" ] && [ -z \"${HTTP_PROXY:-}\" ]; then echo \"ERROR: HOST_PROXY=true but HTTP_PROXY not set after sourcing shell.env\" >&2; exit 1; fi; if [ -n \"${HTTP_PROXY:-}\" ]; then echo \"Acquire::http::Proxy \\\"${HTTP_PROXY}\\\";\" | sudo tee /etc/apt/apt.conf.d/99proxy > /dev/null; echo \"Acquire::https::Proxy \\\"${HTTPS_PROXY:-${HTTP_PROXY}}\\\";\" | sudo tee -a /etc/apt/apt.conf.d/99proxy > /dev/null; _OLD_IFS=\"${IFS}\"; IFS=\",\"; for _e in ${NO_PROXY:-}; do IFS=\"${_OLD_IFS}\"; _e=$(echo \"${_e}\" | tr -d \" \"); case \"${_e}\" in [a-zA-Z]*.*) echo \"Acquire::http::Proxy::${_e} \\\"DIRECT\\\";\" | sudo tee -a /etc/apt/apt.conf.d/99proxy > /dev/null; echo \"Acquire::https::Proxy::${_e} \\\"DIRECT\\\";\" | sudo tee -a /etc/apt/apt.conf.d/99proxy > /dev/null;; esac; done; IFS=\"${_OLD_IFS}\"; echo \"[INFO] Configured apt proxy via /etc/apt/apt.conf.d/99proxy\"; fi; if uname -r | grep -i microsoft > /dev/null; then sudo apt-get update && sudo apt-get install -y gettext-base jq python3 && find .devcontainer -type f -exec sed -i \"s/\\r$//\" {} + && python3 .devcontainer/fix-line-endings.py && sudo apt-get remove -y python3 && sudo apt-get autoremove -y && sudo -E bash .devcontainer/.devcontainer.postcreate.sh vscode; else sudo apt-get update && sudo apt-get install -y gettext-base jq && sudo -E bash .devcontainer/.devcontainer.postcreate.sh vscode; fi && echo \"Setup complete. View logs: cat /tmp/devcontainer-setup.log\"'"
+}
