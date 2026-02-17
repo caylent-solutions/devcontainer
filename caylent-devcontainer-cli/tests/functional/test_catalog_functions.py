@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 from caylent_devcontainer_cli.utils.catalog import (
     clone_catalog_repo,
-    copy_collection_to_project,
-    discover_collection_entries,
+    copy_entry_to_project,
+    discover_entries,
     parse_catalog_url,
     validate_catalog,
 )
@@ -89,15 +89,15 @@ class TestCloneCatalogRepoEndToEnd(TestCase):
         mock_rmtree.assert_called_once()
 
 
-class TestDiscoverCollectionEntriesEndToEnd(TestCase):
-    """Functional tests for collection discovery and sorting."""
+class TestDiscoverEntriesEndToEnd(TestCase):
+    """Functional tests for entry discovery and sorting."""
 
-    def _create_catalog(self, tmp_dir, collections):
-        """Create a catalog with given collections.
+    def _create_catalog(self, tmp_dir, entries):
+        """Create a catalog with given entries.
 
         Args:
             tmp_dir: Root directory for the catalog.
-            collections: Dict mapping collection names to entry dicts.
+            entries: Dict mapping entry names to entry dicts.
         """
         # Create common assets
         assets_dir = os.path.join(tmp_dir, "common", "devcontainer-assets")
@@ -106,24 +106,24 @@ class TestDiscoverCollectionEntriesEndToEnd(TestCase):
             with open(os.path.join(assets_dir, filename), "w") as f:
                 f.write("#!/bin/bash\n")
 
-        # Create collections
-        for name, entry_data in collections.items():
-            col_dir = os.path.join(tmp_dir, "collections", name)
+        # Create entries
+        for name, entry_data in entries.items():
+            col_dir = os.path.join(tmp_dir, "catalog", name)
             os.makedirs(col_dir)
             with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump(entry_data, f)
 
-    def test_discovers_multiple_collections_sorted(self):
+    def test_discovers_multiple_entries_sorted(self):
         with tempfile.TemporaryDirectory() as tmp:
             self._create_catalog(
                 tmp,
                 {
-                    "zebra": {"name": "zebra", "description": "Zebra collection"},
-                    "default": {"name": "default", "description": "Default collection"},
-                    "alpha": {"name": "alpha", "description": "Alpha collection"},
+                    "zebra": {"name": "zebra", "description": "Zebra entry"},
+                    "default": {"name": "default", "description": "Default entry"},
+                    "alpha": {"name": "alpha", "description": "Alpha entry"},
                 },
             )
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             names = [e.entry.name for e in entries]
             self.assertEqual(names, ["default", "alpha", "zebra"])
 
@@ -141,7 +141,7 @@ class TestDiscoverCollectionEntriesEndToEnd(TestCase):
                     },
                 },
             )
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 1)
             entry = entries[0].entry
             self.assertEqual(entry.name, "my-app")
@@ -150,51 +150,51 @@ class TestDiscoverCollectionEntriesEndToEnd(TestCase):
             self.assertEqual(entry.maintainer, "platform-team")
             self.assertEqual(entry.min_cli_version, "2.0.0")
 
-    def test_skips_collections_with_invalid_json(self):
+    def test_skips_entries_with_invalid_json(self):
         with tempfile.TemporaryDirectory() as tmp:
             self._create_catalog(tmp, {"valid": {"name": "valid", "description": "Valid"}})
-            # Add a broken collection
-            broken_dir = os.path.join(tmp, "collections", "broken")
+            # Add a broken entry
+            broken_dir = os.path.join(tmp, "catalog", "broken")
             os.makedirs(broken_dir)
             with open(os.path.join(broken_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                 f.write("{broken json")
 
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 1)
             self.assertEqual(entries[0].entry.name, "valid")
 
 
-class TestCopyCollectionToProjectEndToEnd(TestCase):
-    """Functional tests for copy_collection_to_project full flow."""
+class TestCopyEntryToProjectEndToEnd(TestCase):
+    """Functional tests for copy_entry_to_project full flow."""
 
-    def _create_full_collection(self, tmp_dir):
-        """Create a complete collection and common assets setup."""
-        collection = os.path.join(tmp_dir, "collection")
+    def _create_full_entry(self, tmp_dir):
+        """Create a complete entry and common assets setup."""
+        entry_src = os.path.join(tmp_dir, "collection")
         assets = os.path.join(tmp_dir, "assets")
         target = os.path.join(tmp_dir, "project", ".devcontainer")
-        os.makedirs(collection)
+        os.makedirs(entry_src)
         os.makedirs(assets)
 
-        # Collection files
+        # Entry files
         entry = {
             "name": "test-app",
             "description": "Test application",
             "tags": ["python", "aws"],
             "maintainer": "team",
         }
-        with open(os.path.join(collection, CATALOG_ENTRY_FILENAME), "w") as f:
+        with open(os.path.join(entry_src, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump(entry, f)
         devcontainer = {
             "name": "test",
             "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
         }
-        with open(os.path.join(collection, "devcontainer.json"), "w") as f:
+        with open(os.path.join(entry_src, "devcontainer.json"), "w") as f:
             json.dump(devcontainer, f)
-        with open(os.path.join(collection, CATALOG_VERSION_FILENAME), "w") as f:
+        with open(os.path.join(entry_src, CATALOG_VERSION_FILENAME), "w") as f:
             f.write("2.0.0")
 
-        # Subdirectory in collection
-        nix_dir = os.path.join(collection, "nix-family-os")
+        # Subdirectory in entry
+        nix_dir = os.path.join(entry_src, "nix-family-os")
         os.makedirs(nix_dir)
         with open(os.path.join(nix_dir, "tinyproxy.conf"), "w") as f:
             f.write("# proxy config\n")
@@ -207,16 +207,16 @@ class TestCopyCollectionToProjectEndToEnd(TestCase):
         with open(os.path.join(assets, "project-setup.sh"), "w") as f:
             f.write("#!/bin/bash\necho project-setup\n")
 
-        return collection, assets, target
+        return entry_src, assets, target
 
     def test_full_copy_flow(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._create_full_collection(tmp)
+            entry_src, assets, target = self._create_full_entry(tmp)
             catalog_url = "https://github.com/org/repo.git@v2.0"
 
-            copy_collection_to_project(collection, assets, target, catalog_url)
+            copy_entry_to_project(entry_src, assets, target, catalog_url)
 
-            # Verify collection files copied
+            # Verify entry files copied
             self.assertTrue(os.path.isfile(os.path.join(target, "devcontainer.json")))
             self.assertTrue(os.path.isfile(os.path.join(target, CATALOG_VERSION_FILENAME)))
 
@@ -238,13 +238,13 @@ class TestCopyCollectionToProjectEndToEnd(TestCase):
 
     def test_common_assets_take_precedence(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._create_full_collection(tmp)
+            entry_src, assets, target = self._create_full_entry(tmp)
 
-            # Create conflicting file in collection
-            with open(os.path.join(collection, "project-setup.sh"), "w") as f:
-                f.write("collection version\n")
+            # Create conflicting file in entry
+            with open(os.path.join(entry_src, "project-setup.sh"), "w") as f:
+                f.write("entry version\n")
 
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             # Common assets version should win
             with open(os.path.join(target, "project-setup.sh")) as f:
@@ -253,8 +253,8 @@ class TestCopyCollectionToProjectEndToEnd(TestCase):
 
     def test_catalog_entry_json_format(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._create_full_collection(tmp)
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            entry_src, assets, target = self._create_full_entry(tmp)
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             with open(os.path.join(target, CATALOG_ENTRY_FILENAME)) as f:
                 raw = f.read()
@@ -269,27 +269,27 @@ class TestCopyCollectionToProjectEndToEnd(TestCase):
 class TestProjectSetupOverwriteOnReSetup(TestCase):
     """Functional tests verifying project-setup.sh is overwritten on re-setup."""
 
-    def _create_full_collection(self, tmp_dir):
-        """Create a complete collection and common assets setup."""
-        collection = os.path.join(tmp_dir, "collection")
+    def _create_full_entry(self, tmp_dir):
+        """Create a complete entry and common assets setup."""
+        entry_src = os.path.join(tmp_dir, "collection")
         assets = os.path.join(tmp_dir, "assets")
         target = os.path.join(tmp_dir, "project", ".devcontainer")
-        os.makedirs(collection)
+        os.makedirs(entry_src)
         os.makedirs(assets)
 
-        # Collection files
+        # Entry files
         entry = {
             "name": "test-app",
             "description": "Test application",
         }
-        with open(os.path.join(collection, CATALOG_ENTRY_FILENAME), "w") as f:
+        with open(os.path.join(entry_src, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump(entry, f)
-        with open(os.path.join(collection, "devcontainer.json"), "w") as f:
+        with open(os.path.join(entry_src, "devcontainer.json"), "w") as f:
             json.dump(
                 {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode"},
                 f,
             )
-        with open(os.path.join(collection, CATALOG_VERSION_FILENAME), "w") as f:
+        with open(os.path.join(entry_src, CATALOG_VERSION_FILENAME), "w") as f:
             f.write("2.0.0")
 
         # Common assets
@@ -300,16 +300,16 @@ class TestProjectSetupOverwriteOnReSetup(TestCase):
         with open(os.path.join(assets, "project-setup.sh"), "w") as f:
             f.write("#!/bin/bash\necho original-project-setup\n")
 
-        return collection, assets, target
+        return entry_src, assets, target
 
     def test_project_setup_overwritten_on_second_copy(self):
-        """project-setup.sh must be overwritten when copy_collection_to_project runs again."""
+        """project-setup.sh must be overwritten when copy_entry_to_project runs again."""
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._create_full_collection(tmp)
+            entry_src, assets, target = self._create_full_entry(tmp)
             catalog_url = "https://github.com/org/repo.git"
 
             # First copy
-            copy_collection_to_project(collection, assets, target, catalog_url)
+            copy_entry_to_project(entry_src, assets, target, catalog_url)
 
             # Simulate developer customization
             setup_path = os.path.join(target, "project-setup.sh")
@@ -322,7 +322,7 @@ class TestProjectSetupOverwriteOnReSetup(TestCase):
             self.assertIn("customized-by-developer", content)
 
             # Second copy (re-setup) — must overwrite the customization
-            copy_collection_to_project(collection, assets, target, catalog_url)
+            copy_entry_to_project(entry_src, assets, target, catalog_url)
 
             with open(setup_path) as f:
                 content = f.read()
@@ -342,8 +342,8 @@ class TestValidateCatalogEndToEnd(TestCase):
                 with open(os.path.join(assets_dir, filename), "w") as f:
                     f.write("#!/bin/bash\n")
 
-            # Default collection
-            default_dir = os.path.join(tmp, "collections", "default")
+            # Default entry
+            default_dir = os.path.join(tmp, "catalog", "default")
             os.makedirs(default_dir)
             with open(os.path.join(default_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump(
@@ -364,8 +364,8 @@ class TestValidateCatalogEndToEnd(TestCase):
             with open(os.path.join(default_dir, CATALOG_VERSION_FILENAME), "w") as f:
                 f.write("2.0.0")
 
-            # Second collection
-            java_dir = os.path.join(tmp, "collections", "java-spring")
+            # Second entry
+            java_dir = os.path.join(tmp, "catalog", "java-spring")
             os.makedirs(java_dir)
             with open(os.path.join(java_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump(
@@ -395,9 +395,9 @@ class TestValidateCatalogEndToEnd(TestCase):
                 with open(os.path.join(assets_dir, filename), "w") as f:
                     f.write("#!/bin/bash\n")
 
-            # Two collections with same name
+            # Two entries with same name
             for dirname in ["col-a", "col-b"]:
-                col_dir = os.path.join(tmp, "collections", dirname)
+                col_dir = os.path.join(tmp, "catalog", dirname)
                 os.makedirs(col_dir)
                 with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                     json.dump({"name": "duplicate-name", "description": "Duplicate"}, f)
@@ -410,4 +410,4 @@ class TestValidateCatalogEndToEnd(TestCase):
                     f.write("1.0.0")
 
             errors = validate_catalog(tmp)
-            self.assertTrue(any("Duplicate collection name" in e for e in errors))
+            self.assertTrue(any("Duplicate entry name" in e for e in errors))

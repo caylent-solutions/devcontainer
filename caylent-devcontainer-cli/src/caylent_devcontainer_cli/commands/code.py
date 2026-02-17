@@ -51,7 +51,14 @@ IDE_CONFIG = {
 
 def register_command(subparsers):
     """Register the code command."""
-    code_parser = subparsers.add_parser("code", help="Launch IDE (VS Code, Cursor) with the devcontainer environment")
+    from caylent_devcontainer_cli.cli import _HelpFormatter, build_env_epilog
+
+    code_parser = subparsers.add_parser(
+        "code",
+        help="Launch IDE (VS Code, Cursor) with the devcontainer environment",
+        formatter_class=_HelpFormatter,
+        epilog=build_env_epilog("code"),
+    )
     code_parser.add_argument(
         "project_root",
         nargs="?",
@@ -239,7 +246,7 @@ def _replace_devcontainer_files(project_root):
 
     Reads ``.devcontainer/catalog-entry.json`` to determine the catalog
     source.  If the file exists, clones the same catalog and copies the
-    collection.  If missing (pre-catalog project), prompts the user to
+    entry.  If missing (pre-catalog project), prompts the user to
     select a catalog source using the same flow as setup-devcontainer.
 
     Args:
@@ -264,9 +271,9 @@ def _replace_devcontainer_files(project_root):
 def _replace_from_catalog_entry(project_root, catalog_entry_path):
     """Replace .devcontainer/ files using catalog-entry.json metadata.
 
-    Reads the catalog URL and collection name from the existing
+    Reads the catalog URL and entry name from the existing
     catalog-entry.json, clones the catalog, finds the matching
-    collection, and copies it to the project.
+    entry, and copies it to the project.
 
     Args:
         project_root: Path to the project root directory.
@@ -274,9 +281,9 @@ def _replace_from_catalog_entry(project_root, catalog_entry_path):
     """
     from caylent_devcontainer_cli.utils.catalog import (
         clone_catalog_repo,
-        copy_collection_to_project,
-        discover_collection_entries,
-        find_collection_by_name,
+        copy_entry_to_project,
+        discover_entries,
+        find_entry_by_name,
     )
 
     try:
@@ -289,9 +296,9 @@ def _replace_from_catalog_entry(project_root, catalog_entry_path):
         )
 
     catalog_url = entry_data.get("catalog_url")
-    collection_name = entry_data.get("name")
+    entry_name = entry_data.get("name")
 
-    if not catalog_url or not collection_name:
+    if not catalog_url or not entry_name:
         exit_with_error(
             f"{CATALOG_ENTRY_FILENAME} is missing 'catalog_url' or 'name'. "
             "Run 'cdevcontainer setup-devcontainer <path>' to reconfigure."
@@ -301,11 +308,11 @@ def _replace_from_catalog_entry(project_root, catalog_entry_path):
 
     temp_dir = clone_catalog_repo(catalog_url)
     try:
-        entries = discover_collection_entries(temp_dir, skip_incomplete=True)
-        selected = find_collection_by_name(entries, collection_name)
+        entries = discover_entries(temp_dir, skip_incomplete=True)
+        selected = find_entry_by_name(entries, entry_name)
         common_assets = os.path.join(temp_dir, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
-        copy_collection_to_project(selected.path, common_assets, target_devcontainer, catalog_url)
-        log("OK", f"Collection '{collection_name}' files replaced in .devcontainer/")
+        copy_entry_to_project(selected.path, common_assets, target_devcontainer, catalog_url)
+        log("OK", f"Entry '{entry_name}' files replaced in .devcontainer/")
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 

@@ -18,10 +18,10 @@ from caylent_devcontainer_cli.commands.catalog import (
 )
 from caylent_devcontainer_cli.utils.catalog import (
     CatalogEntry,
-    CollectionInfo,
+    EntryInfo,
     check_min_cli_version,
     compare_semver,
-    find_collection_by_name,
+    find_entry_by_name,
     validate_catalog_entry_env,
 )
 from caylent_devcontainer_cli.utils.constants import (
@@ -139,7 +139,7 @@ class TestHandleCatalogList(TestCase):
     """Test handle_catalog_list() display and filtering."""
 
     def _make_entries(self, entries_data):
-        """Create CollectionInfo list from (name, description, tags, min_cli_version) tuples."""
+        """Create EntryInfo list from (name, description, tags, min_cli_version) tuples."""
         result = []
         for item in entries_data:
             if len(item) == 3:
@@ -148,7 +148,7 @@ class TestHandleCatalogList(TestCase):
             else:
                 name, desc, tags, min_ver = item
             result.append(
-                CollectionInfo(
+                EntryInfo(
                     path=f"/tmp/{name}",
                     entry=CatalogEntry(name=name, description=desc, tags=tags, min_cli_version=min_ver),
                 )
@@ -156,11 +156,11 @@ class TestHandleCatalogList(TestCase):
         return result
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
-    def test_list_displays_collections(self, mock_get_url, mock_clone, mock_validate, mock_discover, mock_rmtree):
+    def test_list_displays_entries(self, mock_get_url, mock_clone, mock_validate, mock_discover, mock_rmtree):
         mock_get_url.return_value = ("https://example.com/repo.git", "default catalog")
         mock_clone.return_value = "/tmp/catalog-test"
         mock_validate.return_value = []
@@ -187,7 +187,7 @@ class TestHandleCatalogList(TestCase):
         mock_rmtree.assert_called_once_with("/tmp/catalog-test", ignore_errors=True)
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
@@ -213,13 +213,13 @@ class TestHandleCatalogList(TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("java-spring", output)
         self.assertIn("python-data", output)
-        # "default" collection should not appear in data lines (header contains "default catalog")
+        # "default" entry should not appear in data lines (header contains "default catalog")
         data_lines = [line for line in output.split("\n") if line.strip() and "Available" not in line]
         data_text = "\n".join(data_lines)
         self.assertNotIn("General", data_text)  # default's description should be absent
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
@@ -239,10 +239,10 @@ class TestHandleCatalogList(TestCase):
             handle_catalog_list(args)
 
         output = mock_stderr.getvalue()
-        self.assertIn("No collections found matching tags: nonexistent-tag", output)
+        self.assertIn("No entries found matching tags: nonexistent-tag", output)
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
@@ -264,10 +264,10 @@ class TestHandleCatalogList(TestCase):
 
         self.assertEqual(ctx.exception.code, 1)
         output = mock_stderr.getvalue()
-        self.assertIn("No devcontainer collections found", output)
+        self.assertIn("No devcontainer entries found", output)
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
@@ -287,7 +287,7 @@ class TestHandleCatalogList(TestCase):
         mock_rmtree.assert_called_once_with("/tmp/catalog-test", ignore_errors=True)
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
@@ -332,7 +332,7 @@ class TestHandleCatalogList(TestCase):
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
     @patch("caylent_devcontainer_cli.commands.catalog.check_min_cli_version")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
@@ -368,7 +368,7 @@ class TestHandleCatalogList(TestCase):
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
     @patch("caylent_devcontainer_cli.commands.catalog.check_min_cli_version")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
@@ -395,18 +395,18 @@ class TestHandleCatalogList(TestCase):
             handle_catalog_list(args)
 
         output = mock_stderr.getvalue()
-        self.assertIn("No compatible collections found", output)
+        self.assertIn("No compatible entries found", output)
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
     @patch("caylent_devcontainer_cli.commands.catalog.check_min_cli_version")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     @patch("caylent_devcontainer_cli.commands.catalog._get_catalog_url")
     def test_list_no_min_cli_version_included(
         self, mock_get_url, mock_clone, mock_validate, mock_discover, mock_check_ver, mock_rmtree
     ):
-        """Collections without min_cli_version are always included."""
+        """Entries without min_cli_version are always included."""
         mock_get_url.return_value = ("https://example.com/repo.git", "default catalog")
         mock_clone.return_value = "/tmp/catalog-test"
         mock_validate.return_value = []
@@ -429,7 +429,7 @@ class TestHandleCatalogList(TestCase):
         mock_check_ver.assert_not_called()
 
     @patch("caylent_devcontainer_cli.commands.catalog.shutil.rmtree")
-    @patch("caylent_devcontainer_cli.commands.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.commands.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.commands.catalog.validate_common_assets")
     @patch("caylent_devcontainer_cli.commands.catalog.clone_catalog_repo")
     def test_list_with_catalog_url_override(self, mock_clone, mock_validate, mock_discover, mock_rmtree):
@@ -537,7 +537,7 @@ class TestRunValidation(TestCase):
             with open(os.path.join(assets_dir, filename), "w") as f:
                 f.write("#!/bin/bash\n")
 
-        col_dir = os.path.join(tmp_dir, "collections", "default")
+        col_dir = os.path.join(tmp_dir, "catalog", "default")
         os.makedirs(col_dir)
         with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump({"name": "default", "description": "Default"}, f)
@@ -558,11 +558,11 @@ class TestRunValidation(TestCase):
 
             output = mock_stderr.getvalue()
             self.assertIn("Catalog validation passed", output)
-            self.assertIn("1 collections found", output)
+            self.assertIn("1 entries found", output)
 
     def test_invalid_catalog_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
-            # Empty directory — no common assets, no collections
+            # Empty directory — no common assets, no entries
             with self.assertRaises(SystemExit) as ctx:
                 with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
                     _run_validation(tmp)
@@ -573,14 +573,14 @@ class TestRunValidation(TestCase):
 
     def test_validation_lists_all_errors(self):
         with tempfile.TemporaryDirectory() as tmp:
-            # Create catalog with invalid collection
+            # Create catalog with invalid entry
             assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
             os.makedirs(assets_dir)
             for filename in CATALOG_REQUIRED_COMMON_ASSETS:
                 with open(os.path.join(assets_dir, filename), "w") as f:
                     f.write("#!/bin/bash\n")
 
-            col_dir = os.path.join(tmp, "collections", "bad")
+            col_dir = os.path.join(tmp, "catalog", "bad")
             os.makedirs(col_dir)
             # Invalid entry: missing description, bad name
             with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
@@ -594,12 +594,12 @@ class TestRunValidation(TestCase):
             output = mock_stderr.getvalue()
             self.assertIn("issues found", output)
 
-    def test_valid_catalog_with_multiple_collections(self):
+    def test_valid_catalog_with_multiple_entries(self):
         with tempfile.TemporaryDirectory() as tmp:
             self._create_valid_catalog(tmp)
 
-            # Add second collection
-            col2 = os.path.join(tmp, "collections", "python-app")
+            # Add second entry
+            col2 = os.path.join(tmp, "catalog", "python-app")
             os.makedirs(col2)
             with open(os.path.join(col2, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump({"name": "python-app", "description": "Python app"}, f)
@@ -615,7 +615,7 @@ class TestRunValidation(TestCase):
                 _run_validation(tmp)
 
             output = mock_stderr.getvalue()
-            self.assertIn("2 collections found", output)
+            self.assertIn("2 entries found", output)
 
 
 class TestCompareSemver(TestCase):
@@ -680,43 +680,43 @@ class TestCheckMinCliVersion(TestCase):
         self.assertTrue(check_min_cli_version(__version__))
 
 
-class TestFindCollectionByName(TestCase):
-    """Test find_collection_by_name() lookup."""
+class TestFindEntryByName(TestCase):
+    """Test find_entry_by_name() lookup."""
 
     def _make_entries(self):
         return [
-            CollectionInfo(
+            EntryInfo(
                 path="/tmp/default",
                 entry=CatalogEntry(name="default", description="Default"),
             ),
-            CollectionInfo(
+            EntryInfo(
                 path="/tmp/java-spring",
                 entry=CatalogEntry(name="java-spring", description="Java"),
             ),
         ]
 
-    def test_finds_existing_collection(self):
+    def test_finds_existing_entry(self):
         entries = self._make_entries()
-        result = find_collection_by_name(entries, "java-spring")
+        result = find_entry_by_name(entries, "java-spring")
         self.assertEqual(result.entry.name, "java-spring")
         self.assertEqual(result.path, "/tmp/java-spring")
 
-    def test_finds_default_collection(self):
+    def test_finds_default_entry(self):
         entries = self._make_entries()
-        result = find_collection_by_name(entries, "default")
+        result = find_entry_by_name(entries, "default")
         self.assertEqual(result.entry.name, "default")
 
     def test_not_found_raises_system_exit(self):
         entries = self._make_entries()
         with self.assertRaises(SystemExit) as ctx:
-            find_collection_by_name(entries, "nonexistent")
+            find_entry_by_name(entries, "nonexistent")
         msg = str(ctx.exception)
-        self.assertIn("Collection 'nonexistent' not found", msg)
+        self.assertIn("Entry 'nonexistent' not found", msg)
         self.assertIn("cdevcontainer catalog list", msg)
 
     def test_empty_list_raises_system_exit(self):
         with self.assertRaises(SystemExit):
-            find_collection_by_name([], "anything")
+            find_entry_by_name([], "anything")
 
 
 class TestValidateCatalogEntryEnv(TestCase):

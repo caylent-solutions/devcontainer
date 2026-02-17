@@ -8,27 +8,27 @@ from unittest.mock import patch
 
 from caylent_devcontainer_cli.utils.catalog import (
     CatalogEntry,
-    CollectionInfo,
+    EntryInfo,
     clone_catalog_repo,
-    copy_collection_to_project,
+    copy_entry_to_project,
     detect_file_conflicts,
-    discover_collection_entries,
-    discover_collections,
+    discover_entries,
+    discover_entry_paths,
     parse_catalog_url,
     resolve_default_catalog_url,
     resolve_latest_catalog_tag,
     validate_catalog,
     validate_catalog_entry,
-    validate_collection,
-    validate_collection_structure,
     validate_common_assets,
+    validate_entry,
+    validate_entry_structure,
     validate_postcreate_command,
 )
 from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ENTRY_FILENAME,
     CATALOG_NAME_PATTERN,
-    CATALOG_REQUIRED_COLLECTION_FILES,
     CATALOG_REQUIRED_COMMON_ASSETS,
+    CATALOG_REQUIRED_ENTRY_FILES,
     CATALOG_TAG_PATTERN,
     CATALOG_VERSION_FILENAME,
     DEFAULT_CATALOG_URL,
@@ -42,14 +42,14 @@ class TestCatalogEntry(TestCase):
     def test_from_dict_all_fields(self):
         data = {
             "name": "my-collection",
-            "description": "A test collection",
+            "description": "A test entry",
             "tags": ["java", "spring-boot"],
             "maintainer": "team-a",
             "min_cli_version": "2.0.0",
         }
         entry = CatalogEntry.from_dict(data)
         self.assertEqual(entry.name, "my-collection")
-        self.assertEqual(entry.description, "A test collection")
+        self.assertEqual(entry.description, "A test entry")
         self.assertEqual(entry.tags, ["java", "spring-boot"])
         self.assertEqual(entry.maintainer, "team-a")
         self.assertEqual(entry.min_cli_version, "2.0.0")
@@ -212,10 +212,10 @@ class TestValidateCatalogEntry(TestCase):
         self.assertTrue(any("must be a string" in e for e in errors))
 
 
-class TestValidateCollectionStructure(TestCase):
-    """Test collection directory structure validation."""
+class TestValidateEntryStructure(TestCase):
+    """Test entry directory structure validation."""
 
-    def test_valid_collection(self, tmp_path=None):
+    def test_valid_entry(self, tmp_path=None):
         if tmp_path is None:
             import tempfile
 
@@ -225,35 +225,35 @@ class TestValidateCollectionStructure(TestCase):
             self._run_valid_test(str(tmp_path))
 
     def _run_valid_test(self, tmp_dir):
-        for filename in CATALOG_REQUIRED_COLLECTION_FILES:
+        for filename in CATALOG_REQUIRED_ENTRY_FILES:
             with open(os.path.join(tmp_dir, filename), "w") as f:
                 f.write("{}" if filename.endswith(".json") else "1.0.0")
-        errors = validate_collection_structure(tmp_dir)
+        errors = validate_entry_structure(tmp_dir)
         self.assertEqual(errors, [])
 
     def test_missing_all_files(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            errors = validate_collection_structure(tmp)
-            self.assertEqual(len(errors), len(CATALOG_REQUIRED_COLLECTION_FILES))
+            errors = validate_entry_structure(tmp)
+            self.assertEqual(len(errors), len(CATALOG_REQUIRED_ENTRY_FILES))
 
     def test_missing_one_file(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             # Create all but VERSION
-            for filename in CATALOG_REQUIRED_COLLECTION_FILES:
+            for filename in CATALOG_REQUIRED_ENTRY_FILES:
                 if filename != CATALOG_VERSION_FILENAME:
                     with open(os.path.join(tmp, filename), "w") as f:
                         f.write("{}")
-            errors = validate_collection_structure(tmp)
+            errors = validate_entry_structure(tmp)
             self.assertEqual(len(errors), 1)
             self.assertIn("VERSION", errors[0])
 
 
 class TestDetectFileConflicts(TestCase):
-    """Test file conflict detection between collection and common assets."""
+    """Test file conflict detection between entry and common assets."""
 
     def test_no_conflicts(self):
         import tempfile
@@ -374,49 +374,49 @@ class TestValidatePostcreateCommand(TestCase):
             self.assertTrue(any("parse" in e.lower() for e in errors))
 
 
-class TestDiscoverCollections(TestCase):
-    """Test collection discovery."""
+class TestDiscoverEntryPaths(TestCase):
+    """Test entry path discovery."""
 
-    def test_discovers_collections(self):
+    def test_discovers_entries(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            col1 = os.path.join(tmp, "collections", "app-a")
-            col2 = os.path.join(tmp, "collections", "app-b")
+            col1 = os.path.join(tmp, "catalog", "app-a")
+            col2 = os.path.join(tmp, "catalog", "app-b")
             os.makedirs(col1)
             os.makedirs(col2)
             with open(os.path.join(col1, CATALOG_ENTRY_FILENAME), "w") as f:
                 f.write("{}")
             with open(os.path.join(col2, CATALOG_ENTRY_FILENAME), "w") as f:
                 f.write("{}")
-            result = discover_collections(tmp)
+            result = discover_entry_paths(tmp)
             self.assertEqual(len(result), 2)
 
-    def test_discovers_nested_collections(self):
+    def test_discovers_nested_entries(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            nested = os.path.join(tmp, "collections", "group", "subgroup", "app")
+            nested = os.path.join(tmp, "catalog", "group", "subgroup", "app")
             os.makedirs(nested)
             with open(os.path.join(nested, CATALOG_ENTRY_FILENAME), "w") as f:
                 f.write("{}")
-            result = discover_collections(tmp)
+            result = discover_entry_paths(tmp)
             self.assertEqual(len(result), 1)
             self.assertEqual(result[0], nested)
 
-    def test_no_collections_dir(self):
+    def test_no_entries_dir(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            result = discover_collections(tmp)
+            result = discover_entry_paths(tmp)
             self.assertEqual(result, [])
 
-    def test_empty_collections_dir(self):
+    def test_empty_entries_dir(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            os.makedirs(os.path.join(tmp, "collections"))
-            result = discover_collections(tmp)
+            os.makedirs(os.path.join(tmp, "catalog"))
+            result = discover_entry_paths(tmp)
             self.assertEqual(result, [])
 
     def test_results_sorted(self):
@@ -424,11 +424,11 @@ class TestDiscoverCollections(TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             for name in ["zebra", "alpha", "middle"]:
-                col = os.path.join(tmp, "collections", name)
+                col = os.path.join(tmp, "catalog", name)
                 os.makedirs(col)
                 with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
                     f.write("{}")
-            result = discover_collections(tmp)
+            result = discover_entry_paths(tmp)
             basenames = [os.path.basename(p) for p in result]
             self.assertEqual(basenames, ["alpha", "middle", "zebra"])
 
@@ -471,11 +471,11 @@ class TestValidateCommonAssets(TestCase):
             self.assertIn("project-setup.sh", errors[0])
 
 
-class TestValidateCollection(TestCase):
-    """Test full collection validation."""
+class TestValidateEntry(TestCase):
+    """Test full entry validation."""
 
-    def _create_valid_collection(self, tmp_dir):
-        """Create a minimal valid collection in tmp_dir."""
+    def _create_valid_entry(self, tmp_dir):
+        """Create a minimal valid entry in tmp_dir."""
         entry = {"name": "test-app", "description": "Test application"}
         with open(os.path.join(tmp_dir, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump(entry, f)
@@ -485,43 +485,43 @@ class TestValidateCollection(TestCase):
         with open(os.path.join(tmp_dir, CATALOG_VERSION_FILENAME), "w") as f:
             f.write("1.0.0")
 
-    def test_valid_collection(self):
+    def test_valid_entry(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_collection(tmp)
-            errors = validate_collection(tmp)
+            self._create_valid_entry(tmp)
+            errors = validate_entry(tmp)
             self.assertEqual(errors, [])
 
     def test_invalid_entry_json(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_collection(tmp)
+            self._create_valid_entry(tmp)
             # Overwrite with invalid entry
             with open(os.path.join(tmp, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump({"name": "A"}, f)  # uppercase, no description
-            errors = validate_collection(tmp)
+            errors = validate_entry(tmp)
             self.assertTrue(len(errors) >= 2)  # name pattern + missing description
 
     def test_conflict_with_common_assets(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_collection(tmp)
+            self._create_valid_entry(tmp)
             with open(os.path.join(tmp, "devcontainer-functions.sh"), "w") as f:
                 f.write("")
-            errors = validate_collection(tmp)
+            errors = validate_entry(tmp)
             self.assertTrue(any("conflicts with" in e for e in errors))
 
     def test_broken_json_in_entry(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_collection(tmp)
+            self._create_valid_entry(tmp)
             with open(os.path.join(tmp, CATALOG_ENTRY_FILENAME), "w") as f:
                 f.write("not json")
-            errors = validate_collection(tmp)
+            errors = validate_entry(tmp)
             self.assertTrue(any("Invalid JSON" in e for e in errors))
 
 
@@ -537,10 +537,10 @@ class TestValidateCatalog(TestCase):
             with open(os.path.join(assets_dir, filename), "w") as f:
                 f.write("#!/bin/bash")
 
-        # One collection
-        col_dir = os.path.join(tmp_dir, "collections", "default")
+        # One entry
+        col_dir = os.path.join(tmp_dir, "catalog", "default")
         os.makedirs(col_dir)
-        entry = {"name": "default", "description": "Default collection"}
+        entry = {"name": "default", "description": "Default entry"}
         with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump(entry, f)
         devcontainer = {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode"}
@@ -561,8 +561,8 @@ class TestValidateCatalog(TestCase):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            # Only create collection, no common
-            col_dir = os.path.join(tmp, "collections", "app")
+            # Only create entry, no common
+            col_dir = os.path.join(tmp, "catalog", "app")
             os.makedirs(col_dir)
             entry = {"name": "app", "description": "App"}
             with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
@@ -574,7 +574,7 @@ class TestValidateCatalog(TestCase):
             errors = validate_catalog(tmp)
             self.assertTrue(any("Missing required directory" in e for e in errors))
 
-    def test_no_collections(self):
+    def test_no_entries(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -584,15 +584,15 @@ class TestValidateCatalog(TestCase):
                 with open(os.path.join(assets_dir, filename), "w") as f:
                     f.write("")
             errors = validate_catalog(tmp)
-            self.assertTrue(any("No collections found" in e for e in errors))
+            self.assertTrue(any("No entries found" in e for e in errors))
 
-    def test_duplicate_collection_names(self):
+    def test_duplicate_entry_names(self):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             self._create_valid_catalog(tmp)
-            # Add a second collection with same name
-            col2 = os.path.join(tmp, "collections", "other")
+            # Add a second entry with same name
+            col2 = os.path.join(tmp, "catalog", "other")
             os.makedirs(col2)
             entry = {"name": "default", "description": "Duplicate name"}
             with open(os.path.join(col2, CATALOG_ENTRY_FILENAME), "w") as f:
@@ -603,7 +603,7 @@ class TestValidateCatalog(TestCase):
             with open(os.path.join(col2, CATALOG_VERSION_FILENAME), "w") as f:
                 f.write("1.0.0")
             errors = validate_catalog(tmp)
-            self.assertTrue(any("Duplicate collection name" in e for e in errors))
+            self.assertTrue(any("Duplicate entry name" in e for e in errors))
 
 
 class TestConstants(TestCase):
@@ -629,18 +629,18 @@ class TestConstants(TestCase):
         self.assertIn("devcontainer-functions.sh", CATALOG_REQUIRED_COMMON_ASSETS)
         self.assertIn("project-setup.sh", CATALOG_REQUIRED_COMMON_ASSETS)
 
-    def test_required_collection_files_defined(self):
-        self.assertIn(CATALOG_ENTRY_FILENAME, CATALOG_REQUIRED_COLLECTION_FILES)
-        self.assertIn("devcontainer.json", CATALOG_REQUIRED_COLLECTION_FILES)
-        self.assertIn(CATALOG_VERSION_FILENAME, CATALOG_REQUIRED_COLLECTION_FILES)
+    def test_required_entry_files_defined(self):
+        self.assertIn(CATALOG_ENTRY_FILENAME, CATALOG_REQUIRED_ENTRY_FILES)
+        self.assertIn("devcontainer.json", CATALOG_REQUIRED_ENTRY_FILES)
+        self.assertIn(CATALOG_VERSION_FILENAME, CATALOG_REQUIRED_ENTRY_FILES)
 
 
-class TestCollectionInfo(TestCase):
-    """Test CollectionInfo dataclass."""
+class TestEntryInfo(TestCase):
+    """Test EntryInfo dataclass."""
 
     def test_creation(self):
         entry = CatalogEntry(name="my-app", description="App")
-        info = CollectionInfo(path="/some/path", entry=entry)
+        info = EntryInfo(path="/some/path", entry=entry)
         self.assertEqual(info.path, "/some/path")
         self.assertEqual(info.entry.name, "my-app")
         self.assertEqual(info.entry.description, "App")
@@ -648,8 +648,8 @@ class TestCollectionInfo(TestCase):
     def test_different_entries(self):
         entry1 = CatalogEntry(name="app-a", description="A", tags=["java"])
         entry2 = CatalogEntry(name="app-b", description="B", maintainer="team")
-        info1 = CollectionInfo(path="/path/a", entry=entry1)
-        info2 = CollectionInfo(path="/path/b", entry=entry2)
+        info1 = EntryInfo(path="/path/a", entry=entry1)
+        info2 = EntryInfo(path="/path/b", entry=entry2)
         self.assertNotEqual(info1.path, info2.path)
         self.assertNotEqual(info1.entry.name, info2.entry.name)
 
@@ -835,19 +835,19 @@ class TestCloneCatalogRepo(TestCase):
         self.assertEqual(cmd[depth_idx + 1], "1")
 
 
-class TestDiscoverCollectionEntries(TestCase):
-    """Test discover_collection_entries() metadata parsing and sorting."""
+class TestDiscoverEntries(TestCase):
+    """Test discover_entries() metadata parsing and sorting."""
 
     def test_default_first_then_alpha(self):
         with tempfile.TemporaryDirectory() as tmp:
-            # Create collections in non-alpha order
+            # Create entries in non-alpha order
             for name in ["zebra", "default", "alpha"]:
-                col = os.path.join(tmp, "collections", name)
+                col = os.path.join(tmp, "catalog", name)
                 os.makedirs(col)
                 entry = {"name": name, "description": f"Desc for {name}"}
                 with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
                     json.dump(entry, f)
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 3)
             self.assertEqual(entries[0].entry.name, "default")
             self.assertEqual(entries[1].entry.name, "alpha")
@@ -855,7 +855,7 @@ class TestDiscoverCollectionEntries(TestCase):
 
     def test_parses_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
-            col = os.path.join(tmp, "collections", "my-app")
+            col = os.path.join(tmp, "catalog", "my-app")
             os.makedirs(col)
             entry = {
                 "name": "my-app",
@@ -866,7 +866,7 @@ class TestDiscoverCollectionEntries(TestCase):
             }
             with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump(entry, f)
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 1)
             self.assertEqual(entries[0].entry.name, "my-app")
             self.assertEqual(entries[0].entry.tags, ["python", "aws"])
@@ -876,94 +876,94 @@ class TestDiscoverCollectionEntries(TestCase):
 
     def test_skips_invalid_json(self):
         with tempfile.TemporaryDirectory() as tmp:
-            col = os.path.join(tmp, "collections", "broken")
+            col = os.path.join(tmp, "catalog", "broken")
             os.makedirs(col)
             with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
                 f.write("not valid json")
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 0)
 
-    def test_empty_collections_dir(self):
+    def test_empty_entries_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
-            os.makedirs(os.path.join(tmp, "collections"))
-            entries = discover_collection_entries(tmp)
+            os.makedirs(os.path.join(tmp, "catalog"))
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 0)
 
-    def test_no_collections_dir(self):
+    def test_no_entries_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 0)
 
     def test_without_default(self):
         with tempfile.TemporaryDirectory() as tmp:
             for name in ["beta", "alpha"]:
-                col = os.path.join(tmp, "collections", name)
+                col = os.path.join(tmp, "catalog", name)
                 os.makedirs(col)
                 entry = {"name": name, "description": f"Desc {name}"}
                 with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
                     json.dump(entry, f)
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 2)
             self.assertEqual(entries[0].entry.name, "alpha")
             self.assertEqual(entries[1].entry.name, "beta")
 
     def test_skip_incomplete_filters_missing_devcontainer_json(self):
-        """Collections missing devcontainer.json are skipped when skip_incomplete=True."""
+        """Entries missing devcontainer.json are skipped when skip_incomplete=True."""
         with tempfile.TemporaryDirectory() as tmp:
-            # Complete collection
-            complete = os.path.join(tmp, "collections", "complete")
+            # Complete entry
+            complete = os.path.join(tmp, "catalog", "complete")
             os.makedirs(complete)
             with open(os.path.join(complete, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump({"name": "complete", "description": "Has all files"}, f)
             with open(os.path.join(complete, "devcontainer.json"), "w") as f:
                 json.dump({"name": "test"}, f)
 
-            # Incomplete collection (missing devcontainer.json)
-            incomplete = os.path.join(tmp, "collections", "incomplete")
+            # Incomplete entry (missing devcontainer.json)
+            incomplete = os.path.join(tmp, "catalog", "incomplete")
             os.makedirs(incomplete)
             with open(os.path.join(incomplete, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump({"name": "incomplete", "description": "Missing devcontainer.json"}, f)
 
             # Without skip_incomplete: both returned
-            entries_all = discover_collection_entries(tmp, skip_incomplete=False)
+            entries_all = discover_entries(tmp, skip_incomplete=False)
             self.assertEqual(len(entries_all), 2)
 
             # With skip_incomplete: only complete returned
-            entries_filtered = discover_collection_entries(tmp, skip_incomplete=True)
+            entries_filtered = discover_entries(tmp, skip_incomplete=True)
             self.assertEqual(len(entries_filtered), 1)
             self.assertEqual(entries_filtered[0].entry.name, "complete")
 
     def test_skip_incomplete_default_false(self):
-        """By default, skip_incomplete is False — incomplete collections are included."""
+        """By default, skip_incomplete is False — incomplete entries are included."""
         with tempfile.TemporaryDirectory() as tmp:
-            col = os.path.join(tmp, "collections", "no-devcontainer")
+            col = os.path.join(tmp, "catalog", "no-devcontainer")
             os.makedirs(col)
             with open(os.path.join(col, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump({"name": "no-devcontainer", "description": "No devcontainer.json"}, f)
 
-            entries = discover_collection_entries(tmp)
+            entries = discover_entries(tmp)
             self.assertEqual(len(entries), 1)
             self.assertEqual(entries[0].entry.name, "no-devcontainer")
 
 
-class TestCopyCollectionToProject(TestCase):
-    """Test copy_collection_to_project() file merging and augmentation."""
+class TestCopyEntryToProject(TestCase):
+    """Test copy_entry_to_project() file merging and augmentation."""
 
-    def _setup_collection_and_assets(self, tmp_dir):
-        """Create a collection dir and common assets dir for testing."""
-        collection = os.path.join(tmp_dir, "collection")
+    def _setup_entry_and_assets(self, tmp_dir):
+        """Create an entry dir and common assets dir for testing."""
+        entry_src = os.path.join(tmp_dir, "collection")
         assets = os.path.join(tmp_dir, "assets")
         target = os.path.join(tmp_dir, "target")
-        os.makedirs(collection)
+        os.makedirs(entry_src)
         os.makedirs(assets)
 
-        # Collection files
+        # Entry files
         entry = {"name": "test-app", "description": "Test app"}
-        with open(os.path.join(collection, CATALOG_ENTRY_FILENAME), "w") as f:
+        with open(os.path.join(entry_src, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump(entry, f)
-        with open(os.path.join(collection, "devcontainer.json"), "w") as f:
+        with open(os.path.join(entry_src, "devcontainer.json"), "w") as f:
             json.dump({"name": "test"}, f)
-        with open(os.path.join(collection, "VERSION"), "w") as f:
+        with open(os.path.join(entry_src, "VERSION"), "w") as f:
             f.write("1.0.0")
 
         # Common assets
@@ -974,35 +974,35 @@ class TestCopyCollectionToProject(TestCase):
         with open(os.path.join(assets, "project-setup.sh"), "w") as f:
             f.write("#!/bin/bash\necho setup")
 
-        return collection, assets, target
+        return entry_src, assets, target
 
-    def test_copies_collection_files(self):
+    def test_copies_entry_files(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            entry_src, assets, target = self._setup_entry_and_assets(tmp)
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             self.assertTrue(os.path.isfile(os.path.join(target, "devcontainer.json")))
             self.assertTrue(os.path.isfile(os.path.join(target, "VERSION")))
 
     def test_copies_common_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            entry_src, assets, target = self._setup_entry_and_assets(tmp)
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             self.assertTrue(os.path.isfile(os.path.join(target, ".devcontainer.postcreate.sh")))
             self.assertTrue(os.path.isfile(os.path.join(target, "devcontainer-functions.sh")))
             self.assertTrue(os.path.isfile(os.path.join(target, "project-setup.sh")))
 
-    def test_common_assets_override_collection(self):
+    def test_common_assets_override_entry(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
-            # Add a file to collection that also exists in assets
-            with open(os.path.join(collection, "project-setup.sh"), "w") as f:
-                f.write("collection version")
+            entry_src, assets, target = self._setup_entry_and_assets(tmp)
+            # Add a file to entry that also exists in assets
+            with open(os.path.join(entry_src, "project-setup.sh"), "w") as f:
+                f.write("entry version")
             with open(os.path.join(assets, "project-setup.sh"), "w") as f:
                 f.write("assets version")
 
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             with open(os.path.join(target, "project-setup.sh")) as f:
                 content = f.read()
@@ -1010,9 +1010,9 @@ class TestCopyCollectionToProject(TestCase):
 
     def test_augments_catalog_entry_with_url(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
+            entry_src, assets, target = self._setup_entry_and_assets(tmp)
             catalog_url = "https://github.com/org/repo.git@v2.0"
-            copy_collection_to_project(collection, assets, target, catalog_url)
+            copy_entry_to_project(entry_src, assets, target, catalog_url)
 
             with open(os.path.join(target, CATALOG_ENTRY_FILENAME)) as f:
                 data = json.load(f)
@@ -1021,30 +1021,30 @@ class TestCopyCollectionToProject(TestCase):
 
     def test_creates_target_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, _ = self._setup_collection_and_assets(tmp)
+            entry_src, assets, _ = self._setup_entry_and_assets(tmp)
             target = os.path.join(tmp, "nested", "deep", "target")
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             self.assertTrue(os.path.isdir(target))
 
     def test_copies_subdirectories(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
-            # Add a subdirectory to collection
-            subdir = os.path.join(collection, "nix-family-os")
+            entry_src, assets, target = self._setup_entry_and_assets(tmp)
+            # Add a subdirectory to entry
+            subdir = os.path.join(entry_src, "nix-family-os")
             os.makedirs(subdir)
             with open(os.path.join(subdir, "tinyproxy.conf"), "w") as f:
                 f.write("proxy config")
 
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             self.assertTrue(os.path.isdir(os.path.join(target, "nix-family-os")))
             self.assertTrue(os.path.isfile(os.path.join(target, "nix-family-os", "tinyproxy.conf")))
 
     def test_catalog_entry_json_has_trailing_newline(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            entry_src, assets, target = self._setup_entry_and_assets(tmp)
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
 
             with open(os.path.join(target, CATALOG_ENTRY_FILENAME)) as f:
                 content = f.read()
@@ -1052,9 +1052,9 @@ class TestCopyCollectionToProject(TestCase):
 
     def test_no_example_files_present_no_error(self):
         with tempfile.TemporaryDirectory() as tmp:
-            collection, assets, target = self._setup_collection_and_assets(tmp)
+            entry_src, assets, target = self._setup_entry_and_assets(tmp)
             # No example files exist — should not raise
-            copy_collection_to_project(collection, assets, target, "https://example.com/repo.git")
+            copy_entry_to_project(entry_src, assets, target, "https://example.com/repo.git")
             self.assertTrue(os.path.isdir(target))
 
 

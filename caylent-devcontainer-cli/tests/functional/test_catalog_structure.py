@@ -1,6 +1,6 @@
 """Functional tests validating the catalog directory structure.
 
-These tests verify that the repo's catalog structure (common/ and collections/)
+These tests verify that the repo's catalog structure (common/ and catalog/)
 is correctly set up and passes all catalog validation from S1.4.1.
 """
 
@@ -11,21 +11,21 @@ from unittest import TestCase
 from caylent_devcontainer_cli.utils.catalog import (
     CatalogEntry,
     detect_file_conflicts,
-    discover_collections,
+    discover_entry_paths,
     validate_catalog,
     validate_catalog_entry,
-    validate_collection,
-    validate_collection_structure,
     validate_common_assets,
+    validate_entry,
+    validate_entry_structure,
     validate_postcreate_command,
 )
 from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ASSETS_DIR,
-    CATALOG_COLLECTIONS_DIR,
     CATALOG_COMMON_DIR,
+    CATALOG_ENTRIES_DIR,
     CATALOG_ENTRY_FILENAME,
-    CATALOG_REQUIRED_COLLECTION_FILES,
     CATALOG_REQUIRED_COMMON_ASSETS,
+    CATALOG_REQUIRED_ENTRY_FILES,
     DEFAULT_CATALOG_URL,
 )
 
@@ -142,62 +142,62 @@ class TestCommonAssetsDirectory(TestCase):
         self.assertTrue(os.path.isfile(daemon))
 
 
-class TestDefaultCollectionStructure(TestCase):
-    """Tests for the collections/default/ directory structure."""
+class TestDefaultEntryStructure(TestCase):
+    """Tests for the catalog/default/ directory structure."""
 
     def setUp(self):
         self.repo_root = _repo_root()
-        self.collection_dir = os.path.join(self.repo_root, CATALOG_COLLECTIONS_DIR, "default")
+        self.entry_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR, "default")
 
-    def test_collections_directory_exists(self):
-        """collections/ directory must exist at repo root."""
-        collections_dir = os.path.join(self.repo_root, CATALOG_COLLECTIONS_DIR)
-        self.assertTrue(os.path.isdir(collections_dir))
+    def test_entries_directory_exists(self):
+        """catalog/ directory must exist at repo root."""
+        entries_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR)
+        self.assertTrue(os.path.isdir(entries_dir))
 
-    def test_default_collection_directory_exists(self):
-        """collections/default/ directory must exist."""
-        self.assertTrue(os.path.isdir(self.collection_dir))
+    def test_default_entry_directory_exists(self):
+        """catalog/default/ directory must exist."""
+        self.assertTrue(os.path.isdir(self.entry_dir))
 
-    def test_all_required_collection_files_present(self):
-        """All required collection files must be present."""
-        for filename in CATALOG_REQUIRED_COLLECTION_FILES:
-            filepath = os.path.join(self.collection_dir, filename)
+    def test_all_required_entry_files_present(self):
+        """All required entry files must be present."""
+        for filename in CATALOG_REQUIRED_ENTRY_FILES:
+            filepath = os.path.join(self.entry_dir, filename)
             self.assertTrue(
                 os.path.isfile(filepath),
-                f"Missing required collection file: {filename}",
+                f"Missing required entry file: {filename}",
             )
 
-    def test_validate_collection_structure_passes(self):
-        """validate_collection_structure() must return no errors."""
-        errors = validate_collection_structure(self.collection_dir)
-        self.assertEqual(errors, [], f"Collection structure validation errors: {errors}")
+    def test_validate_entry_structure_passes(self):
+        """validate_entry_structure() must return no errors."""
+        errors = validate_entry_structure(self.entry_dir)
+        self.assertEqual(errors, [], f"Entry structure validation errors: {errors}")
 
     def test_fix_line_endings_present(self):
-        """fix-line-endings.py must be present in default collection."""
-        filepath = os.path.join(self.collection_dir, "fix-line-endings.py")
+        """fix-line-endings.py must be present in default entry."""
+        filepath = os.path.join(self.entry_dir, "fix-line-endings.py")
         self.assertTrue(os.path.isfile(filepath))
 
     def test_version_file_content(self):
         """VERSION file must contain a valid semver string."""
-        filepath = os.path.join(self.collection_dir, "VERSION")
+        filepath = os.path.join(self.entry_dir, "VERSION")
         with open(filepath) as f:
             version = f.read().strip()
         self.assertRegex(version, r"^\d+\.\d+\.\d+$")
 
     def test_no_file_conflicts_with_common_assets(self):
-        """Collection must not contain files that conflict with common assets."""
-        conflicts = detect_file_conflicts(self.collection_dir, CATALOG_REQUIRED_COMMON_ASSETS)
+        """Entry must not contain files that conflict with common assets."""
+        conflicts = detect_file_conflicts(self.entry_dir, CATALOG_REQUIRED_COMMON_ASSETS)
         self.assertEqual(conflicts, [], f"File conflicts with common assets: {conflicts}")
 
 
 class TestDefaultCatalogEntryJson(TestCase):
-    """Tests for the collections/default/catalog-entry.json content."""
+    """Tests for the catalog/default/catalog-entry.json content."""
 
     def setUp(self):
         self.repo_root = _repo_root()
         self.entry_path = os.path.join(
             self.repo_root,
-            CATALOG_COLLECTIONS_DIR,
+            CATALOG_ENTRIES_DIR,
             "default",
             CATALOG_ENTRY_FILENAME,
         )
@@ -311,14 +311,14 @@ class TestProjectSetupShLifecycle(TestCase):
         self.assertIn("No project-specific setup script found", content)
 
 
-class TestDefaultCollectionDevcontainerJson(TestCase):
-    """Tests for collections/default/devcontainer.json."""
+class TestDefaultEntryDevcontainerJson(TestCase):
+    """Tests for catalog/default/devcontainer.json."""
 
     def setUp(self):
         self.repo_root = _repo_root()
         self.devcontainer_path = os.path.join(
             self.repo_root,
-            CATALOG_COLLECTIONS_DIR,
+            CATALOG_ENTRIES_DIR,
             "default",
             "devcontainer.json",
         )
@@ -361,21 +361,21 @@ class TestFullCatalogValidation(TestCase):
         errors = validate_catalog(self.repo_root)
         self.assertEqual(errors, [], f"Full catalog validation errors: {errors}")
 
-    def test_discover_collections_finds_default(self):
-        """discover_collections() must find the default collection."""
-        collections = discover_collections(self.repo_root)
-        self.assertTrue(len(collections) >= 1)
-        default_found = any(os.path.basename(c) == "default" for c in collections)
+    def test_discover_entry_paths_finds_default(self):
+        """discover_entry_paths() must find the default entry."""
+        entry_paths = discover_entry_paths(self.repo_root)
+        self.assertTrue(len(entry_paths) >= 1)
+        default_found = any(os.path.basename(c) == "default" for c in entry_paths)
         self.assertTrue(
             default_found,
-            f"Default collection not found. Collections: {collections}",
+            f"Default entry not found. Entries: {entry_paths}",
         )
 
-    def test_validate_collection_passes_for_default(self):
-        """validate_collection() must return no errors for collections/default/."""
-        collection_dir = os.path.join(self.repo_root, CATALOG_COLLECTIONS_DIR, "default")
-        errors = validate_collection(collection_dir)
-        self.assertEqual(errors, [], f"Default collection validation errors: {errors}")
+    def test_validate_entry_passes_for_default(self):
+        """validate_entry() must return no errors for catalog/default/."""
+        entry_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR, "default")
+        errors = validate_entry(entry_dir)
+        self.assertEqual(errors, [], f"Default entry validation errors: {errors}")
 
 
 class TestDevcontainerDirectoryUntouched(TestCase):
@@ -390,11 +390,11 @@ class TestDevcontainerDirectoryUntouched(TestCase):
         self.assertTrue(os.path.isdir(self.devcontainer_dir))
 
     def test_devcontainer_is_not_inside_catalog(self):
-        """.devcontainer/ must NOT be inside common/ or collections/."""
+        """.devcontainer/ must NOT be inside common/ or catalog/."""
         common_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR)
-        collections_dir = os.path.join(self.repo_root, CATALOG_COLLECTIONS_DIR)
+        entries_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR)
         self.assertFalse(self.devcontainer_dir.startswith(common_dir))
-        self.assertFalse(self.devcontainer_dir.startswith(collections_dir))
+        self.assertFalse(self.devcontainer_dir.startswith(entries_dir))
 
     def test_devcontainer_has_own_postcreate(self):
         """.devcontainer/ must still have its own postcreate script."""

@@ -40,9 +40,10 @@ def test_register_command():
 
     register_command(mock_subparsers)
 
-    mock_subparsers.add_parser.assert_called_once_with(
-        "code", help="Launch IDE (VS Code, Cursor) with the devcontainer environment"
-    )
+    mock_subparsers.add_parser.assert_called_once()
+    call_args = mock_subparsers.add_parser.call_args
+    assert call_args[0][0] == "code"
+    assert call_args[1]["help"] == "Launch IDE (VS Code, Cursor) with the devcontainer environment"
     mock_parser.set_defaults.assert_called_once_with(func=handle_code)
 
 
@@ -819,14 +820,14 @@ class TestReplaceFromCatalogEntry:
     """Test _replace_from_catalog_entry reads catalog-entry.json and clones."""
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
     def test_valid_entry_clones_and_copies(
         self, mock_clone, mock_discover, mock_find, mock_copy, mock_rmtree, tmp_path
     ):
-        """Valid catalog-entry.json: clones, finds, copies collection."""
+        """Valid catalog-entry.json: clones, finds, copies entry."""
         entry_file = tmp_path / "catalog-entry.json"
         entry_file.write_text(
             json.dumps({"name": "my-collection", "catalog_url": "https://github.com/org/catalog.git"})
@@ -834,7 +835,7 @@ class TestReplaceFromCatalogEntry:
 
         mock_clone.return_value = "/tmp/catalog-xyz"
         mock_selected = MagicMock()
-        mock_selected.path = "/tmp/catalog-xyz/collections/my-collection"
+        mock_selected.path = "/tmp/catalog-xyz/catalog/my-collection"
         mock_discover.return_value = [mock_selected]
         mock_find.return_value = mock_selected
 
@@ -879,9 +880,9 @@ class TestReplaceFromCatalogEntry:
         assert "missing 'catalog_url' or 'name'" in captured.err
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
     def test_temp_dir_cleaned_up_on_success(
         self, mock_clone, mock_discover, mock_find, mock_copy, mock_rmtree, tmp_path
@@ -892,7 +893,7 @@ class TestReplaceFromCatalogEntry:
 
         mock_clone.return_value = "/tmp/catalog-cleanup"
         mock_selected = MagicMock()
-        mock_selected.path = "/tmp/catalog-cleanup/collections/test"
+        mock_selected.path = "/tmp/catalog-cleanup/catalog/test"
         mock_discover.return_value = [mock_selected]
         mock_find.return_value = mock_selected
 
@@ -901,8 +902,8 @@ class TestReplaceFromCatalogEntry:
         mock_rmtree.assert_called_once_with("/tmp/catalog-cleanup", ignore_errors=True)
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
     def test_temp_dir_cleaned_up_on_failure(self, mock_clone, mock_discover, mock_find, mock_rmtree, tmp_path):
         """Temp directory is cleaned up even when find fails."""
@@ -911,7 +912,7 @@ class TestReplaceFromCatalogEntry:
 
         mock_clone.return_value = "/tmp/catalog-fail"
         mock_discover.return_value = []
-        mock_find.side_effect = SystemExit("Collection not found")
+        mock_find.side_effect = SystemExit("Entry not found")
 
         with pytest.raises(SystemExit):
             _replace_from_catalog_entry(str(tmp_path), str(entry_file))
@@ -919,20 +920,20 @@ class TestReplaceFromCatalogEntry:
         mock_rmtree.assert_called_once_with("/tmp/catalog-fail", ignore_errors=True)
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
     def test_success_message_logged(
         self, mock_clone, mock_discover, mock_find, mock_copy, mock_rmtree, tmp_path, capsys
     ):
-        """Success message includes collection name."""
+        """Success message includes entry name."""
         entry_file = tmp_path / "catalog-entry.json"
         entry_file.write_text(json.dumps({"name": "my-col", "catalog_url": "https://example.com"}))
 
         mock_clone.return_value = "/tmp/catalog-msg"
         mock_selected = MagicMock()
-        mock_selected.path = "/tmp/catalog-msg/collections/my-col"
+        mock_selected.path = "/tmp/catalog-msg/catalog/my-col"
         mock_discover.return_value = [mock_selected]
         mock_find.return_value = mock_selected
 

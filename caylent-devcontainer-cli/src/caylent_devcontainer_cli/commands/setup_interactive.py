@@ -750,7 +750,7 @@ def apply_template(template_data: Dict[str, Any], target_path: str) -> None:
     Generates all project configuration files (environment variables JSON,
     shell.env, AWS profile map, SSH key, .gitignore entries) via write_project_files().
     Does NOT copy .devcontainer/ files — that responsibility belongs to the
-    catalog pipeline's copy_collection_to_project().
+    catalog pipeline's copy_entry_to_project().
     """
     # Resolve template name from data or use "unknown"
     template_name = template_data.get("template_name", "unknown")

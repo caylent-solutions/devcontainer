@@ -1,13 +1,13 @@
 """Catalog data model and validation for devcontainer catalog repositories.
 
-A catalog repo contains shared devcontainer assets and one or more collections.
-Each collection provides a complete devcontainer configuration (devcontainer.json,
+A catalog repo contains shared devcontainer assets and one or more catalog entries.
+Each entry provides a complete devcontainer configuration (devcontainer.json,
 catalog-entry.json, VERSION, and optional extra files).
 
 Layout:
     catalog-repo/
       common/devcontainer-assets/   (shared postcreate, functions, project-setup)
-      collections/<name>/           (one or more collections)
+      catalog/<name>/               (one or more catalog entries)
 """
 
 import json
@@ -22,12 +22,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ASSETS_DIR,
-    CATALOG_COLLECTIONS_DIR,
     CATALOG_COMMON_DIR,
+    CATALOG_ENTRIES_DIR,
     CATALOG_ENTRY_FILENAME,
     CATALOG_NAME_PATTERN,
-    CATALOG_REQUIRED_COLLECTION_FILES,
     CATALOG_REQUIRED_COMMON_ASSETS,
+    CATALOG_REQUIRED_ENTRY_FILES,
     CATALOG_TAG_PATTERN,
     DEFAULT_CATALOG_URL,
     MIN_CATALOG_TAG_VERSION,
@@ -71,8 +71,8 @@ class CatalogEntry:
 
 
 @dataclass
-class CollectionInfo:
-    """A discovered collection with its path and parsed metadata."""
+class EntryInfo:
+    """A discovered catalog entry with its path and parsed metadata."""
 
     path: str
     entry: CatalogEntry
@@ -124,32 +124,30 @@ def check_min_cli_version(min_version: str, current_version: Optional[str] = Non
     return compare_semver(current_version, min_version) >= 0
 
 
-def find_collection_by_name(entries: List[CollectionInfo], name: str) -> CollectionInfo:
-    """Look up a collection by name from a list of discovered entries.
+def find_entry_by_name(entries: List[EntryInfo], name: str) -> EntryInfo:
+    """Look up a catalog entry by name from a list of discovered entries.
 
     Args:
-        entries: The list of discovered :class:`CollectionInfo` objects.
-        name: The collection name to search for.
+        entries: The list of discovered :class:`EntryInfo` objects.
+        name: The entry name to search for.
 
     Returns:
-        The matching :class:`CollectionInfo`.
+        The matching :class:`EntryInfo`.
 
     Raises:
-        SystemExit: If no collection with *name* is found.
+        SystemExit: If no entry with *name* is found.
     """
     for entry_info in entries:
         if entry_info.entry.name == name:
             return entry_info
-    raise SystemExit(
-        f"Collection '{name}' not found. " "Run 'cdevcontainer catalog list' to see available collections."
-    )
+    raise SystemExit(f"Entry '{name}' not found. " "Run 'cdevcontainer catalog list' to see available entries.")
 
 
 def validate_catalog_entry_env(catalog_entry_name: str) -> str:
     """Validate that DEVCONTAINER_CATALOG_URL is set when ``--catalog-entry`` is used.
 
     Args:
-        catalog_entry_name: The collection name supplied via ``--catalog-entry``.
+        catalog_entry_name: The entry name supplied via ``--catalog-entry``.
 
     Returns:
         The catalog URL from the environment variable.
@@ -330,25 +328,25 @@ def resolve_default_catalog_url() -> str:
     return f"{DEFAULT_CATALOG_URL}@{tag}"
 
 
-def discover_collection_entries(
+def discover_entries(
     catalog_root: str,
     skip_incomplete: bool = False,
-) -> List[CollectionInfo]:
-    """Discover collections and return them with parsed metadata.
+) -> List[EntryInfo]:
+    """Discover catalog entries and return them with parsed metadata.
 
     Scans for ``catalog-entry.json`` files, parses each one into a
     :class:`CatalogEntry`, and returns the list sorted with ``default``
-    first followed by A-Z order of collection names.
+    first followed by A-Z order of entry names.
 
     Args:
         catalog_root: Path to the catalog repository root.
-        skip_incomplete: When ``True``, collections missing a
+        skip_incomplete: When ``True``, entries missing a
             ``devcontainer.json`` are silently skipped.  Useful for
             list/browse mode.  In validate mode this should be ``False``
-            so that all collections are discovered and checked.
+            so that all entries are discovered and checked.
     """
-    raw_paths = discover_collections(catalog_root)
-    entries: List[CollectionInfo] = []
+    raw_paths = discover_entry_paths(catalog_root)
+    entries: List[EntryInfo] = []
 
     for path in raw_paths:
         entry_path = os.path.join(path, CATALOG_ENTRY_FILENAME)
@@ -364,27 +362,27 @@ def discover_collection_entries(
             with open(entry_path) as f:
                 data = json.load(f)
             entry = CatalogEntry.from_dict(data)
-            entries.append(CollectionInfo(path=path, entry=entry))
+            entries.append(EntryInfo(path=path, entry=entry))
         except (json.JSONDecodeError, OSError):
             continue
 
     # Sort: "default" first, then alphabetically by name.
-    def _sort_key(info: CollectionInfo) -> Tuple[int, str]:
+    def _sort_key(info: EntryInfo) -> Tuple[int, str]:
         return (0 if info.entry.name == "default" else 1, info.entry.name)
 
     entries.sort(key=_sort_key)
     return entries
 
 
-def copy_collection_to_project(
-    collection_path: str,
+def copy_entry_to_project(
+    entry_dir: str,
     common_assets_path: str,
     target_path: str,
     catalog_url: str,
 ) -> None:
-    """Copy collection files and common assets into a project ``.devcontainer/``.
+    """Copy catalog entry files and common assets into a project ``.devcontainer/``.
 
-    1. Copies all files/dirs from *collection_path* to *target_path*.
+    1. Copies all files/dirs from *entry_dir* to *target_path*.
     2. Copies all files/dirs from *common_assets_path* to *target_path*
        (common assets take precedence on name collisions).
     3. Augments the copied ``catalog-entry.json`` with *catalog_url*.
@@ -392,9 +390,9 @@ def copy_collection_to_project(
     """
     os.makedirs(target_path, exist_ok=True)
 
-    # 1. Copy collection files
-    for item in os.listdir(collection_path):
-        src = os.path.join(collection_path, item)
+    # 1. Copy entry files
+    for item in os.listdir(entry_dir):
+        src = os.path.join(entry_dir, item)
         dst = os.path.join(target_path, item)
         if os.path.isdir(src):
             shutil.copytree(src, dst, dirs_exist_ok=True)
@@ -470,37 +468,37 @@ def validate_catalog_entry(data: Dict[str, Any]) -> List[str]:
     return errors
 
 
-def validate_collection_structure(collection_path: str) -> List[str]:
-    """Validate that a collection directory has all required files.
+def validate_entry_structure(entry_dir: str) -> List[str]:
+    """Validate that a catalog entry directory has all required files.
 
     Returns a list of errors (empty if valid).
     """
     errors: List[str] = []
 
-    for filename in CATALOG_REQUIRED_COLLECTION_FILES:
-        filepath = os.path.join(collection_path, filename)
+    for filename in CATALOG_REQUIRED_ENTRY_FILES:
+        filepath = os.path.join(entry_dir, filename)
         if not os.path.isfile(filepath):
             errors.append(f"Missing required file: {filename}")
 
     return errors
 
 
-def detect_file_conflicts(collection_path: str, common_assets: Tuple[str, ...]) -> List[str]:
-    """Detect files in a collection that conflict with common/devcontainer-assets/.
+def detect_file_conflicts(entry_dir: str, common_assets: Tuple[str, ...]) -> List[str]:
+    """Detect files in a catalog entry that conflict with common/devcontainer-assets/.
 
-    Collections must NOT contain files with the same name as files in
+    Entries must NOT contain files with the same name as files in
     common/devcontainer-assets/ to prevent overwrites during copy.
 
     Returns a list of conflicting filenames.
     """
     conflicts: List[str] = []
 
-    if not os.path.isdir(collection_path):
+    if not os.path.isdir(entry_dir):
         return conflicts
 
-    collection_files = set(os.listdir(collection_path))
+    entry_files = set(os.listdir(entry_dir))
     for asset_name in common_assets:
-        if asset_name in collection_files:
+        if asset_name in entry_files:
             conflicts.append(asset_name)
 
     return conflicts
@@ -538,8 +536,8 @@ def validate_postcreate_command(devcontainer_json_path: str) -> List[str]:
     return errors
 
 
-def validate_collection(collection_path: str) -> List[str]:
-    """Run all validations on a single collection directory.
+def validate_entry(entry_dir: str) -> List[str]:
+    """Run all validations on a single catalog entry directory.
 
     Validates structure, catalog-entry.json content, file conflicts,
     and postCreateCommand.
@@ -549,10 +547,10 @@ def validate_collection(collection_path: str) -> List[str]:
     errors: List[str] = []
 
     # 1. Structure validation
-    errors.extend(validate_collection_structure(collection_path))
+    errors.extend(validate_entry_structure(entry_dir))
 
     # 2. catalog-entry.json content validation
-    entry_path = os.path.join(collection_path, CATALOG_ENTRY_FILENAME)
+    entry_path = os.path.join(entry_dir, CATALOG_ENTRY_FILENAME)
     if os.path.isfile(entry_path):
         try:
             with open(entry_path) as f:
@@ -564,14 +562,12 @@ def validate_collection(collection_path: str) -> List[str]:
             errors.append(f"Cannot read {CATALOG_ENTRY_FILENAME}: {e}")
 
     # 3. File conflict detection
-    conflicts = detect_file_conflicts(collection_path, CATALOG_REQUIRED_COMMON_ASSETS)
+    conflicts = detect_file_conflicts(entry_dir, CATALOG_REQUIRED_COMMON_ASSETS)
     for conflict in conflicts:
-        errors.append(
-            f"Collection contains '{conflict}' which conflicts with " f"common/{CATALOG_ASSETS_DIR}/{conflict}"
-        )
+        errors.append(f"Entry contains '{conflict}' which conflicts with " f"common/{CATALOG_ASSETS_DIR}/{conflict}")
 
     # 4. postCreateCommand validation
-    devcontainer_json = os.path.join(collection_path, "devcontainer.json")
+    devcontainer_json = os.path.join(entry_dir, "devcontainer.json")
     if os.path.isfile(devcontainer_json):
         errors.extend(validate_postcreate_command(devcontainer_json))
 
@@ -598,29 +594,29 @@ def validate_common_assets(catalog_root: str) -> List[str]:
     return errors
 
 
-def discover_collections(catalog_root: str) -> List[str]:
-    """Recursively discover collections by scanning for catalog-entry.json files.
+def discover_entry_paths(catalog_root: str) -> List[str]:
+    """Recursively discover catalog entries by scanning for catalog-entry.json files.
 
     Returns a list of absolute directory paths containing catalog-entry.json.
     """
-    collections: List[str] = []
-    collections_dir = os.path.join(catalog_root, CATALOG_COLLECTIONS_DIR)
+    entry_paths: List[str] = []
+    entries_dir = os.path.join(catalog_root, CATALOG_ENTRIES_DIR)
 
-    if not os.path.isdir(collections_dir):
-        return collections
+    if not os.path.isdir(entries_dir):
+        return entry_paths
 
-    for dirpath, _dirnames, filenames in os.walk(collections_dir):
+    for dirpath, _dirnames, filenames in os.walk(entries_dir):
         if CATALOG_ENTRY_FILENAME in filenames:
-            collections.append(dirpath)
+            entry_paths.append(dirpath)
 
-    return sorted(collections)
+    return sorted(entry_paths)
 
 
 def validate_catalog(catalog_root: str) -> List[str]:
     """Validate an entire catalog repository.
 
-    Checks common assets, discovers collections, validates each collection,
-    and checks for duplicate collection names.
+    Checks common assets, discovers entries, validates each entry,
+    and checks for duplicate entry names.
 
     Returns a list of all errors found.
     """
@@ -629,34 +625,32 @@ def validate_catalog(catalog_root: str) -> List[str]:
     # 1. Validate common assets
     errors.extend(validate_common_assets(catalog_root))
 
-    # 2. Discover and validate collections
-    collections = discover_collections(catalog_root)
-    if not collections:
-        errors.append(
-            f"No collections found. Expected {CATALOG_ENTRY_FILENAME} " f"files under {CATALOG_COLLECTIONS_DIR}/"
-        )
+    # 2. Discover and validate entries
+    entry_dirs = discover_entry_paths(catalog_root)
+    if not entry_dirs:
+        errors.append(f"No entries found. Expected {CATALOG_ENTRY_FILENAME} " f"files under {CATALOG_ENTRIES_DIR}/")
         return errors
 
-    # 3. Validate each collection and check name uniqueness
+    # 3. Validate each entry and check name uniqueness
     seen_names: Dict[str, str] = {}
-    for collection_path in collections:
-        collection_errors = validate_collection(collection_path)
-        rel_path = os.path.relpath(collection_path, catalog_root)
-        for error in collection_errors:
+    for entry_dir in entry_dirs:
+        entry_errors = validate_entry(entry_dir)
+        rel_path = os.path.relpath(entry_dir, catalog_root)
+        for error in entry_errors:
             errors.append(f"[{rel_path}] {error}")
 
         # Check name uniqueness
-        entry_path = os.path.join(collection_path, CATALOG_ENTRY_FILENAME)
+        entry_path = os.path.join(entry_dir, CATALOG_ENTRY_FILENAME)
         if os.path.isfile(entry_path):
             try:
                 with open(entry_path) as f:
                     entry_data = json.load(f)
                 name = entry_data.get("name", "")
                 if name and name in seen_names:
-                    errors.append(f"Duplicate collection name '{name}': " f"found in {rel_path} and {seen_names[name]}")
+                    errors.append(f"Duplicate entry name '{name}': " f"found in {rel_path} and {seen_names[name]}")
                 elif name:
                     seen_names[name] = rel_path
             except (json.JSONDecodeError, OSError):
-                pass  # Already reported by validate_collection
+                pass  # Already reported by validate_entry
 
     return errors

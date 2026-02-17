@@ -3,7 +3,7 @@
 import os
 
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, KNOWN_KEYS
 from caylent_devcontainer_cli.utils.fs import (
     load_json_config,
     resolve_project_root,
@@ -21,7 +21,14 @@ from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, confirm_actio
 
 def register_command(subparsers):
     """Register the template command."""
-    template_parser = subparsers.add_parser("template", help="Template management")
+    from caylent_devcontainer_cli.cli import _HelpFormatter, build_env_epilog
+
+    template_parser = subparsers.add_parser(
+        "template",
+        help="Template management",
+        formatter_class=_HelpFormatter,
+        epilog=build_env_epilog("template"),
+    )
     template_subparsers = template_parser.add_subparsers(dest="template_command")
 
     # 'template save' command
@@ -41,6 +48,11 @@ def register_command(subparsers):
     # 'template list' command
     list_parser = template_subparsers.add_parser("list", help="List available templates")
     list_parser.set_defaults(func=handle_template_list)
+
+    # 'template view' command
+    view_parser = template_subparsers.add_parser("view", help="View a template's configuration values")
+    view_parser.add_argument("name", help="Template name")
+    view_parser.set_defaults(func=handle_template_view)
 
     # 'template delete' command
     delete_parser = template_subparsers.add_parser("delete", help="Delete one or more templates")
@@ -73,6 +85,11 @@ def handle_template_load(args):
 def handle_template_list(args):
     """Handle the template list command."""
     list_templates()
+
+
+def handle_template_view(args):
+    """Handle the template view command."""
+    view_template(args.name)
 
 
 def handle_template_delete(args):
@@ -229,6 +246,47 @@ def list_templates():
     print(f"{COLORS['CYAN']}Available templates:{COLORS['RESET']}")
     for template_name, version in templates:
         print(f"  - {COLORS['GREEN']}{template_name}{COLORS['RESET']} (created with CLI version {version})")
+
+
+def view_template(template_name):
+    """Display a template's configuration values.
+
+    Reads the template JSON and prints metadata (name, CLI version)
+    followed by environment variables grouped into known and custom.
+    """
+    template_path = get_template_path(template_name)
+
+    if not os.path.exists(template_path):
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
+
+    data = load_json_config(template_path)
+    container_env = data.get("containerEnv", {})
+
+    # Separate known vs custom keys
+    known = {k: v for k, v in sorted(container_env.items()) if k in KNOWN_KEYS}
+    custom = {k: v for k, v in sorted(container_env.items()) if k not in KNOWN_KEYS}
+
+    # Compute column width from all keys
+    all_keys = list(known.keys()) + list(custom.keys())
+    max_key_len = max((len(k) for k in all_keys), default=0)
+
+    print(f"{COLORS['CYAN']}Template:{COLORS['RESET']} {template_name}")
+    print(f"{COLORS['CYAN']}CLI Version:{COLORS['RESET']} {data.get('cli_version', 'unknown')}")
+
+    if known:
+        print(f"\n{COLORS['CYAN']}Environment Variables:{COLORS['RESET']}")
+        for key, value in known.items():
+            padding = " " * (max_key_len - len(key) + 2)
+            print(f"  {key}{padding}{value}")
+
+    if custom:
+        print(f"\n{COLORS['CYAN']}Custom Variables:{COLORS['RESET']}")
+        for key, value in custom.items():
+            padding = " " * (max_key_len - len(key) + 2)
+            print(f"  {key}{padding}{value}")
+
+    if not known and not custom:
+        print(f"\n{COLORS['YELLOW']}No environment variables defined.{COLORS['RESET']}")
 
 
 def delete_template(template_name):

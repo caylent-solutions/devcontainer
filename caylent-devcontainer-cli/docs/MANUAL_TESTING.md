@@ -243,26 +243,26 @@ cdevcontainer template create --help
 
 ### 10. Catalog List Test
 
-**Purpose**: Verify the catalog list command displays available collections
+**Purpose**: Verify the catalog list command displays available entries
 
 ```bash
-# Test 1: List collections from the default catalog
+# Test 1: List entries from the default catalog
 cdevcontainer catalog list
 # Should display a formatted list of available devcontainer configurations
-# with "default" collection listed first
+# with "default" entry listed first
 
 # Test 2: Filter by tags
 cdevcontainer catalog list --tags general
-# Should only show collections matching the "general" tag
+# Should only show entries matching the "general" tag
 
 # Test 3: Filter with no matches
 cdevcontainer catalog list --tags nonexistent-tag
-# Should display "No collections found matching tags: nonexistent-tag"
+# Should display "No entries found matching tags: nonexistent-tag"
 
 # Test 4: Custom catalog URL
 export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
 cdevcontainer catalog list
-# Should display collections from the specified catalog
+# Should display entries from the specified catalog
 unset DEVCONTAINER_CATALOG_URL
 
 # Test 5: Invalid catalog URL should fail gracefully
@@ -281,7 +281,7 @@ unset DEVCONTAINER_CATALOG_URL
 # Test 1: Validate local catalog (this repository)
 cd /path/to/devcontainer
 cdevcontainer catalog validate --local .
-# Should display "Catalog validation passed. N collections found."
+# Should display "Catalog validation passed. N entries found."
 
 # Test 2: Validate remote default catalog
 cdevcontainer catalog validate
@@ -312,7 +312,7 @@ cdevcontainer setup-devcontainer --catalog-entry my-collection /tmp/test-catalog
 export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
 mkdir -p /tmp/test-catalog-entry2
 cdevcontainer setup-devcontainer --catalog-entry default /tmp/test-catalog-entry2
-# Should clone the catalog, find the "default" collection, display metadata
+# Should clone the catalog, find the "default" entry, display metadata
 # Ask "Is this correct?" and continue with setup
 unset DEVCONTAINER_CATALOG_URL
 
@@ -330,7 +330,7 @@ unset DEVCONTAINER_CATALOG_URL
 unset DEVCONTAINER_CATALOG_URL
 mkdir -p /tmp/test-default-catalog
 cdevcontainer setup-devcontainer /tmp/test-default-catalog
-# Should auto-clone default catalog and auto-select the default collection
+# Should auto-clone default catalog and auto-select the default entry
 # No source selection prompt should appear
 ```
 

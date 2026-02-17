@@ -12,9 +12,9 @@ import pytest
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands.setup import (
-    _browse_collections,
-    _display_and_confirm_collection,
-    _display_collection_metadata,
+    _browse_entries,
+    _display_and_confirm_entry,
+    _display_entry_metadata,
     _ensure_tool_versions,
     _has_python_entry,
     _prompt_replace_decision,
@@ -44,7 +44,7 @@ from caylent_devcontainer_cli.commands.setup_interactive import (
     select_template,
     upgrade_template,
 )
-from caylent_devcontainer_cli.utils.catalog import CatalogEntry, CollectionInfo
+from caylent_devcontainer_cli.utils.catalog import CatalogEntry, EntryInfo
 
 # ─── register_command ───────────────────────────────────────────────────────
 
@@ -59,9 +59,10 @@ class TestRegisterCommand:
 
         register_command(mock_subparsers)
 
-        mock_subparsers.add_parser.assert_called_once_with(
-            "setup-devcontainer", help="Set up a devcontainer in a project directory"
-        )
+        mock_subparsers.add_parser.assert_called_once()
+        call_args = mock_subparsers.add_parser.call_args
+        assert call_args[0][0] == "setup-devcontainer"
+        assert call_args[1]["help"] == "Set up a devcontainer in a project directory"
         mock_parser.set_defaults.assert_called_once_with(func=handle_setup)
 
     def test_no_manual_flag(self):
@@ -188,7 +189,7 @@ class TestShowExistingConfig:
             devcontainer_dir = os.path.join(tmpdir, ".devcontainer")
             os.makedirs(devcontainer_dir)
             catalog_data = {
-                "collection_name": "default",
+                "name": "default",
                 "catalog_url": "https://github.com/example/catalog.git",
             }
             with open(os.path.join(devcontainer_dir, "catalog-entry.json"), "w") as f:
@@ -197,7 +198,7 @@ class TestShowExistingConfig:
             _show_existing_config(tmpdir)
 
             captured = capsys.readouterr()
-            assert "Catalog collection: default" in captured.err
+            assert "Catalog entry: default" in captured.err
             assert "Catalog URL: https://github.com/example/catalog.git" in captured.err
 
     def test_no_catalog_entry_no_error(self, capsys):
@@ -208,7 +209,7 @@ class TestShowExistingConfig:
             _show_existing_config(tmpdir)
 
             captured = capsys.readouterr()
-            assert "Catalog collection" not in captured.err
+            assert "Catalog entry" not in captured.err
 
     def test_displays_replace_notice(self, capsys):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -503,10 +504,10 @@ class TestHandleSetupCatalogEntry:
 # ─── _select_and_copy_catalog ───────────────────────────────────────────────
 
 
-def _make_entry(name="default", description="Default collection", tags=None, min_cli_version=None):
-    """Helper to create a CollectionInfo for testing."""
-    return CollectionInfo(
-        path=f"/tmp/catalog/collections/{name}",
+def _make_entry(name="default", description="Default entry", tags=None, min_cli_version=None):
+    """Helper to create a EntryInfo for testing."""
+    return EntryInfo(
+        path=f"/tmp/catalog/catalog/{name}",
         entry=CatalogEntry(
             name=name,
             description=description,
@@ -520,8 +521,8 @@ class TestSelectAndCopyCatalog:
     """Tests for _select_and_copy_catalog()."""
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch(
@@ -531,7 +532,7 @@ class TestSelectAndCopyCatalog:
     def test_default_flow_no_env_url(
         self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
-        """No DEVCONTAINER_CATALOG_URL → resolve default tag, clone, auto-select single collection."""
+        """No DEVCONTAINER_CATALOG_URL → resolve default tag, clone, auto-select single entry."""
         entry = _make_entry()
         mock_discover.return_value = [entry]
 
@@ -545,18 +546,18 @@ class TestSelectAndCopyCatalog:
         mock_rmtree.assert_called_once_with("/tmp/catalog", ignore_errors=True)
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
     )
-    def test_auto_select_single_collection(
+    def test_auto_select_single_entry(
         self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
-        """When only one compatible collection, auto-select it."""
+        """When only one compatible entry, auto-select it."""
         entry = _make_entry()
         mock_discover.return_value = [entry]
 
@@ -569,16 +570,16 @@ class TestSelectAndCopyCatalog:
         assert call_args[0][0] == entry.path
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch(
         "caylent_devcontainer_cli.utils.catalog.validate_catalog_entry_env",
         return_value="https://example.com/catalog.git",
     )
-    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_collection")
-    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_entry")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
     def test_catalog_entry_flag_flow(
         self,
         mock_find,
@@ -604,12 +605,12 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="default")
-    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
@@ -634,12 +635,12 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="browse")
-    @patch("caylent_devcontainer_cli.commands.setup._browse_collections")
+    @patch("caylent_devcontainer_cli.commands.setup._browse_entries")
     def test_env_url_browse_selection(
         self, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
@@ -657,16 +658,16 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection", return_value="browse")
-    @patch("caylent_devcontainer_cli.commands.setup._browse_collections")
-    def test_browse_single_collection_shows_ui(
+    @patch("caylent_devcontainer_cli.commands.setup._browse_entries")
+    def test_browse_single_entry_shows_ui(
         self, mock_browse, mock_source, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
-        """Browse with single collection still shows selection UI instead of auto-selecting."""
+        """Browse with single entry still shows selection UI instead of auto-selecting."""
         entry = _make_entry(name="java-backend")
         mock_discover.return_value = [entry]
         mock_browse.return_value = entry
@@ -679,8 +680,8 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     def test_catalog_url_override_bypasses_tag_resolution(
@@ -697,12 +698,12 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
-    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_collection")
-    @patch("caylent_devcontainer_cli.utils.catalog.find_collection_by_name")
+    @patch("caylent_devcontainer_cli.commands.setup._display_and_confirm_entry")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
     def test_catalog_url_override_with_catalog_entry(
         self, mock_find, mock_confirm, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
@@ -723,8 +724,8 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch("caylent_devcontainer_cli.commands.setup._prompt_source_selection")
@@ -743,15 +744,15 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=False)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
         return_value="https://example.com/repo.git@2.1.0",
     )
-    def test_no_compatible_collections_exits(self, mock_resolve, mock_clone, mock_version, mock_discover, mock_rmtree):
-        """Exits when all collections filtered by min_cli_version."""
+    def test_no_compatible_entries_exits(self, mock_resolve, mock_clone, mock_version, mock_discover, mock_rmtree):
+        """Exits when all entries filtered by min_cli_version."""
         mock_discover.return_value = [_make_entry(min_cli_version="99.0.0")]
 
         with (
@@ -763,8 +764,8 @@ class TestSelectAndCopyCatalog:
         mock_rmtree.assert_called_once_with("/tmp/catalog", ignore_errors=True)
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch(
@@ -788,7 +789,7 @@ class TestSelectAndCopyCatalog:
         mock_copy.assert_called_once()
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch(
         "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
@@ -807,8 +808,8 @@ class TestSelectAndCopyCatalog:
         mock_rmtree.assert_called_once_with("/tmp/catalog", ignore_errors=True)
 
     @patch("shutil.rmtree")
-    @patch("caylent_devcontainer_cli.utils.catalog.copy_collection_to_project")
-    @patch("caylent_devcontainer_cli.utils.catalog.discover_collection_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
     @patch("caylent_devcontainer_cli.utils.catalog.check_min_cli_version", return_value=True)
     @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo", return_value="/tmp/catalog")
     @patch(
@@ -818,7 +819,7 @@ class TestSelectAndCopyCatalog:
     def test_no_min_cli_version_included(
         self, mock_resolve, mock_clone, mock_version, mock_discover, mock_copy, mock_rmtree
     ):
-        """Collections without min_cli_version are always included."""
+        """Entries without min_cli_version are always included."""
         entry = _make_entry(min_cli_version=None)
         mock_discover.return_value = [entry]
 
@@ -855,11 +856,11 @@ class TestPromptSourceSelection:
             _prompt_source_selection()
 
 
-# ─── _browse_collections ─────────────────────────────────────────────────────
+# ─── _browse_entries ─────────────────────────────────────────────────────
 
 
-class TestBrowseCollections:
-    """Tests for _browse_collections()."""
+class TestBrowseEntries:
+    """Tests for _browse_entries()."""
 
     @patch("questionary.confirm")
     @patch("questionary.select")
@@ -868,7 +869,7 @@ class TestBrowseCollections:
         mock_select.return_value.ask.return_value = entry
         mock_confirm.return_value.ask.return_value = True
 
-        result = _browse_collections([entry])
+        result = _browse_entries([entry])
 
         assert result == entry
         mock_select.assert_called_once()
@@ -882,7 +883,7 @@ class TestBrowseCollections:
         mock_select.return_value.ask.side_effect = [entry1, entry2]
         mock_confirm.return_value.ask.side_effect = [False, True]
 
-        result = _browse_collections([entry1, entry2])
+        result = _browse_entries([entry1, entry2])
 
         assert result == entry2
         assert mock_select.return_value.ask.call_count == 2
@@ -893,18 +894,18 @@ class TestBrowseCollections:
     def test_exits_on_select_none(self, mock_select, mock_confirm):
         mock_select.return_value.ask.return_value = None
         with pytest.raises(SystemExit):
-            _browse_collections([_make_entry()])
+            _browse_entries([_make_entry()])
 
 
-# ─── _display_collection_metadata ────────────────────────────────────────────
+# ─── _display_entry_metadata ────────────────────────────────────────────
 
 
-class TestDisplayCollectionMetadata:
-    """Tests for _display_collection_metadata()."""
+class TestDisplayEntryMetadata:
+    """Tests for _display_entry_metadata()."""
 
     def test_displays_name_and_description(self, capsys):
         entry = _make_entry(name="test-collection", description="A test collection")
-        _display_collection_metadata(entry)
+        _display_entry_metadata(entry)
 
         captured = capsys.readouterr()
         assert "test-collection" in captured.out
@@ -912,13 +913,13 @@ class TestDisplayCollectionMetadata:
 
     def test_displays_tags(self, capsys):
         entry = _make_entry(tags=["java", "spring"])
-        _display_collection_metadata(entry)
+        _display_entry_metadata(entry)
 
         captured = capsys.readouterr()
         assert "java, spring" in captured.out
 
     def test_displays_maintainer(self, capsys):
-        entry = CollectionInfo(
+        entry = EntryInfo(
             path="/tmp/test",
             entry=CatalogEntry(
                 name="test",
@@ -926,21 +927,21 @@ class TestDisplayCollectionMetadata:
                 maintainer="Team A",
             ),
         )
-        _display_collection_metadata(entry)
+        _display_entry_metadata(entry)
 
         captured = capsys.readouterr()
         assert "Team A" in captured.out
 
     def test_displays_min_cli_version(self, capsys):
         entry = _make_entry(min_cli_version="2.0.0")
-        _display_collection_metadata(entry)
+        _display_entry_metadata(entry)
 
         captured = capsys.readouterr()
         assert "2.0.0" in captured.out
 
     def test_hides_optional_fields_when_empty(self, capsys):
         entry = _make_entry(tags=[], min_cli_version=None)
-        _display_collection_metadata(entry)
+        _display_entry_metadata(entry)
 
         captured = capsys.readouterr()
         assert "Tags:" not in captured.out
@@ -948,18 +949,18 @@ class TestDisplayCollectionMetadata:
         assert "Min CLI:" not in captured.out
 
 
-# ─── _display_and_confirm_collection ─────────────────────────────────────────
+# ─── _display_and_confirm_entry ─────────────────────────────────────────
 
 
-class TestDisplayAndConfirmCollection:
-    """Tests for _display_and_confirm_collection()."""
+class TestDisplayAndConfirmEntry:
+    """Tests for _display_and_confirm_entry()."""
 
     @patch("questionary.confirm")
     def test_proceeds_when_confirmed(self, mock_confirm, capsys):
         mock_confirm.return_value.ask.return_value = True
         entry = _make_entry(name="my-collection", description="My Collection")
 
-        _display_and_confirm_collection(entry)
+        _display_and_confirm_entry(entry)
 
         captured = capsys.readouterr()
         assert "my-collection" in captured.out
@@ -970,7 +971,7 @@ class TestDisplayAndConfirmCollection:
         entry = _make_entry()
 
         with pytest.raises(SystemExit):
-            _display_and_confirm_collection(entry)
+            _display_and_confirm_entry(entry)
 
     @patch("questionary.confirm")
     def test_exits_on_none(self, mock_confirm):
@@ -978,7 +979,7 @@ class TestDisplayAndConfirmCollection:
         entry = _make_entry()
 
         with pytest.raises(SystemExit):
-            _display_and_confirm_collection(entry)
+            _display_and_confirm_entry(entry)
 
 
 # ─── create_version_file ────────────────────────────────────────────────────

@@ -159,7 +159,7 @@ export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/devcontainer-catalo
 cdevcontainer setup-devcontainer /path/to/your/project
 ```
 
-You can also select a specific collection directly (useful for CI/automation):
+You can also select a specific entry directly (useful for CI/automation):
 
 ```bash
 export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/devcontainer-catalog.git"
@@ -689,7 +689,7 @@ cdevcontainer --help
 # Set up a devcontainer in a project directory
 cdevcontainer setup-devcontainer /path/to/your/project
 
-# Set up using a specific collection from a specialized catalog
+# Set up using a specific entry from a specialized catalog
 export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/catalog.git"
 cdevcontainer setup-devcontainer --catalog-entry java-backend /path/to/your/project
 
@@ -705,6 +705,7 @@ cdevcontainer code /path/to/another-project --ide cursor
 
 # Manage templates
 cdevcontainer template list
+cdevcontainer template view my-template
 cdevcontainer template create my-template
 cdevcontainer template save my-template
 cdevcontainer template load my-template
@@ -712,26 +713,36 @@ cdevcontainer template delete template1 template2
 cdevcontainer template upgrade my-template
 ```
 
+### CLI Environment Variables
+
+The CLI reads the following environment variables. Run `cdevcontainer <command> --help` to see which variables apply to each command.
+
+| Variable | Description |
+|---|---|
+| `DEVCONTAINER_CATALOG_URL` | Override the default catalog repository URL (supports `@tag` suffix). Used by `setup-devcontainer` and `catalog` commands. |
+| `CDEVCONTAINER_SKIP_UPDATE` | Set to `1` to disable automatic update checks. |
+| `CDEVCONTAINER_DEBUG_UPDATE` | Set to `1` to enable debug logging for update checks. |
+
 For detailed information about the Caylent Devcontainer CLI, see the [CLI documentation](caylent-devcontainer-cli/README.md).
 
 ---
 
 ## DevContainer Catalogs
 
-This repository serves as the **default catalog** for the Caylent DevContainer CLI. A catalog is a Git repository containing one or more collections — each collection is a complete devcontainer configuration that can be applied to a project.
+This repository serves as the **default catalog** for the Caylent DevContainer CLI. A catalog is a Git repository containing one or more entries — each entry is a complete devcontainer configuration that can be applied to a project.
 
-Organizations can create their own specialized catalogs with custom collections, shared assets, and team-specific tooling. The CLI discovers and applies collections from any catalog repository.
+Organizations can create their own specialized catalogs with custom entries, shared assets, and team-specific tooling. The CLI discovers and applies entries from any catalog repository.
 
 ### Key Concepts
 
-- **Catalog** — A Git repository with `common/devcontainer-assets/` (shared files) and `collections/` (one or more configurations)
-- **Collection** — A directory containing `catalog-entry.json`, `devcontainer.json`, and `VERSION`
-- **Common assets** — Files and directories in `common/devcontainer-assets/` that are **automatically copied into every project's `.devcontainer/`** when a collection is installed. This includes shared scripts (postcreate, functions, project-setup) and host-side proxy toolkits (`nix-family-os/`, `wsl-family-os/`). Any file or directory added to `common/devcontainer-assets/` is distributed to all projects regardless of which collection is selected.
+- **Catalog** — A Git repository with `common/devcontainer-assets/` (shared files) and `catalog/` (one or more entries)
+- **Entry** — A directory under `catalog/` containing `catalog-entry.json`, `devcontainer.json`, and `VERSION`
+- **Common assets** — Files and directories in `common/devcontainer-assets/` that are **automatically copied into every project's `.devcontainer/`** when an entry is installed. This includes shared scripts (postcreate, functions, project-setup) and host-side proxy toolkits (`nix-family-os/`, `wsl-family-os/`). Any file or directory added to `common/devcontainer-assets/` is distributed to all projects regardless of which entry is selected.
 
 ### Catalog Commands
 
 ```bash
-# List collections from a catalog
+# List entries from a catalog
 DEVCONTAINER_CATALOG_URL="https://github.com/your-org/your-catalog.git" \
   cdevcontainer catalog list
 
@@ -756,23 +767,23 @@ catalog-repo/
       project-setup.sh                 # Project-setup template (required)
       nix-family-os/                   # Host proxy toolkit for macOS/Linux
       wsl-family-os/                   # Host proxy toolkit for Windows/WSL
-  collections/
-    <collection-name>/
-      catalog-entry.json               # Collection metadata (required)
+  catalog/
+    <entry-name>/
+      catalog-entry.json               # Entry metadata (required)
       devcontainer.json                # DevContainer config (required)
       VERSION                          # Semver version (required)
 ```
 
-Everything in `common/devcontainer-assets/` is automatically copied into every project's `.devcontainer/` directory — this is how shared scripts and proxy toolkits are distributed to all projects. Collection-specific files are copied first, then common assets are overlaid (common assets take precedence on name collisions).
+Everything in `common/devcontainer-assets/` is automatically copied into every project's `.devcontainer/` directory — this is how shared scripts and proxy toolkits are distributed to all projects. Entry-specific files are copied first, then common assets are overlaid (common assets take precedence on name collisions).
 
 ### Creating a Custom Catalog
 
 See the catalog documentation in any catalog repository's README.md for the full guide covering:
 
 - Catalog repo structure and required files
-- Adding and validating collections
+- Adding and validating catalog entries
 - The `postCreateCommand` reference
-- The 3-layer customization model (catalog collections, developer templates, project-setup.sh)
+- The 3-layer customization model (catalog entries, developer templates, project-setup.sh)
 - Distribution via `DEVCONTAINER_CATALOG_URL`
 
 ---

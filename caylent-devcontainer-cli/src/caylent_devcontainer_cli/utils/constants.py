@@ -24,7 +24,7 @@ MIN_CATALOG_TAG_VERSION = "2.0.0"
 # Catalog structure constants
 CATALOG_COMMON_DIR = "common"
 CATALOG_ASSETS_DIR = "devcontainer-assets"
-CATALOG_COLLECTIONS_DIR = "collections"
+CATALOG_ENTRIES_DIR = "catalog"
 CATALOG_VERSION_FILENAME = "VERSION"
 
 # Required files in common/devcontainer-assets/
@@ -34,8 +34,8 @@ CATALOG_REQUIRED_COMMON_ASSETS = (
     "project-setup.sh",
 )
 
-# Required files in each collection
-CATALOG_REQUIRED_COLLECTION_FILES = (
+# Required files in each catalog entry
+CATALOG_REQUIRED_ENTRY_FILES = (
     CATALOG_ENTRY_FILENAME,
     "devcontainer.json",
     CATALOG_VERSION_FILENAME,
@@ -66,6 +66,26 @@ VALID_KEY_VALUES = {
 # Default NO_PROXY bypass list — addresses that should not be routed through HOST_PROXY.
 # All external traffic (including apt repos) goes through the proxy when HOST_PROXY=true.
 DEFAULT_NO_PROXY = "localhost,127.0.0.1,.local"
+
+# CLI-level environment variables — name, description, and which commands they apply to.
+# Entries with an empty ``commands`` list are global (shown for every subcommand).
+CLI_ENV_VARS = [
+    {
+        "name": "DEVCONTAINER_CATALOG_URL",
+        "description": "Override the default catalog repository URL (supports @tag suffix)",
+        "commands": ["setup-devcontainer", "catalog"],
+    },
+    {
+        "name": "CDEVCONTAINER_SKIP_UPDATE",
+        "description": "Set to '1' to disable automatic update checks",
+        "commands": [],
+    },
+    {
+        "name": "CDEVCONTAINER_DEBUG_UPDATE",
+        "description": "Set to '1' to enable debug logging for update checks",
+        "commands": [],
+    },
+]
 
 # All known environment variable keys (used for conflict detection in custom env var loop)
 # This is the union of EXAMPLE_ENV_VALUES keys — defined here to avoid circular imports.

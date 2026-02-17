@@ -127,7 +127,7 @@ cdevcontainer setup-devcontainer /path/to/your/project
 export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/catalog.git@v1.0"
 cdevcontainer setup-devcontainer /path/to/your/project
 
-# Select a specific collection by name (requires DEVCONTAINER_CATALOG_URL)
+# Select a specific entry by name (requires DEVCONTAINER_CATALOG_URL)
 cdevcontainer setup-devcontainer --catalog-entry java-backend /path/to/your/project
 
 # Override catalog URL directly (bypasses tag resolution; useful for testing branches)
@@ -142,7 +142,7 @@ The setup command will:
 2. Detect existing `.devcontainer/` configuration and show version/catalog info
 3. If `.tool-versions` contains a Python entry, recommend managing Python through devcontainer features
 4. Ask whether to replace existing `.devcontainer/` files or keep them
-5. Clone the catalog, discover collections, and copy selected collection files to `.devcontainer/`
+5. Clone the catalog, discover entries, and copy selected entry files to `.devcontainer/`
 6. Copy common assets from `common/devcontainer-assets/` (shared scripts, host proxy toolkits) into `.devcontainer/`
 7. Run informational validation on existing project configuration files
 8. Guide you through interactive template selection or creation
@@ -158,6 +158,9 @@ cdevcontainer template save my-template
 
 # List available templates
 cdevcontainer template list
+
+# View a template's configuration values
+cdevcontainer template view my-template
 
 # Load a template into a project
 cdevcontainer template load my-template
@@ -211,7 +214,7 @@ cdevcontainer code /path/to/another-project --ide cursor
 # List available devcontainer configurations from the default catalog
 cdevcontainer catalog list
 
-# Filter collections by tags (ANY match)
+# Filter entries by tags (ANY match)
 cdevcontainer catalog list --tags java,python
 
 # Validate the default catalog
@@ -240,8 +243,8 @@ All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for rele
 - Tag every release with a semver version (`MAJOR.MINOR.PATCH`)
 - Do not rely on the default branch (`main`) for production use
 - Use annotated tags (`git tag -a 2.1.0 -m "Release 2.1.0"`) for provenance
-- Place shared files in `common/devcontainer-assets/` — everything in this directory is automatically copied into every project's `.devcontainer/` regardless of which collection is selected
-- Place collection-specific files (e.g., `devcontainer.json`, `catalog-entry.json`) in `collections/<name>/`
+- Place shared files in `common/devcontainer-assets/` — everything in this directory is automatically copied into every project's `.devcontainer/` regardless of which entry is selected
+- Place entry-specific files (e.g., `devcontainer.json`, `catalog-entry.json`) in `catalog/<name>/`
 
 ## Development
 

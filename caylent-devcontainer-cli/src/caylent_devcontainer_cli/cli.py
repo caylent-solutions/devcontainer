@@ -5,7 +5,37 @@ import sys
 
 from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.commands import catalog, code, setup, template
-from caylent_devcontainer_cli.utils.constants import CLI_NAME
+from caylent_devcontainer_cli.utils.constants import CLI_ENV_VARS, CLI_NAME
+
+
+class _HelpFormatter(argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
+    """Formatter that preserves epilog whitespace while showing argument defaults."""
+
+
+def build_env_epilog(command_name=None):
+    """Build an epilog string listing relevant environment variables.
+
+    Args:
+        command_name: Subcommand name to filter by (e.g. ``"setup-devcontainer"``).
+            When ``None``, all env vars are included (used for the top-level parser).
+
+    Returns:
+        Formatted epilog string.
+    """
+    if command_name is None:
+        env_vars = CLI_ENV_VARS
+    else:
+        env_vars = [v for v in CLI_ENV_VARS if not v["commands"] or command_name in v["commands"]]
+
+    if not env_vars:
+        return ""
+
+    max_name = max(len(v["name"]) for v in env_vars)
+    lines = ["environment variables:"]
+    for var in env_vars:
+        padding = " " * (max_name - len(var["name"]) + 2)
+        lines.append(f"  {var['name']}{padding}{var['description']}")
+    return "\n".join(lines)
 
 
 def main():
@@ -23,7 +53,8 @@ def main():
     # Create the main parser
     parser = argparse.ArgumentParser(
         description=f"{CLI_NAME} - Manage devcontainer environments",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=_HelpFormatter,
+        epilog=build_env_epilog(),
     )
 
     # Add global options

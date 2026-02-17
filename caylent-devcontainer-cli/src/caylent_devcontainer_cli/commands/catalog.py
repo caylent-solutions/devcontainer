@@ -7,7 +7,7 @@ import sys
 from caylent_devcontainer_cli.utils.catalog import (
     check_min_cli_version,
     clone_catalog_repo,
-    discover_collection_entries,
+    discover_entries,
     resolve_default_catalog_url,
     validate_catalog,
     validate_common_assets,
@@ -32,11 +32,18 @@ def _get_catalog_url():
 
 def register_command(subparsers):
     """Register the catalog command and its subcommands."""
-    catalog_parser = subparsers.add_parser("catalog", help="Catalog management")
+    from caylent_devcontainer_cli.cli import _HelpFormatter, build_env_epilog
+
+    catalog_parser = subparsers.add_parser(
+        "catalog",
+        help="Catalog management",
+        formatter_class=_HelpFormatter,
+        epilog=build_env_epilog("catalog"),
+    )
     catalog_subparsers = catalog_parser.add_subparsers(dest="catalog_command")
 
     # 'catalog list' command
-    list_parser = catalog_subparsers.add_parser("list", help="List available catalog collections")
+    list_parser = catalog_subparsers.add_parser("list", help="List available catalog entries")
     list_parser.add_argument(
         "--tags",
         type=str,
@@ -90,11 +97,11 @@ def handle_catalog_list(args):
             )
             sys.exit(1)
 
-        # Discover collections (skip incomplete ones missing devcontainer.json)
-        entries = discover_collection_entries(temp_dir, skip_incomplete=True)
+        # Discover entries (skip incomplete ones missing devcontainer.json)
+        entries = discover_entries(temp_dir, skip_incomplete=True)
 
         if not entries:
-            log("ERR", "No devcontainer collections found in the catalog.")
+            log("ERR", "No devcontainer entries found in the catalog.")
             sys.exit(1)
 
         # Filter by min_cli_version — warn and skip incompatible entries
@@ -115,11 +122,11 @@ def handle_catalog_list(args):
             compatible_entries = [e for e in compatible_entries if filter_tags & set(e.entry.tags)]
             if not compatible_entries:
                 tags_str = ", ".join(sorted(filter_tags))
-                log("INFO", f"No collections found matching tags: {tags_str}")
+                log("INFO", f"No entries found matching tags: {tags_str}")
                 return
 
         if not compatible_entries:
-            log("INFO", "No compatible collections found in the catalog.")
+            log("INFO", "No compatible entries found in the catalog.")
             return
 
         # Display header
@@ -178,6 +185,6 @@ def _run_validation(catalog_path):
         log("ERR", f"Catalog validation failed. {len(errors)} issues found.")
         sys.exit(1)
 
-    # Count collections for the success message
-    entries = discover_collection_entries(catalog_path)
-    log("OK", f"Catalog validation passed. {len(entries)} collections found.")
+    # Count entries for the success message
+    entries = discover_entries(catalog_path)
+    log("OK", f"Catalog validation passed. {len(entries)} entries found.")

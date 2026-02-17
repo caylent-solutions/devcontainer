@@ -35,14 +35,21 @@ EXAMPLE_ENV_VALUES = {
 
 def register_command(subparsers):
     """Register the setup-devcontainer command with the CLI."""
-    parser = subparsers.add_parser("setup-devcontainer", help="Set up a devcontainer in a project directory")
+    from caylent_devcontainer_cli.cli import _HelpFormatter, build_env_epilog
+
+    parser = subparsers.add_parser(
+        "setup-devcontainer",
+        help="Set up a devcontainer in a project directory",
+        formatter_class=_HelpFormatter,
+        epilog=build_env_epilog("setup-devcontainer"),
+    )
     parser.add_argument("path", help="Path to the root of the repository to set up")
     parser.add_argument(
         "--catalog-entry",
         type=str,
         default=None,
         metavar="NAME",
-        help="Select a specific collection by name from a specialized catalog (requires DEVCONTAINER_CATALOG_URL)",
+        help="Select a specific entry by name from a specialized catalog (requires DEVCONTAINER_CATALOG_URL)",
     )
     parser.add_argument(
         "--catalog-url",
@@ -102,7 +109,7 @@ def handle_setup(args):
 
 
 def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_override=None):
-    """Select a catalog collection and copy its files to the project.
+    """Select a catalog entry and copy its files to the project.
 
     Handles catalog URL resolution with the following precedence:
     1. ``--catalog-url`` override (used as-is, bypasses tag resolution and env var)
@@ -112,15 +119,15 @@ def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_overri
 
     Args:
         target_path: Path to the project root directory.
-        catalog_entry: Optional collection name from ``--catalog-entry`` flag.
+        catalog_entry: Optional entry name from ``--catalog-entry`` flag.
         catalog_url_override: Optional catalog URL from ``--catalog-url`` flag.
     """
     from caylent_devcontainer_cli.utils.catalog import (
         check_min_cli_version,
         clone_catalog_repo,
-        copy_collection_to_project,
-        discover_collection_entries,
-        find_collection_by_name,
+        copy_entry_to_project,
+        discover_entries,
+        find_entry_by_name,
         resolve_default_catalog_url,
         validate_catalog_entry_env,
     )
@@ -151,7 +158,7 @@ def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_overri
     # Clone, discover, select, copy
     temp_dir = clone_catalog_repo(catalog_url)
     try:
-        entries = discover_collection_entries(temp_dir, skip_incomplete=True)
+        entries = discover_entries(temp_dir, skip_incomplete=True)
 
         # Filter by min_cli_version — warn and skip incompatible entries
         compatible = []
@@ -163,31 +170,31 @@ def _select_and_copy_catalog(target_path, catalog_entry=None, catalog_url_overri
             compatible.append(entry_info)
 
         if not compatible:
-            exit_with_error("No compatible devcontainer collections found in the catalog.")
+            exit_with_error("No compatible devcontainer entries found in the catalog.")
 
-        # Select collection
+        # Select entry
         if catalog_entry:
-            selected = find_collection_by_name(compatible, catalog_entry)
-            _display_and_confirm_collection(selected)
+            selected = find_entry_by_name(compatible, catalog_entry)
+            _display_and_confirm_entry(selected)
         elif user_chose_browse:
             # User explicitly chose "Browse" — always show selection UI
-            # _browse_collections already displays metadata and confirms
-            selected = _browse_collections(compatible)
+            # _browse_entries already displays metadata and confirms
+            selected = _browse_entries(compatible)
         elif len(compatible) == 1:
             selected = compatible[0]
-            log("INFO", f"Auto-selected collection: {selected.entry.name}")
+            log("INFO", f"Auto-selected entry: {selected.entry.name}")
         elif env_url and user_chose_default:
             # User picked "Default" from source selection
-            selected = find_collection_by_name(compatible, "default")
-            log("INFO", f"Selected default collection: {selected.entry.name}")
+            selected = find_entry_by_name(compatible, "default")
+            log("INFO", f"Selected default entry: {selected.entry.name}")
         else:
-            # _browse_collections already displays metadata and confirms
-            selected = _browse_collections(compatible)
+            # _browse_entries already displays metadata and confirms
+            selected = _browse_entries(compatible)
 
         # Copy files
         common_assets = os.path.join(temp_dir, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
-        copy_collection_to_project(selected.path, common_assets, target_devcontainer, catalog_url)
-        log("OK", f"Collection '{selected.entry.name}' files copied to .devcontainer/")
+        copy_entry_to_project(selected.path, common_assets, target_devcontainer, catalog_url)
+        log("OK", f"Entry '{selected.entry.name}' files copied to .devcontainer/")
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -219,16 +226,16 @@ def _prompt_source_selection():
     )
 
 
-def _browse_collections(entries):
-    """Present a searchable selection list of catalog collections.
+def _browse_entries(entries):
+    """Present a searchable selection list of catalog entries.
 
     Loops until the user confirms their selection with "Is this correct?".
 
     Args:
-        entries: List of :class:`CollectionInfo` objects to choose from.
+        entries: List of :class:`EntryInfo` objects to choose from.
 
     Returns:
-        The selected :class:`CollectionInfo`.
+        The selected :class:`EntryInfo`.
     """
     import questionary
 
@@ -237,23 +244,23 @@ def _browse_collections(entries):
 
         selected = ask_or_exit(
             questionary.select(
-                "Select a devcontainer collection:",
+                "Select a devcontainer entry:",
                 choices=choices,
             )
         )
 
-        _display_collection_metadata(selected)
+        _display_entry_metadata(selected)
 
         confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
         if confirmed:
             return selected
 
 
-def _display_collection_metadata(entry_info):
-    """Display the full metadata for a selected collection.
+def _display_entry_metadata(entry_info):
+    """Display the full metadata for a selected catalog entry.
 
     Args:
-        entry_info: The :class:`CollectionInfo` to display.
+        entry_info: The :class:`EntryInfo` to display.
     """
     entry = entry_info.entry
     print(f"\n  Name:        {entry.name}")
@@ -267,20 +274,20 @@ def _display_collection_metadata(entry_info):
     print()
 
 
-def _display_and_confirm_collection(entry_info):
-    """Display collection metadata and ask the user to confirm.
+def _display_and_confirm_entry(entry_info):
+    """Display entry metadata and ask the user to confirm.
 
     If the user does not confirm, exits with a cancellation message.
 
     Args:
-        entry_info: The :class:`CollectionInfo` to confirm.
+        entry_info: The :class:`EntryInfo` to confirm.
     """
     import questionary
 
-    _display_collection_metadata(entry_info)
+    _display_entry_metadata(entry_info)
     confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
     if not confirmed:
-        exit_cancelled("Collection selection cancelled by user.")
+        exit_cancelled("Entry selection cancelled by user.")
 
 
 def _ensure_tool_versions(target_path: str) -> None:
@@ -326,9 +333,9 @@ def _show_existing_config(target_path: str) -> None:
         try:
             with open(catalog_entry_path, "r") as f:
                 catalog_data = json.load(f)
-            collection_name = catalog_data.get("collection_name", "unknown")
+            entry_name = catalog_data.get("name", "unknown")
             catalog_url = catalog_data.get("catalog_url", "unknown")
-            log("INFO", f"Catalog collection: {collection_name}")
+            log("INFO", f"Catalog entry: {entry_name}")
             log("INFO", f"Catalog URL: {catalog_url}")
         except (json.JSONDecodeError, OSError):
             log("WARN", "Could not read catalog-entry.json")

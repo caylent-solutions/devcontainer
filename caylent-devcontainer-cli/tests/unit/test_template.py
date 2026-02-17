@@ -19,10 +19,12 @@ from caylent_devcontainer_cli.commands.template import (
     handle_template_load,
     handle_template_save,
     handle_template_upgrade,
+    handle_template_view,
     list_templates,
     load_template,
     save_template,
     upgrade_template_file,
+    view_template,
 )
 from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
 from caylent_devcontainer_cli.utils.template import ensure_templates_dir
@@ -734,7 +736,10 @@ def test_register_command():
     register_command(mock_subparsers)
 
     # Verify the main template parser was created
-    mock_subparsers.add_parser.assert_called_with("template", help="Template management")
+    mock_subparsers.add_parser.assert_called_once()
+    call_args = mock_subparsers.add_parser.call_args
+    assert call_args[0][0] == "template"
+    assert call_args[1]["help"] == "Template management"
     # Verify subcommands were added
     assert mock_template_subparsers.add_parser.call_count >= 5
 
@@ -809,3 +814,100 @@ def test_upgrade_no_upgrade_template_import():
 
     source = inspect.getsource(template.upgrade_template_file)
     assert "upgrade_template(" not in source.replace("upgrade_template_file", "")
+
+
+# ---------------------------------------------------------------------------
+# view_template tests
+# ---------------------------------------------------------------------------
+
+
+def test_handle_template_view_calls_view_template():
+    """handle_template_view delegates to view_template."""
+    args = MagicMock()
+    args.name = "my-tmpl"
+    with patch("caylent_devcontainer_cli.commands.template.view_template") as mock_view:
+        handle_template_view(args)
+        mock_view.assert_called_once_with("my-tmpl")
+
+
+def test_view_template_prints_known_and_custom(capsys):
+    """view_template prints known and custom variables."""
+    template_data = {
+        "containerEnv": {
+            "DEVELOPER_NAME": "Alice",
+            "GIT_USER": "alice",
+            "MY_CUSTOM": "custom-val",
+        },
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("test-tmpl")
+
+    output = capsys.readouterr().out
+    assert "test-tmpl" in output
+    assert "2.0.0" in output
+    assert "DEVELOPER_NAME" in output
+    assert "Alice" in output
+    assert "GIT_USER" in output
+    assert "MY_CUSTOM" in output
+    assert "custom-val" in output
+
+
+def test_view_template_exits_if_not_found():
+    """view_template exits with error for missing template."""
+    with (
+        patch("os.path.exists", return_value=False),
+        pytest.raises(SystemExit),
+    ):
+        view_template("nonexistent")
+
+
+def test_view_template_separates_known_and_custom(capsys):
+    """view_template shows separate sections for known vs custom keys."""
+    template_data = {
+        "containerEnv": {
+            "DEVELOPER_NAME": "Bob",
+            "EXTRA_THING": "extra",
+        },
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("split-test")
+
+    output = capsys.readouterr().out
+    assert "Environment Variables:" in output
+    assert "Custom Variables:" in output
+    assert "DEVELOPER_NAME" in output
+    assert "EXTRA_THING" in output
+
+
+def test_view_template_empty_containerenv(capsys):
+    """view_template handles empty containerEnv gracefully."""
+    template_data = {
+        "containerEnv": {},
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("empty-tmpl")
+
+    output = capsys.readouterr().out
+    assert "empty-tmpl" in output
+    assert "No environment variables defined" in output
