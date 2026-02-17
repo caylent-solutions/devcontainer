@@ -271,6 +271,7 @@ def view_template(template_name):
     max_key_len = max((len(k) for k in all_keys), default=0)
 
     print(f"{COLORS['CYAN']}Template:{COLORS['RESET']} {template_name}")
+    print(f"{COLORS['CYAN']}Path:{COLORS['RESET']} {template_path}")
     print(f"{COLORS['CYAN']}CLI Version:{COLORS['RESET']} {data.get('cli_version', 'unknown')}")
 
     if known:
@@ -287,6 +288,18 @@ def view_template(template_name):
 
     if not known and not custom:
         print(f"\n{COLORS['YELLOW']}No environment variables defined.{COLORS['RESET']}")
+
+    # Display AWS profiles if present
+    aws_profiles = data.get("aws_profile_map", {})
+    if aws_profiles:
+        print(f"\n{COLORS['CYAN']}AWS Profiles:{COLORS['RESET']}")
+        for profile_name, profile_config in sorted(aws_profiles.items()):
+            print(f"\n  [{COLORS['GREEN']}{profile_name}{COLORS['RESET']}]")
+            if isinstance(profile_config, dict):
+                profile_key_len = max((len(k) for k in profile_config), default=0)
+                for key, value in sorted(profile_config.items()):
+                    padding = " " * (profile_key_len - len(key) + 2)
+                    print(f"    {key}{padding}{value}")
 
 
 def delete_template(template_name):

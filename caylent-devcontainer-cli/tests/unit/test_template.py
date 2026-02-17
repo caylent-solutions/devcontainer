@@ -851,6 +851,7 @@ def test_view_template_prints_known_and_custom(capsys):
 
     output = capsys.readouterr().out
     assert "test-tmpl" in output
+    assert "Path:" in output
     assert "2.0.0" in output
     assert "DEVELOPER_NAME" in output
     assert "Alice" in output
@@ -911,3 +912,147 @@ def test_view_template_empty_containerenv(capsys):
     output = capsys.readouterr().out
     assert "empty-tmpl" in output
     assert "No environment variables defined" in output
+
+
+def test_view_template_shows_aws_profiles(capsys):
+    """view_template displays AWS profiles when present."""
+    template_data = {
+        "containerEnv": {
+            "AWS_CONFIG_ENABLED": "true",
+            "DEVELOPER_NAME": "Alice",
+        },
+        "aws_profile_map": {
+            "default": {
+                "region": "us-west-2",
+                "sso_start_url": "https://example.awsapps.com/start",
+                "sso_region": "us-west-2",
+                "account_name": "example-dev-account",
+                "account_id": "123456789012",
+                "role_name": "DeveloperAccess",
+            }
+        },
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("aws-tmpl")
+
+    output = capsys.readouterr().out
+    assert "AWS Profiles:" in output
+    assert "default" in output
+    assert "us-west-2" in output
+    assert "https://example.awsapps.com/start" in output
+    assert "example-dev-account" in output
+    assert "123456789012" in output
+    assert "DeveloperAccess" in output
+
+
+def test_view_template_shows_aws_profiles_when_disabled(capsys):
+    """view_template displays AWS profiles even when AWS_CONFIG_ENABLED is false."""
+    template_data = {
+        "containerEnv": {
+            "AWS_CONFIG_ENABLED": "false",
+            "DEVELOPER_NAME": "Bob",
+        },
+        "aws_profile_map": {
+            "staging": {
+                "region": "eu-west-1",
+                "account_name": "staging-account",
+                "account_id": "999888777666",
+                "role_name": "ReadOnly",
+            }
+        },
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("disabled-aws")
+
+    output = capsys.readouterr().out
+    assert "AWS Profiles:" in output
+    assert "staging" in output
+    assert "eu-west-1" in output
+    assert "staging-account" in output
+
+
+def test_view_template_shows_multiple_aws_profiles(capsys):
+    """view_template displays multiple AWS profiles sorted by name."""
+    template_data = {
+        "containerEnv": {"AWS_CONFIG_ENABLED": "true"},
+        "aws_profile_map": {
+            "production": {
+                "region": "us-east-1",
+                "account_name": "prod-account",
+            },
+            "default": {
+                "region": "us-west-2",
+                "account_name": "dev-account",
+            },
+        },
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("multi-profile")
+
+    output = capsys.readouterr().out
+    assert "AWS Profiles:" in output
+    # Both profiles present
+    assert "default" in output
+    assert "production" in output
+    # default should appear before production (sorted)
+    assert output.index("default") < output.index("production")
+
+
+def test_view_template_no_aws_profiles(capsys):
+    """view_template does not show AWS Profiles section when aws_profile_map is absent."""
+    template_data = {
+        "containerEnv": {"DEVELOPER_NAME": "Alice"},
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("no-aws")
+
+    output = capsys.readouterr().out
+    assert "AWS Profiles:" not in output
+
+
+def test_view_template_empty_aws_profiles(capsys):
+    """view_template does not show AWS Profiles section when aws_profile_map is empty."""
+    template_data = {
+        "containerEnv": {"DEVELOPER_NAME": "Alice"},
+        "aws_profile_map": {},
+        "cli_version": "2.0.0",
+    }
+    with (
+        patch("os.path.exists", return_value=True),
+        patch(
+            "caylent_devcontainer_cli.commands.template.load_json_config",
+            return_value=template_data,
+        ),
+    ):
+        view_template("empty-aws")
+
+    output = capsys.readouterr().out
+    assert "AWS Profiles:" not in output
