@@ -23,8 +23,8 @@ Allow 192.168.0.0/16
 Allow 172.16.0.0/12
 Allow 10.0.0.0/8
 
-# Forward ALL traffic to upstream proxy
-Upstream http __UPSTREAM_HOST__:__UPSTREAM_PORT__ "."
+# Forward ALL traffic to upstream proxy (catch-all: no domain = all hosts)
+Upstream http __UPSTREAM_HOST__:__UPSTREAM_PORT__
 
 # Allow CONNECT for HTTPS tunneling and common service ports
 ConnectPort 443

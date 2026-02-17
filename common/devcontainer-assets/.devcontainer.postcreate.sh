@@ -237,7 +237,7 @@ log_info "Proxy environment: HTTP_PROXY=${HTTP_PROXY:-unset} http_proxy=${http_p
 if ! sudo apt-get update -qq; then
   exit_with_error "apt-get update failed. Check proxy settings and network connectivity. HTTP_PROXY=${HTTP_PROXY:-unset}"
 fi
-if ! sudo apt-get install -y -qq curl vim git gh jq yq nmap sipcalc wget unzip zip netcat-openbsd bc; then
+if ! sudo apt-get install -y -qq curl vim-tiny git gh nmap sipcalc wget unzip zip netcat-openbsd bc; then
   exit_with_error "apt-get install failed for core packages"
 fi
 
