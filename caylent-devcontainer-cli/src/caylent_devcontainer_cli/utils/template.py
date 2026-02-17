@@ -149,6 +149,7 @@ def _validate_base_key_completeness(data: Dict[str, Any]) -> None:
     container_env = data["containerEnv"]
     auth_method = container_env.get("GIT_AUTH_METHOD", "token")
     aws_enabled = container_env.get("AWS_CONFIG_ENABLED", "true")
+    proxy_enabled = container_env.get("HOST_PROXY", "false")
 
     for key, default_value in sorted(EXAMPLE_ENV_VALUES.items()):
         # GIT_TOKEN is conditional on auth method
@@ -157,6 +158,10 @@ def _validate_base_key_completeness(data: Dict[str, Any]) -> None:
 
         # AWS_DEFAULT_OUTPUT is conditional on AWS being enabled
         if key == "AWS_DEFAULT_OUTPUT" and aws_enabled != "true":
+            continue
+
+        # HOST_PROXY_URL is conditional on proxy being enabled
+        if key == "HOST_PROXY_URL" and proxy_enabled != "true":
             continue
 
         if key not in container_env:

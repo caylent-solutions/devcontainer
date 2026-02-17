@@ -166,6 +166,7 @@ def detect_validation_issues(project_root: str, config_data: Dict[str, Any]) -> 
     # --- Step 0: Check base keys in both files ---
     auth_method = container_env.get("GIT_AUTH_METHOD", "token")
     aws_enabled = container_env.get("AWS_CONFIG_ENABLED", "true")
+    proxy_enabled = container_env.get("HOST_PROXY", "false")
 
     for key, default_value in EXAMPLE_ENV_VALUES.items():
         # GIT_TOKEN is conditional on auth method
@@ -174,6 +175,10 @@ def detect_validation_issues(project_root: str, config_data: Dict[str, Any]) -> 
 
         # AWS_DEFAULT_OUTPUT is conditional on AWS being enabled
         if key == "AWS_DEFAULT_OUTPUT" and aws_enabled != "true":
+            continue
+
+        # HOST_PROXY_URL is conditional on proxy being enabled
+        if key == "HOST_PROXY_URL" and proxy_enabled != "true":
             continue
 
         in_json = key in container_env

@@ -296,6 +296,58 @@ class TestStep0BaseKeyCheck:
 
     @patch(
         "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
+        {"KEY_A": "a", "HOST_PROXY_URL": ""},
+    )
+    def test_host_proxy_url_not_required_when_proxy_disabled(self):
+        """Test Step 0 skips HOST_PROXY_URL when HOST_PROXY is false."""
+        config_data = {
+            "containerEnv": {"KEY_A": "value", "HOST_PROXY": "false"},
+            "template_name": "test",
+            "template_path": "/path/test.json",
+            "cli_version": "2.0.0",
+        }
+        shell_env_content = "export KEY_A='value'\nexport HOST_PROXY='false'\n"
+        template_data = {"containerEnv": {"KEY_A": "value", "HOST_PROXY": "false"}}
+
+        with (
+            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._step2_locate_template",
+                return_value=(True, template_data),
+            ),
+        ):
+            result = detect_validation_issues("/test/path", config_data)
+
+        assert "HOST_PROXY_URL" not in result.missing_base_keys
+
+    @patch(
+        "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
+        {"KEY_A": "a", "HOST_PROXY_URL": ""},
+    )
+    def test_host_proxy_url_required_when_proxy_enabled(self):
+        """Test Step 0 flags HOST_PROXY_URL when HOST_PROXY is true and key absent."""
+        config_data = {
+            "containerEnv": {"KEY_A": "value", "HOST_PROXY": "true"},
+            "template_name": "test",
+            "template_path": "/path/test.json",
+            "cli_version": "2.0.0",
+        }
+        shell_env_content = "export KEY_A='value'\nexport HOST_PROXY='true'\n"
+        template_data = {"containerEnv": {"KEY_A": "value", "HOST_PROXY": "true"}}
+
+        with (
+            patch("caylent_devcontainer_cli.utils.validation._read_shell_env", return_value=shell_env_content),
+            patch(
+                "caylent_devcontainer_cli.utils.validation._step2_locate_template",
+                return_value=(True, template_data),
+            ),
+        ):
+            result = detect_validation_issues("/test/path", config_data)
+
+        assert "HOST_PROXY_URL" in result.missing_base_keys
+
+    @patch(
+        "caylent_devcontainer_cli.utils.validation.EXAMPLE_ENV_VALUES",
         {"KEY_A": "a", "KEY_B": "b"},
     )
     def test_no_missing_keys_when_all_present(self):

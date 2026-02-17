@@ -233,6 +233,30 @@ class TestBaseKeyCompleteness:
             result = validate_template(template)
         assert result["containerEnv"]["AWS_DEFAULT_OUTPUT"] == "json"
 
+    def test_host_proxy_url_not_required_when_proxy_disabled(self):
+        """HOST_PROXY_URL is not required when HOST_PROXY=false."""
+        template = _valid_template()
+        template["containerEnv"]["HOST_PROXY"] = "false"
+        del template["containerEnv"]["HOST_PROXY_URL"]
+
+        with patch("questionary.text") as mock_text:
+            result = validate_template(template)
+            for call in mock_text.call_args_list:
+                assert "HOST_PROXY_URL" not in str(call)
+        assert "HOST_PROXY_URL" not in result["containerEnv"]
+
+    def test_host_proxy_url_required_when_proxy_enabled(self):
+        """HOST_PROXY_URL is required when HOST_PROXY=true."""
+        template = _valid_template()
+        template["containerEnv"]["HOST_PROXY"] = "true"
+        del template["containerEnv"]["HOST_PROXY_URL"]
+
+        mock_question = MagicMock()
+        mock_question.ask.return_value = "http://proxy.local:3128"
+        with patch("questionary.text", return_value=mock_question):
+            result = validate_template(template)
+        assert result["containerEnv"]["HOST_PROXY_URL"] == "http://proxy.local:3128"
+
     def test_multiple_missing_keys_all_prompted(self):
         """Multiple missing keys each prompt the user."""
         template = _valid_template()

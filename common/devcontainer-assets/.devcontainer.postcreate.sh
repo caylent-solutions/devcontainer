@@ -251,9 +251,9 @@ if [ -n "${EXTRA_APT_PACKAGES:-}" ]; then
   fi
 fi
 
-if [ -f "${WORK_DIR}/.tool-versions" ]; then
+if [ -f "${WORK_DIR}/.tool-versions" ] && grep -qE '^[a-zA-Z]' "${WORK_DIR}/.tool-versions"; then
   log_info "Installing asdf plugins from .tool-versions..."
-  cut -d' ' -f1 "${WORK_DIR}/.tool-versions" | while read -r plugin; do
+  grep -E '^[a-zA-Z]' "${WORK_DIR}/.tool-versions" | cut -d' ' -f1 | while read -r plugin; do
     install_asdf_plugin "$plugin"
   done
 
@@ -262,13 +262,17 @@ if [ -f "${WORK_DIR}/.tool-versions" ]; then
     log_warn "❌ asdf install failed — tool versions may not be fully installed"
   fi
 else
-  log_info "No .tool-versions file found — skipping general asdf install"
+  log_info "No .tool-versions file found (or file is empty) — skipping asdf install"
 fi
 
-# Ensure reshim is run for the current user
-log_info "Running asdf reshim..."
-if ! asdf reshim; then
-  exit_with_error "❌ asdf reshim failed"
+# Ensure reshim is run if any plugins are installed
+if asdf plugin list 2>/dev/null | grep -q .; then
+  log_info "Running asdf reshim..."
+  if ! asdf reshim; then
+    exit_with_error "❌ asdf reshim failed"
+  fi
+else
+  log_info "No asdf plugins installed — skipping reshim"
 fi
 
 # Create symlinks in /usr/local/bin for direct access by AI agents
@@ -307,10 +311,14 @@ fi
 
 install_with_pipx "${CLI_INSTALL_CMD}"
 
-# Verify asdf is working properly
-log_info "Verifying asdf installation..."
-if ! asdf current; then
-  exit_with_error "❌ asdf current failed - installation may be incomplete"
+# Verify asdf is working properly (only if plugins are installed)
+if asdf plugin list 2>/dev/null | grep -q .; then
+  log_info "Verifying asdf installation..."
+  if ! asdf current; then
+    exit_with_error "❌ asdf current failed - installation may be incomplete"
+  fi
+else
+  log_info "No asdf plugins installed — skipping asdf current verification"
 fi
 
 ##############
