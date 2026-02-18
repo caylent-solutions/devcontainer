@@ -8,6 +8,10 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: release-pipeline
+  cancel-in-progress: false
+
 jobs:
   validate-version:
     name: Validate version format

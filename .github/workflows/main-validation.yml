@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: release-pipeline
+  cancel-in-progress: false
+
 jobs:
   validate:
     name: Validate Main
