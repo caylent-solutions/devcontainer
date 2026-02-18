@@ -588,12 +588,7 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
 
 The main postcreate script (`.devcontainer.postcreate.sh`) runs as **root**. It configures shell profiles, installs tools, sets up Git and AWS, then fixes ownership with `chown -R vscode:vscode /home/vscode`.
 
-The project-setup script (`project-setup.sh`) runs **after** the main postcreate as the **container user** (`vscode`). Because the postcreate script configures shell profiles (`.bashrc`, `.zshrc`) and tools for the `vscode` user's future shell sessions — not the current root shell — be aware that paths and environment may differ from your interactive terminal. If your project-setup script installs anything with `sudo` that creates files under `/home/vscode`, add a chown cleanup at the end of your script:
-
-```bash
-# At the end of project-setup.sh — fix ownership for any root-created files
-sudo chown -R vscode:vscode /home/vscode
-```
+The project-setup script (`project-setup.sh`) runs **after** the main postcreate as the **container user** (`vscode`) — not root. This means files created by project-setup are already owned by the correct user and no chown cleanup is needed. The script sources `devcontainer-functions.sh` so logging functions (`log_info`, `log_success`, `log_warn`, `log_error`) are available. Note that shell profiles (`.bashrc`, `.zshrc`) are configured for future shell sessions, so paths and environment may differ from your interactive terminal.
 
 ### 📝 Example Use Cases
 
