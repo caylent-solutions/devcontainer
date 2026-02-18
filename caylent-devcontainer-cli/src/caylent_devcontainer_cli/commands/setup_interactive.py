@@ -656,7 +656,11 @@ def _prompt_edit(key, current_value, prompt_fn, display_fn=None):
     Returns:
         The new value (or the original if the user declined).
     """
-    display = display_fn(current_value) if display_fn else current_value
+    if display_fn is not None:
+        char_count = len(str(current_value))
+        display = f"****** ({char_count} characters)"
+    else:
+        display = current_value
     log("INFO", f"{key}: {display}")
     if ask_or_exit(questionary.confirm(f"Change {key}?", default=False)):
         return prompt_with_confirmation(prompt_fn, display_fn=display_fn)

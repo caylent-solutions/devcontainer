@@ -143,7 +143,8 @@ def prompt_with_confirmation(
         answer = ask_or_exit(prompt_fn())
 
         if display_fn is not None:
-            display_value = display_fn(answer)
+            char_count = len(answer)
+            display_value = f"****** ({char_count} characters)"
         else:
             display_value = str(answer)
 

@@ -191,7 +191,7 @@ class TestPromptWithConfirmationDisplay:
 
         assert result == "secret123"
         captured = capsys.readouterr()
-        assert "MASKED(9 chars)" in captured.err
+        assert "****** (9 characters)" in captured.err
 
     def test_default_display_shows_raw_value(self, capsys):
         """Without display_fn, the raw value is shown."""
@@ -234,16 +234,13 @@ class TestPromptWithConfirmationDisplay:
         mock_confirm = MagicMock()
         mock_confirm.ask.side_effect = [False, True]
 
-        display_calls = []
-
-        def tracking_display(v):
-            display_calls.append(v)
-            return f"[{v}]"
-
         with patch("questionary.confirm", return_value=mock_confirm):
-            prompt_with_confirmation(lambda: mock_text, display_fn=tracking_display)
+            result = prompt_with_confirmation(lambda: mock_text, display_fn=lambda v: f"[{v}]")
 
-        assert display_calls == ["first", "second"]
+        assert result == "second"
+        captured = capsys.readouterr()
+        assert "****** (5 characters)" in captured.err
+        assert "****** (6 characters)" in captured.err
 
 
 # =============================================================================
