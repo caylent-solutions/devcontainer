@@ -338,7 +338,7 @@ class TestValidatePostcreateCommand(TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "devcontainer.json")
-            cmd = "bash -c 'source shell.env && sudo -E bash" " .devcontainer/.devcontainer.postcreate.sh vscode'"
+            cmd = "bash -c 'source shell.env && sudo -E bash .devcontainer/.devcontainer.postcreate.sh vscode'"
             config = {"postCreateCommand": cmd}
             with open(path, "w") as f:
                 json.dump(config, f)

@@ -97,7 +97,6 @@ def test_save_template():
         ),
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
     ):
-
         save_template("/test/path", "test-template")
 
         # Verify json.dump was called with the env_data that includes cli_version
@@ -121,7 +120,6 @@ def test_load_template_no_existing_file():
         ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
-
         load_template("/test/path", "test-template")
 
         # Verify write_project_files was called with the template data
@@ -148,7 +146,6 @@ def test_load_template_overwrite_accepted():
         ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
-
         load_template("/test/path", "test-template")
 
         mock_write_files.assert_called_once()
@@ -185,7 +182,6 @@ def test_load_template_calls_validate_template():
         ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write_files,
     ):
-
         load_template("/test/path", "test-template")
 
         # write_project_files should receive the validated data, not the original
@@ -211,7 +207,6 @@ def test_load_template_passes_name_and_path_to_write():
             "/home/.devcontainer-templates",
         ),
     ):
-
         load_template("/test/path", "my-template")
 
         call_args = mock_write_files.call_args[0]
@@ -646,7 +641,6 @@ def test_save_template_adds_version():
             return_value=True,
         ),
     ):
-
         save_template("/test/path", "test-template")
 
         # Verify json.dump was called with the env_data that includes cli_version
@@ -684,7 +678,6 @@ def test_save_template_no_env_file():
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
         patch("sys.exit", side_effect=SystemExit(1)),
     ):
-
         with pytest.raises(SystemExit):
             save_template("/test/path", "test-template")
 
@@ -700,7 +693,6 @@ def test_save_template_confirm_cancel():
         patch("caylent_devcontainer_cli.commands.template.ensure_templates_dir"),
         patch("sys.exit", side_effect=SystemExit(1)),
     ):
-
         with pytest.raises(SystemExit):
             save_template("/test/path", "test-template")
 
@@ -719,7 +711,6 @@ def test_load_template_success_message(capsys):
         ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files"),
     ):
-
         load_template("/test/path", "test-template")
 
     captured = capsys.readouterr()
@@ -736,7 +727,6 @@ def test_delete_template_exception():
             return_value=True,
         ),
     ):
-
         delete_template("test-template")
 
 
@@ -748,7 +738,6 @@ def test_list_templates_json_exception():
         patch("builtins.open", side_effect=Exception("JSON error")),
         patch("builtins.print"),
     ):
-
         list_templates()  # Should handle exception gracefully
 
 
@@ -768,7 +757,6 @@ def test_create_new_template_overwrite():
         ),
         patch("caylent_devcontainer_cli.commands.setup_interactive.save_template_to_file"),
     ):
-
         create_new_template("existing-template")
 
 
@@ -786,7 +774,6 @@ def test_load_template_create_new_env_file():
         ),
         patch("caylent_devcontainer_cli.commands.template.write_project_files") as mock_write,
     ):
-
         load_template("/test/path", "test-template")
 
         mock_write.assert_called_once()
@@ -807,7 +794,6 @@ def test_save_template_create_new_template():
         patch("json.load", return_value=mock_env_data),
         patch("json.dump"),
     ):
-
         save_template("/test/path", "test-template")
 
 

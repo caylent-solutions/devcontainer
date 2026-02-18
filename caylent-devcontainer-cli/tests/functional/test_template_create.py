@@ -79,7 +79,7 @@ class TestValidateSshKeyFileEndToEnd:
         """Corrupted key file is rejected."""
         key_file = tmp_path / "corrupt_key"
         key_file.write_text(
-            "-----BEGIN OPENSSH PRIVATE KEY-----\n" "corrupt-data-here\n" "-----END OPENSSH PRIVATE KEY-----\n"
+            "-----BEGIN OPENSSH PRIVATE KEY-----\ncorrupt-data-here\n-----END OPENSSH PRIVATE KEY-----\n"
         )
 
         success, message = validate_ssh_key_file(str(key_file))

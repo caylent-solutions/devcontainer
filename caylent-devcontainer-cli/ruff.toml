@@ -1,0 +1,22 @@
+# Ruff configuration — standalone file for reuse across projects
+line-length = 120
+target-version = "py310"
+
+[lint]
+# Enable pyflakes (F) and pycodestyle (E, W) to match flake8 defaults
+select = ["E", "F", "W"]
+# E203: whitespace before ':' — matches black's style (was extend-ignore in .flake8)
+ignore = ["E203"]
+
+[lint.per-file-ignores]
+# E402: module level import not at top — matches .flake8 per-file-ignores
+"tests/*" = ["E402"]
+
+[lint.isort]
+# Match isort's black-compatible profile
+known-first-party = ["caylent_devcontainer_cli"]
+
+[format]
+# Match black's formatting defaults
+quote-style = "double"
+indent-style = "space"

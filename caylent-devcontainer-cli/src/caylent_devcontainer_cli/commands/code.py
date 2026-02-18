@@ -43,8 +43,7 @@ IDE_CONFIG = {
         "command": "cursor",
         "name": "Cursor",
         "install_instructions": (
-            "Please install Cursor and ensure the 'cursor' command is available in your PATH. "
-            "Visit: https://cursor.sh/"
+            "Please install Cursor and ensure the 'cursor' command is available in your PATH. Visit: https://cursor.sh/"
         ),
     },
 }

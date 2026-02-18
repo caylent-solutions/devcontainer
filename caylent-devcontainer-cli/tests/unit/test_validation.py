@@ -23,7 +23,7 @@ class TestParseShellEnv:
 
     def test_extracts_export_keys(self):
         """Test that exported variable names are extracted."""
-        content = "export AWS_CONFIG_ENABLED='true'\n" "export DEVELOPER_NAME='tester'\n" "export GIT_USER='myuser'\n"
+        content = "export AWS_CONFIG_ENABLED='true'\nexport DEVELOPER_NAME='tester'\nexport GIT_USER='myuser'\n"
         result = parse_shell_env(content)
         assert "AWS_CONFIG_ENABLED" in result.keys
         assert "DEVELOPER_NAME" in result.keys
@@ -57,9 +57,7 @@ class TestParseShellEnv:
 
     def test_ignores_non_export_lines(self):
         """Test that non-export lines are ignored for key extraction."""
-        content = (
-            "# comment\n" "unset GIT_EDITOR\n" "export REAL_KEY='value'\n" 'export PATH="$HOME/.asdf/shims:$PATH"\n'
-        )
+        content = "# comment\nunset GIT_EDITOR\nexport REAL_KEY='value'\nexport PATH=\"$HOME/.asdf/shims:$PATH\"\n"
         result = parse_shell_env(content)
         assert "REAL_KEY" in result.keys
         assert "PATH" in result.keys

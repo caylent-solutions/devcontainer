@@ -115,7 +115,7 @@ VALID_KEY_VALUES = {
 # All external traffic (including apt repos) goes through the proxy when HOST_PROXY=true.
 # VS Code marketplace domains are bypassed so the Extensions sidebar can load.
 DEFAULT_NO_PROXY = (
-    "localhost,127.0.0.1,.local,169.254.169.254," "marketplace.visualstudio.com,.vo.msecnd.net,.gallerycdn.vsassets.io"
+    "localhost,127.0.0.1,.local,169.254.169.254,marketplace.visualstudio.com,.vo.msecnd.net,.gallerycdn.vsassets.io"
 )
 
 # CLI-level environment variables — name, description, and which commands they apply to.

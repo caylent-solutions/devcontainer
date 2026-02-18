@@ -302,10 +302,10 @@ make functional-test-report
 ### Code Quality and Validation
 
 ```bash
-# Check code style (Python linting)
+# Check code style (ruff linting and format check)
 make lint
 
-# Format code (Python formatting)
+# Format code (ruff formatting and auto-fix)
 make format
 
 # Check GitHub workflow YAML files (from repository root)

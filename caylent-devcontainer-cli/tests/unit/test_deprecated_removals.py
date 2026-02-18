@@ -4,6 +4,7 @@ These tests verify that deprecated commands, flags, files, and patterns
 have been fully removed from the codebase.
 """
 
+import importlib
 import os
 from unittest.mock import patch
 
@@ -16,7 +17,7 @@ class TestEnvCommandRemoved:
     def test_env_module_does_not_exist(self):
         """commands/env.py should not be importable."""
         with pytest.raises(ImportError):
-            import caylent_devcontainer_cli.commands.env  # noqa: F401
+            importlib.import_module("caylent_devcontainer_cli.commands.env")
 
     def test_env_not_registered_in_cli(self):
         """The env subcommand should not be registered in the CLI parser."""
@@ -39,7 +40,7 @@ class TestInstallCommandRemoved:
     def test_install_module_does_not_exist(self):
         """commands/install.py should not be importable."""
         with pytest.raises(ImportError):
-            import caylent_devcontainer_cli.commands.install  # noqa: F401
+            importlib.import_module("caylent_devcontainer_cli.commands.install")
 
     def test_install_not_registered_in_cli(self):
         """The install subcommand should not be registered in the CLI parser."""
@@ -201,9 +202,9 @@ class TestImportHygiene:
             if in_function and "from caylent_devcontainer_cli.utils.ui import COLORS" in stripped:
                 inline_colors_imports += 1
 
-        assert (
-            inline_colors_imports == 0
-        ), f"Found {inline_colors_imports} inline COLORS imports in template.py function bodies"
+        assert inline_colors_imports == 0, (
+            f"Found {inline_colors_imports} inline COLORS imports in template.py function bodies"
+        )
 
 
 class TestInstallDirConstantRemoved:

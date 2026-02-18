@@ -898,7 +898,7 @@ When adding files with git:
 - `--skip-checks`, `--force`, or equivalent flags to bypass CI/CD quality gates
 
 **Prohibited inline code annotations (these tell tools to ignore findings):**
-- `# noqa` (flake8/ruff ignore)
+- `# noqa` (ruff ignore)
 - `# nosec` (bandit security ignore)
 - `// nosec` (gosec ignore)
 - `# type: ignore` (mypy ignore)
@@ -910,7 +910,7 @@ When adding files with git:
 - Any similar annotation in any language that suppresses a linter, formatter, type checker, or security scanner finding
 
 **Prohibited configuration changes:**
-- Adding files or patterns to `.flake8`, `.eslintignore`, `.banditrc`, or similar ignore lists to hide findings
+- Adding files or patterns to `ruff.toml`, `.eslintignore`, `.banditrc`, or similar ignore lists to hide findings
 - Adding `exclude` rules to security scanner configs
 - Modifying tool configurations to raise thresholds or disable rules
 
