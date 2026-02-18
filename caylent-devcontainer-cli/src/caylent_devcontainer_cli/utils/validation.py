@@ -189,8 +189,7 @@ def detect_validation_issues(project_root: str, config_data: Dict[str, Any]) -> 
 
     # --- Step 1: Validate required metadata ---
     result.metadata_present = all(
-        isinstance(config_data.get(key), str) and config_data.get(key).strip()
-        for key in _REQUIRED_METADATA
+        isinstance(config_data.get(key), str) and config_data.get(key).strip() for key in _REQUIRED_METADATA
     )
 
     if result.metadata_present:

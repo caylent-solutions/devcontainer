@@ -3,9 +3,9 @@
 # Get the root directory of the git repository
 ROOT_DIR=$(git rev-parse --show-toplevel)
 
-# Check if we're pushing changes to the CLI subdirectory
-if git diff --name-only HEAD @{u} 2>/dev/null | grep -q "^caylent-devcontainer-cli/"; then
-  echo "Running tests and linting for CLI changes before push..."
+# Check if we're pushing changes to the CLI, catalog, or common directories
+if git diff --name-only HEAD @{u} 2>/dev/null | grep -qE "^(caylent-devcontainer-cli|catalog|common)/"; then
+  echo "Running tests and linting for CLI/catalog/common changes before push..."
   cd "$ROOT_DIR/caylent-devcontainer-cli"
 
   # Run linting
