@@ -214,15 +214,22 @@ When running `cdevcontainer setup-devcontainer`, you'll be guided through config
 
 The interactive setup will create a `devcontainer-environment-variables.json` file with your settings.
 
-The `devcontainer-environment-variables.json` file supports these values:
+The `devcontainer-environment-variables.json` file supports these values (inside `containerEnv`):
 - `AWS_CONFIG_ENABLED` (default: `true`) - Set to `false` to disable AWS configuration
+- `AWS_DEFAULT_OUTPUT` (default: `json`) - Choose from: json, table, text, yaml (only when AWS enabled)
 - `DEFAULT_GIT_BRANCH` (e.g. `main`)
-- `DEFAULT_PYTHON_VERSION` (e.g. `3.12.9`)
-- Git credentials: `GIT_USER`, `GIT_USER_EMAIL`, `GIT_TOKEN`
-- AWS SSO and account information (required if `AWS_CONFIG_ENABLED=true`)
-- Extra Ubuntu LTS packages: `EXTRA_APT_PACKAGES`
+- `DEVELOPER_NAME` - Your name, used in the devcontainer
+- `EXTRA_APT_PACKAGES` - Space-separated list of extra Ubuntu packages to install
+- `GIT_AUTH_METHOD` (default: `token`) - Choose from: token, ssh
+- `GIT_PROVIDER_URL` (default: `github.com`) - Git provider hostname (no protocol prefix)
+- `GIT_TOKEN` - Personal access token (only when `GIT_AUTH_METHOD=token`)
+- `GIT_USER` - Git username
+- `GIT_USER_EMAIL` - Git email for commits
+- `HOST_PROXY` (default: `false`) - Set to `true` to enable host proxy support
+- `HOST_PROXY_URL` - Proxy URL (only when `HOST_PROXY=true`, e.g. `http://host.docker.internal:3128`)
 - `PAGER` (default: `cat`) - Choose from: cat, less, more, most
-- `AWS_DEFAULT_OUTPUT` (default: `json`) - Choose from: json, table, text, yaml
+
+In addition to the built-in variables above, the template creation flow supports **custom environment variables**. You can add any number of free-form key-value pairs — useful for API tokens, AI agent credentials, feature flags, or any project-specific configuration your devcontainer needs. Custom variables are injected into `containerEnv` alongside the built-in ones and are available inside the container at runtime.
 
 #### Client/Project Templates
 
@@ -429,7 +436,6 @@ When running in CI/CD mode, you still need to set these core environment variabl
 env:
   CICD: "true"                           # Enable CI/CD mode
   DEFAULT_GIT_BRANCH: "main"              # Required: Git branch for aliases
-  DEFAULT_PYTHON_VERSION: "3.12.9"        # Required: Python version to install
   EXTRA_APT_PACKAGES: ""                  # Optional: Additional Ubuntu packages
   PAGER: "cat"                            # Optional: Pager for command output (defaults to cat)
   AWS_DEFAULT_OUTPUT: "json"              # Optional: AWS CLI output format (defaults to json)
@@ -566,11 +572,23 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
 
 ### ⚠️ Important Notes
 
-- **DO NOT modify** `.devcontainer.postcreate.sh` for project-specific setup
+- **DO NOT modify** these catalog-managed files — they are replaced on every catalog update:
+  - `.devcontainer/.devcontainer.postcreate.sh` — main postcreate hook
+  - `.devcontainer/postcreate-wrapper.sh` — postcreate orchestration
+  - `.devcontainer/devcontainer-functions.sh` — shared shell functions
+  - `.devcontainer/fix-line-endings.py` — Windows line ending conversion
+  - The `postCreateCommand` field in `.devcontainer/devcontainer.json`
+  - The `image` field in `.devcontainer/devcontainer.json` — the base image is maintained by the catalog and includes infrastructure (ECR mirror, scheduled updates) that your project depends on. Only change this if you are hosting an equivalent image yourself.
 - **DO modify** `.devcontainer/project-setup.sh` for your project needs
-- **DO customize** `.devcontainer/devcontainer.json` for IDE settings and extensions
+- **DO add** custom scripts to `.devcontainer/` — the project-setup script can call any number of additional scripts you place there
+- **DO customize** `.devcontainer/devcontainer.json` for IDE settings, extensions, and features (but not `postCreateCommand` or `image`)
 - This approach ensures you can receive devcontainer updates without conflicts
-- The script runs with the same permissions and environment as the main setup
+
+#### Execution Context
+
+The main postcreate script (`.devcontainer.postcreate.sh`) runs as **root**. It configures shell profiles, installs tools, sets up Git and AWS, then fixes ownership with `chown -R vscode:vscode /home/vscode`.
+
+The project-setup script (`project-setup.sh`) runs **after** the main postcreate as the **container user** (`vscode`) — not root. This means files created by project-setup are already owned by the correct user and no chown cleanup is needed. The script sources `devcontainer-functions.sh` so logging functions (`log_info`, `log_success`, `log_warn`, `log_error`) are available. Note that shell profiles (`.bashrc`, `.zshrc`) are configured for future shell sessions, so paths and environment may differ from your interactive terminal.
 
 ### 📝 Example Use Cases
 
@@ -583,24 +601,23 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
 
 ---
 
-## 🐍 Python Install Logic
+## 🐍 Primary Runtime Installation
 
-- `.tool-versions` present with Python? → installs that pinned Python version
-- Not present or no Python entry? → installs fallback version from:
+Primary runtimes (Python, Node.js, Java, etc.) should be installed via devcontainer **features** in `devcontainer.json`, not via `asdf` and `.tool-versions`. VS Code and Cursor need to discover the primary runtime before `asdf` runs during the postcreate phase — installing runtimes through features ensures the IDE can detect and configure language support (IntelliSense, debugging, linting) on first launch.
+
 ```json
-"DEFAULT_PYTHON_VERSION": "3.12.9"
+{
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.14"
+    }
+  }
+}
 ```
 
-> ✅ **Automatic .tool-versions creation**: The setup command will automatically check for a `.tool-versions` file in your project root. If not found, it will create one with your chosen Python version to ensure consistent runtime management via asdf.
+The `.tool-versions` file is used for pinning **supplementary tools** via `asdf` (e.g., `jq`, `pre-commit`, `terraform`) — tools that the IDE does not need to know about at startup.
 
-> ✅ Best practice: commit `.tool-versions` to your repo:
-```bash
-echo "python 3.12.9" > .tool-versions
-git add .tool-versions
-git commit -m "Add Python version pin for devcontainer"
-```
-
-Then rebuild the container.
+> ✅ **Automatic .tool-versions creation**: The setup command automatically creates an empty `.tool-versions` file in your project root if one does not exist. Add tool entries as needed for your project.
 
 ---
 
@@ -734,7 +751,7 @@ If the JSON is malformed, Python will report a parse error with the line and col
 
 ## 🧼 Git Hygiene
 
-- ❌ Never commit `shell.env` or `devcontainer-environment-variables.json`
+- ❌ Never commit `shell.env`, `devcontainer-environment-variables.json`, or `.devcontainer/ssh-private-key`
 - ✅ Use `.tool-versions` to ensure reproducibility
 - ✅ Use `aws-profile-map.json` to declare AWS SSO profiles
 - `.gitignore` excludes common temp files, IDE config, and secrets
@@ -744,6 +761,7 @@ If the JSON is malformed, Python will report a parse error with the line and col
 > # Devcontainer - commit structure but not secrets
 > devcontainer-environment-variables.json
 > .devcontainer/aws-profile-map.json
+> .devcontainer/ssh-private-key
 > shell.env
 > ```
 >
