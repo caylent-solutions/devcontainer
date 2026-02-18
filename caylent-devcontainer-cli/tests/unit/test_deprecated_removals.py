@@ -6,9 +6,11 @@ have been fully removed from the codebase.
 
 import importlib
 import os
+import re
 from unittest.mock import patch
 
 import pytest
+import semver
 
 
 class TestEnvCommandRemoved:
@@ -149,21 +151,44 @@ class TestYesFlagRemoved:
 class TestVersionUpdated:
     """Verify version and Python requirement updates."""
 
-    def test_cli_version_is_2_0_0(self):
-        """The CLI version should be 2.0.0."""
+    def test_cli_version_is_valid_semver(self):
+        """The CLI __version__ should be a valid semantic version."""
         from caylent_devcontainer_cli import __version__
 
-        assert __version__ == "2.0.0"
+        parsed = semver.Version.parse(__version__)
+        assert parsed is not None, f"__version__ '{__version__}' is not valid semver"
 
-    def test_pyproject_version_is_2_0_0(self):
-        """pyproject.toml should have version 2.0.0."""
+    def test_pyproject_version_is_valid_semver(self):
+        """pyproject.toml should have a valid semantic version."""
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         pyproject_path = os.path.join(project_root, "pyproject.toml")
 
         with open(pyproject_path, "r") as f:
             content = f.read()
 
-        assert 'version = "2.0.0"' in content
+        match = re.search(r'^version = "([^"]+)"', content, re.MULTILINE)
+        assert match is not None, "Could not find version field in pyproject.toml"
+
+        parsed = semver.Version.parse(match.group(1))
+        assert parsed is not None, f"pyproject.toml version '{match.group(1)}' is not valid semver"
+
+    def test_version_consistency(self):
+        """__init__.py and pyproject.toml versions must match."""
+        from caylent_devcontainer_cli import __version__
+
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        pyproject_path = os.path.join(project_root, "pyproject.toml")
+
+        with open(pyproject_path, "r") as f:
+            content = f.read()
+
+        match = re.search(r'^version = "([^"]+)"', content, re.MULTILINE)
+        assert match is not None, "Could not find version field in pyproject.toml"
+
+        assert __version__ == match.group(1), (
+            f"Version mismatch: __init__.py has '{__version__}' "
+            f"but pyproject.toml has '{match.group(1)}'"
+        )
 
     def test_python_requires_3_10(self):
         """pyproject.toml should require Python >= 3.10."""
