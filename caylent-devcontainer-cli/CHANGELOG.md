@@ -2,7 +2,121 @@
 
 
 
+## v2.0.0 (2026-02-18)
+
+### Breaking
+
+* feat!: caylent devcontainer CLI and platform v2.0.0
+
+BREAKING CHANGE: Complete rewrite of the CLI and devcontainer
+configuration system. The setup-devcontainer command now uses a
+catalog-based pipeline. The --manual and --ref flags are removed.
+Environment variables are sourced from shell.env instead of
+containerEnv. The collections/ directory is renamed to catalog/.
+
+Catalog system:
+- Add catalog data model with entry metadata, version tracking, and
+  tag-based filtering
+- Add catalog list command with --tags filtering
+- Add catalog validate command for remote and local validation
+- Add --catalog-url override and --catalog-entry direct selection flags
+- Auto-resolve latest semver tag for default catalog URL
+- Add common assets directory auto-distributed to every project
+- Add root project assets for distributing CLAUDE.md and .claude/ config
+- Integrate catalog pipeline into setup-devcontainer and code commands
+
+Template system rewrite:
+- Add 17-step interactive template creation with SSH key validation
+- Add template edit command with per-setting change prompts
+- Add template view showing SSH key path, AWS profiles, and file path
+- Rewrite template load and upgrade using shared validation
+- Add unified write_project_files() for all project config generation
+
+CLI enhancements:
+- Add shell completion for bash and zsh
+- Add dynamic template name completion
+- Add directory completion for path arguments
+- Add universal UI confirmation pattern
+- Add two-stage validation (Steps 0-5) for code command
+- Add &#34;Open without changes&#34; option in code command
+
+Host proxy support:
+- Add proxy toolkits for macOS/Linux and WSL as common catalog assets
+- Add template-based tinyproxy configuration with env var placeholders
+- Add tinyproxy process pool directives for WSL compatibility
+- Add readiness polling with port listening checks
+- Add port conflict detection with actionable diagnostics
+- Add IPv6 loopback support
+- Add apt proxy via apt.conf.d with NO_PROXY DIRECT overrides
+
+Git authentication:
+- Add token-based auth via .netrc and credential helper
+- Add SSH-based auth with key management and connectivity verification
+- Add auth method branching in postcreate script
+
+DevContainer hardening:
+- Switch to shell.env-first environment setup
+- Disable auto port forwarding and stale port restoration
+- Suppress built-in Copilot via github.copilot.enable and
+  chat.extensionUnification.enabled
+- Restrict defaultExtensionsIfInstalledLocally to exclude Copilot
+- Fix postCreateCommand race condition from orphaned tee process
+
+Infrastructure:
+- Add ECR Public mirror for devcontainer base image
+- Add GitHub Actions workflow for automated bimonthly image mirroring
+- Add Terraform/Terragrunt infrastructure with S3 remote state
+
+Security and CI:
+- Break CodeQL taint chain for password display in prompt functions
+- Resolve gitleaks false positives and CodeQL clear-text logging alerts
+- Prevent grep exit code 1 from failing Find code owners step
+- Remove ASDF python plugin to prevent stale shim conflicts
+- Trigger full test suite on catalog and common file changes
+
+Bug fixes:
+- Fix SSH key written as empty placeholder instead of actual content
+- Fix tinyproxy upstream routing breaking all proxy traffic
+- Fix tinyproxy StartServers missing causing daemon exit on WSL
+- Fix duplicate confirmation prompt during catalog browse
+- Fix asdf failures when .tool-versions is empty or absent
+- Fix apt ignoring NO_PROXY environment variable
+- Fix ssh-keygen hanging on passphrase-protected keys
+- Fix tilde expansion in SSH key file paths
+
+Refactoring:
+- Rename collection/collections to entry/entries across codebase
+- Restructure catalog directory from collections/ to catalog/
+- Consolidate template application and interactive setup functions
+- Remove dead code superseded during rewrite
+- Add shared JSON/FS utilities, file path constants, and UI exit utilities
+- Replace black, isort, flake8 with ruff for linting and formatting
+- Remove VS Code marketplace domains from NO_PROXY defaults ([`02af94d`](https://github.com/caylent-solutions/devcontainer/commit/02af94d724a65876cddd9620b38991117cd37a6e))
+
+### Feature
+
+* feat: add mirror-devcontainer-image workflow (#116)
+
+* feat: add GitHub Actions workflow to mirror devcontainer base image to ECR Public
+
+* feat: add collections directory referenced by mirror workflow
+
+* fix: add validation step for ECR_PUSH_ROLE_ARN in mirror workflow
+
+* fix: address review feedback on mirror workflow ([`e345bcb`](https://github.com/caylent-solutions/devcontainer/commit/e345bcb62ccd23eecd8f9941cfa9953324a3a57a))
+
+### Fix
+
+* fix: simplify mirror workflow to crane-only image copy (#118) ([`fd8ed24`](https://github.com/caylent-solutions/devcontainer/commit/fd8ed2480023560343c6f32041de29cf57dc224b))
+
+* fix: use crane copy for multi-arch image mirroring (#117) ([`ee677ba`](https://github.com/caylent-solutions/devcontainer/commit/ee677bab00b901d793c8ddb5dfb53c305a573908))
+
+
 ## v1.14.1 (2025-11-06)
+
+### Chore
+
+* chore(release): 1.14.1 ([`e508845`](https://github.com/caylent-solutions/devcontainer/commit/e5088453c8897469ddc16332ebe2662862a605d1))
 
 ### Fix
 
@@ -32,6 +146,12 @@ Benefits:
 - Better maintainability - reduced code duplication and dead code
 - More robust - explicit validation and error handling throughout
 - Fully dynamic paths - works with any workspace mount configuration ([`33feb55`](https://github.com/caylent-solutions/devcontainer/commit/33feb558b2f4d41a43351a77cd3ecac95e10d716))
+
+### Unknown
+
+* Merge pull request #112 from caylent-solutions/release-1.14.1
+
+Release 1.14.1 ([`d19bbc0`](https://github.com/caylent-solutions/devcontainer/commit/d19bbc0e874f5ffcbb79f806f85e4f59cb2d7355))
 
 
 ## v1.14.0 (2025-10-28)
