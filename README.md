@@ -572,11 +572,16 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
 
 ### ⚠️ Important Notes
 
-- **DO NOT modify** `.devcontainer.postcreate.sh` for project-specific setup
+- **DO NOT modify** these catalog-managed files — they are replaced on every catalog update:
+  - `.devcontainer/.devcontainer.postcreate.sh` — main postcreate hook
+  - `.devcontainer/postcreate-wrapper.sh` — postcreate orchestration
+  - `.devcontainer/devcontainer-functions.sh` — shared shell functions
+  - `.devcontainer/fix-line-endings.py` — Windows line ending conversion
+  - The `postCreateCommand` field in `.devcontainer/devcontainer.json`
 - **DO modify** `.devcontainer/project-setup.sh` for your project needs
-- **DO customize** `.devcontainer/devcontainer.json` for IDE settings and extensions
+- **DO customize** `.devcontainer/devcontainer.json` for IDE settings, extensions, and features (but not `postCreateCommand`)
 - This approach ensures you can receive devcontainer updates without conflicts
-- The script runs with the same permissions and environment as the main setup
+- The project-setup script runs with the same permissions and environment as the main setup
 
 ### 📝 Example Use Cases
 
