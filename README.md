@@ -739,7 +739,7 @@ If the JSON is malformed, Python will report a parse error with the line and col
 
 ## 🧼 Git Hygiene
 
-- ❌ Never commit `shell.env` or `devcontainer-environment-variables.json`
+- ❌ Never commit `shell.env`, `devcontainer-environment-variables.json`, or `.devcontainer/ssh-private-key`
 - ✅ Use `.tool-versions` to ensure reproducibility
 - ✅ Use `aws-profile-map.json` to declare AWS SSO profiles
 - `.gitignore` excludes common temp files, IDE config, and secrets
@@ -749,6 +749,7 @@ If the JSON is malformed, Python will report a parse error with the line and col
 > # Devcontainer - commit structure but not secrets
 > devcontainer-environment-variables.json
 > .devcontainer/aws-profile-map.json
+> .devcontainer/ssh-private-key
 > shell.env
 > ```
 >
