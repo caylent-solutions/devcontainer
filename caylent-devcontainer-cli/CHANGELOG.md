@@ -2,9 +2,25 @@
 
 
 
-## v2.0.1 (2026-02-18)
+## v2.0.2 (2026-02-18)
 
 ### Fix
+
+* fix(ci): upgrade CodeQL Action from v3 to v4 before December 2026 deprecation (#131)
+
+Upgrade github/codeql-action/init and github/codeql-action/analyze from v3 to v4 in both codeql-analysis.yml and main-validation.yml
+CodeQL Action v3 will be deprecated in December 2026: https://github.blog/changelog/2025-10-28-upcoming-deprecation-of-codeql-action-v3/ ([`06fea64`](https://github.com/caylent-solutions/devcontainer/commit/06fea6444470cf50006a5d8c71a66e2f24bd8e3c))
+
+
+## v2.0.1 (2026-02-18)
+
+### Chore
+
+* chore(release): 2.0.1 ([`357e5a3`](https://github.com/caylent-solutions/devcontainer/commit/357e5a337e6142b7ac2c5e6321d02a541c479051))
+
+### Fix
+
+* fix(docs): add required host proxy setup section for Caylent users ([`c7f96a0`](https://github.com/caylent-solutions/devcontainer/commit/c7f96a0624ab0c1a0909392a441c2adc10ae972c))
 
 * fix(docs): correct environment variables, runtime install logic, and project-setup docs
 
@@ -53,6 +69,12 @@ HOST_PROXY, HOST_PROXY_URL. Add defaults and descriptions for all values.
 - Link to Caylent DevOps Platform repos as catalog examples
 
 * fix: trailing newline in CONTRIBUTING.md from end-of-file-fixer hook ([`0c0b102`](https://github.com/caylent-solutions/devcontainer/commit/0c0b102d8c69492abfec96e4ac8ecc2e5d60e2fe))
+
+### Unknown
+
+* Merge pull request #130 from caylent-solutions/release-2.0.1
+
+Release 2.0.1 ([`083a385`](https://github.com/caylent-solutions/devcontainer/commit/083a3859c0a092387f0667702ce555fee0e4a93f))
 
 
 ## v2.0.0 (2026-02-18)
