@@ -113,9 +113,7 @@ VALID_KEY_VALUES = {
 
 # Default NO_PROXY bypass list — addresses that should not be routed through HOST_PROXY.
 # All external traffic (including apt repos) goes through the proxy when HOST_PROXY=true.
-DEFAULT_NO_PROXY = (
-    "localhost,127.0.0.1,.local,169.254.169.254"
-)
+DEFAULT_NO_PROXY = "localhost,127.0.0.1,.local,169.254.169.254"
 
 # CLI-level environment variables — name, description, and which commands they apply to.
 # Entries with an empty ``commands`` list are global (shown for every subcommand).
