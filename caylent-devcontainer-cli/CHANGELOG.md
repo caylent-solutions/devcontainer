@@ -8,6 +8,166 @@
 
 * feat!: caylent devcontainer CLI and platform v2.0.0
 
+feat!: caylent devcontainer CLI and platform v2.0.0
+
+BREAKING CHANGE: Complete rewrite of the CLI and devcontainer
+configuration system. The setup-devcontainer command now uses a
+catalog-based pipeline. The --manual and --ref flags are removed.
+Environment variables are sourced from shell.env instead of
+containerEnv. The collections/ directory is renamed to catalog/.
+
+Catalog system:
+- Add catalog data model with entry metadata, version tracking, and
+  tag-based filtering
+- Add catalog list command with --tags filtering
+- Add catalog validate command for remote and local validation
+- Add --catalog-url override and --catalog-entry direct selection flags
+- Auto-resolve latest semver tag for default catalog URL
+- Add common assets directory auto-distributed to every project
+- Add root project assets for distributing CLAUDE.md and .claude/ config
+- Integrate catalog pipeline into setup-devcontainer and code commands
+
+Template system rewrite:
+- Add 17-step interactive template creation with SSH key validation
+- Add template edit command with per-setting change prompts
+- Add template view showing SSH key path, AWS profiles, and file path
+- Rewrite template load and upgrade using shared validation
+- Add unified write_project_files() for all project config generation
+
+CLI enhancements:
+- Add shell completion for bash and zsh
+- Add dynamic template name completion
+- Add directory completion for path arguments
+- Add universal UI confirmation pattern
+- Add two-stage validation (Steps 0-5) for code command
+- Add &#34;Open without changes&#34; option in code command
+
+Host proxy support:
+- Add proxy toolkits for macOS/Linux and WSL as common catalog assets
+- Add template-based tinyproxy configuration with env var placeholders
+- Add readiness polling with port listening checks
+- Add port conflict detection with actionable diagnostics
+- Add IPv6 loopback support
+- Add apt proxy via apt.conf.d with NO_PROXY DIRECT overrides
+- Add VS Code marketplace and AWS IMDS to NO_PROXY defaults
+
+Git authentication:
+- Add token-based auth via .netrc and credential helper
+- Add SSH-based auth with key management and connectivity verification
+- Add auth method branching in postcreate script
+
+DevContainer hardening:
+- Switch to shell.env-first environment setup
+- Disable auto port forwarding and stale port restoration
+- Suppress built-in Copilot via github.copilot.enable and
+  chat.extensionUnification.enabled
+- Restrict defaultExtensionsIfInstalledLocally to exclude Copilot
+- Fix postCreateCommand race condition from orphaned tee process
+
+Infrastructure:
+- Add ECR Public mirror for devcontainer base image
+- Add GitHub Actions workflow for automated bimonthly image mirroring
+- Add Terraform/Terragrunt infrastructure with S3 remote state
+
+Bug fixes:
+- Fix SSH key written as empty placeholder instead of actual content
+- Fix tinyproxy upstream routing breaking all proxy traffic
+- Fix duplicate confirmation prompt during catalog browse
+- Fix asdf failures when .tool-versions is empty or absent
+- Fix apt ignoring NO_PROXY environment variable
+- Fix ssh-keygen hanging on passphrase-protected keys
+- Fix VS Code extensions sidebar blank when proxy is enabled
+- Fix tilde expansion in SSH key file paths
+
+Refactoring:
+- Rename collection/collections to entry/entries across codebase
+- Restructure catalog directory from collections/ to catalog/
+- Consolidate template application and interactive setup functions
+- Remove dead code superseded during rewrite
+- Add shared JSON/FS utilities, file path constants, and UI exit utilities
+- moved linting and formatting to ruff linter ([`08bcdb1`](https://github.com/caylent-solutions/devcontainer/commit/08bcdb173bd6deb04bd7169315eecfd2a438b65d))
+
+* feat!: caylent devcontainer CLI and platform v2.0.0
+
+BREAKING CHANGE: Complete rewrite of the CLI and devcontainer
+configuration system. The setup-devcontainer command now uses a
+catalog-based pipeline. The --manual and --ref flags are removed.
+Environment variables are sourced from shell.env instead of
+containerEnv. The collections/ directory is renamed to catalog/.
+
+Catalog system:
+- Add catalog data model with entry metadata, version tracking, and
+  tag-based filtering
+- Add catalog list command with --tags filtering
+- Add catalog validate command for remote and local validation
+- Add --catalog-url override and --catalog-entry direct selection flags
+- Auto-resolve latest semver tag for default catalog URL
+- Add common assets directory auto-distributed to every project
+- Add root project assets for distributing CLAUDE.md and .claude/ config
+- Integrate catalog pipeline into setup-devcontainer and code commands
+
+Template system rewrite:
+- Add 17-step interactive template creation with SSH key validation
+- Add template edit command with per-setting change prompts
+- Add template view showing SSH key path, AWS profiles, and file path
+- Rewrite template load and upgrade using shared validation
+- Add unified write_project_files() for all project config generation
+
+CLI enhancements:
+- Add shell completion for bash and zsh
+- Add dynamic template name completion
+- Add directory completion for path arguments
+- Add universal UI confirmation pattern
+- Add two-stage validation (Steps 0-5) for code command
+- Add &#34;Open without changes&#34; option in code command
+
+Host proxy support:
+- Add proxy toolkits for macOS/Linux and WSL as common catalog assets
+- Add template-based tinyproxy configuration with env var placeholders
+- Add readiness polling with port listening checks
+- Add port conflict detection with actionable diagnostics
+- Add IPv6 loopback support
+- Add apt proxy via apt.conf.d with NO_PROXY DIRECT overrides
+- Add VS Code marketplace and AWS IMDS to NO_PROXY defaults
+
+Git authentication:
+- Add token-based auth via .netrc and credential helper
+- Add SSH-based auth with key management and connectivity verification
+- Add auth method branching in postcreate script
+
+DevContainer hardening:
+- Switch to shell.env-first environment setup
+- Disable auto port forwarding and stale port restoration
+- Suppress built-in Copilot via github.copilot.enable and
+  chat.extensionUnification.enabled
+- Restrict defaultExtensionsIfInstalledLocally to exclude Copilot
+- Fix postCreateCommand race condition from orphaned tee process
+
+Infrastructure:
+- Add ECR Public mirror for devcontainer base image
+- Add GitHub Actions workflow for automated bimonthly image mirroring
+- Add Terraform/Terragrunt infrastructure with S3 remote state
+
+Bug fixes:
+- Fix SSH key written as empty placeholder instead of actual content
+- Fix tinyproxy upstream routing breaking all proxy traffic
+- Fix duplicate confirmation prompt during catalog browse
+- Fix asdf failures when .tool-versions is empty or absent
+- Fix apt ignoring NO_PROXY environment variable
+- Fix ssh-keygen hanging on passphrase-protected keys
+- Fix VS Code extensions sidebar blank when proxy is enabled
+- Fix tilde expansion in SSH key file paths
+
+Refactoring:
+- Rename collection/collections to entry/entries across codebase
+- Restructure catalog directory from collections/ to catalog/
+- Consolidate template application and interactive setup functions
+- Remove dead code superseded during rewrite
+- Add shared JSON/FS utilities, file path constants, and UI exit utilities
+- moved linting and formatting to ruff linter ([`f812501`](https://github.com/caylent-solutions/devcontainer/commit/f8125019513e9b50c30d63e96fba078ce734b0b7))
+
+* feat!: caylent devcontainer CLI and platform v2.0.0
+
 BREAKING CHANGE: Complete rewrite of the CLI and devcontainer
 configuration system. The setup-devcontainer command now uses a
 catalog-based pipeline. The --manual and --ref flags are removed.
@@ -93,6 +253,10 @@ Refactoring:
 - Replace black, isort, flake8 with ruff for linting and formatting
 - Remove VS Code marketplace domains from NO_PROXY defaults ([`02af94d`](https://github.com/caylent-solutions/devcontainer/commit/02af94d724a65876cddd9620b38991117cd37a6e))
 
+### Chore
+
+* chore(release): 2.0.0 ([`79d993a`](https://github.com/caylent-solutions/devcontainer/commit/79d993adc9efb143a09b003cf18ac63ec2873997))
+
 ### Feature
 
 * feat: add mirror-devcontainer-image workflow (#116)
@@ -107,9 +271,23 @@ Refactoring:
 
 ### Fix
 
+* fix(cli): use legacy license table format for twine compatibility
+
+setuptools&gt;=78 emits PEP 639 license-expression metadata from the
+string-form license field. twine 6.1 does not recognize this newer
+metadata field and rejects the distribution. Switch to the dict-form
+license = {text = &#34;...&#34;} which produces the legacy License metadata
+field that twine validates. ([`9cfbc22`](https://github.com/caylent-solutions/devcontainer/commit/9cfbc22fad749c58487121ff4ebae61b41ed3ce7))
+
 * fix: simplify mirror workflow to crane-only image copy (#118) ([`fd8ed24`](https://github.com/caylent-solutions/devcontainer/commit/fd8ed2480023560343c6f32041de29cf57dc224b))
 
 * fix: use crane copy for multi-arch image mirroring (#117) ([`ee677ba`](https://github.com/caylent-solutions/devcontainer/commit/ee677bab00b901d793c8ddb5dfb53c305a573908))
+
+### Unknown
+
+* Merge pull request #120 from caylent-solutions/release-2.0.0
+
+Release 2.0.0 ([`7e3c0cd`](https://github.com/caylent-solutions/devcontainer/commit/7e3c0cd5c13656fbf1ff75d16934dd6a4fe676a8))
 
 
 ## v1.14.1 (2025-11-06)
