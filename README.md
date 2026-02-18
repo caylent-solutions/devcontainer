@@ -578,8 +578,9 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
   - `.devcontainer/devcontainer-functions.sh` — shared shell functions
   - `.devcontainer/fix-line-endings.py` — Windows line ending conversion
   - The `postCreateCommand` field in `.devcontainer/devcontainer.json`
+  - The `image` field in `.devcontainer/devcontainer.json` — the base image is maintained by the catalog and includes infrastructure (ECR mirror, scheduled updates) that your project depends on. Only change this if you are hosting an equivalent image yourself.
 - **DO modify** `.devcontainer/project-setup.sh` for your project needs
-- **DO customize** `.devcontainer/devcontainer.json` for IDE settings, extensions, and features (but not `postCreateCommand`)
+- **DO customize** `.devcontainer/devcontainer.json` for IDE settings, extensions, and features (but not `postCreateCommand` or `image`)
 - This approach ensures you can receive devcontainer updates without conflicts
 - The project-setup script runs with the same permissions and environment as the main setup
 
