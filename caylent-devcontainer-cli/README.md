@@ -49,7 +49,7 @@ The CLI requires IDE command-line tools to launch projects:
 pipx install caylent-devcontainer-cli
 
 # Install from GitHub with a specific version tag
-pipx install git+https://github.com/caylent-solutions/devcontainer.git@0.1.0#subdirectory=caylent-devcontainer-cli
+pipx install git+https://github.com/caylent-solutions/devcontainer.git@2.0.0#subdirectory=caylent-devcontainer-cli
 
 # If you don't have pipx installed, install it first:
 python -m pip install pipx
@@ -147,8 +147,8 @@ The setup command will:
 6. Copy common assets from `common/devcontainer-assets/` (shared scripts, host proxy toolkits) into `.devcontainer/`
 7. Copy root project assets from `common/root-project-assets/` (e.g., `CLAUDE.md`, `.claude/`) into the project root
 8. Run informational validation on existing project configuration files
-8. Guide you through interactive template selection or creation
-9. Generate project configuration files via `write_project_files()`
+9. Guide you through interactive template selection or creation
+10. Generate project configuration files via `write_project_files()`
 
 > **Note**: All files and directories in the catalog's `common/devcontainer-assets/` are automatically included in every project — this is how shared scripts (postcreate, functions) and host-side proxy toolkits (`nix-family-os/`, `wsl-family-os/`) are distributed.
 
@@ -324,27 +324,17 @@ The repository includes comprehensive quality assurance with pre-commit hooks th
 
 #### Automated Release Process
 
-The package is automatically published to PyPI when a new tag is pushed to GitHub.
+The release pipeline is fully automated. When changes to CLI files are merged to `main`, the CI pipeline computes the next semantic version, generates the changelog, creates and merges a release PR, tags the release, and triggers the publish workflow — all without manual intervention. A human approval gate on the `pypi` environment ensures releases are intentional and immutable.
 
-To create a new release:
-
-1. Ensure all tests pass (`make test`)
-2. Perform the [manual tests](docs/MANUAL_TESTING.md) to verify functionality
-3. Create and push a new tag following semantic versioning:
-
-```bash
-git tag -a X.Y.Z -m "Release X.Y.Z"
-git push origin X.Y.Z
-```
-
-The GitHub Actions workflow will:
-1. Validate the tag follows semantic versioning (MAJOR.MINOR.PATCH)
-2. Build the package using ASDF for Python version management
-3. Publish the package to PyPI
-
-#### Manual Release Process
-
-Follow the manual release process documented in the [Contributing Guide](docs/CONTRIBUTING.md#manual-release-process-when-github-actions-workflow-is-not-working).
+The automated pipeline will:
+1. Compute the next semantic version from conventional commit messages
+2. Update `pyproject.toml`, `__init__.py`, and `CHANGELOG.md`
+3. Create and merge a release PR
+4. Tag the release and trigger the publish workflow
+5. Validate the tag follows semantic versioning (MAJOR.MINOR.PATCH)
+6. Verify version consistency across `__init__.py`, `pyproject.toml`, and the tag
+7. Build the package using ASDF for Python version management
+8. Publish the package to PyPI via trusted publishing (after environment approval)
 
 ## License
 

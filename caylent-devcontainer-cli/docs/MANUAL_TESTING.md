@@ -41,26 +41,29 @@ cd /tmp/test-project
 # Run the setup command in interactive mode
 cdevcontainer setup-devcontainer .
 
+# .tool-versions is auto-created as an empty file before prompts begin
 # Follow the prompts with these values:
 # - No saved template
 # - AWS Config: false
 # - Git branch: main
-# - Python version: 3.12.9
 # - Developer name: Test User
 # - Git provider: github.com
+# - Git auth method: token
 # - Git username: testuser
 # - Git email: test@example.com
 # - Git token: test-token
 # - Extra packages: (leave empty)
+# - Pager: cat
+# - Host proxy: false
+# - No custom env vars
 # - Don't save as template
-# - Press Enter when prompted to create .tool-versions file
 
 # Verify files were created
 ls -la .devcontainer/
 cat devcontainer-environment-variables.json
 # Should see the values you entered
 cat .tool-versions
-# Should contain: python 3.12.9
+# Should exist and be empty
 ```
 
 ### 3. Template Save and Load Workflow
@@ -118,34 +121,35 @@ cd /tmp/test-project-aws
 # Run setup with AWS enabled
 cdevcontainer setup-devcontainer .
 
-# Follow prompts, but this time set:
+# .tool-versions is auto-created as an empty file
+# Follow prompts, this time set:
 # - AWS_CONFIG_ENABLED: true
-# - Add a simple AWS profile configuration
-# - Press Enter when prompted to create .tool-versions file
+# - Complete all environment prompts (branch, name, git, proxy, pager, etc.)
+# - AWS output format: json
+# - Add a simple AWS profile configuration when prompted
 
 # Verify AWS profile map was created
 cat .devcontainer/aws-profile-map.json
-# Verify .tool-versions was created
+# Verify .tool-versions was created (empty)
 cat .tool-versions
 ```
 
 ### 6. .tool-versions File Management Test
 
-**Purpose**: Verify .tool-versions file detection and creation
+**Purpose**: Verify .tool-versions file detection and auto-creation
 
 ```bash
 # Test 1: Project without .tool-versions
 mkdir -p /tmp/test-no-tool-versions
 cd /tmp/test-no-tool-versions
 
-# Run setup (manual mode for simplicity)
-cdevcontainer setup-devcontainer --manual .
-# Should prompt to create .tool-versions file
-# Press Enter to create it
+# Run setup — .tool-versions is auto-created as an empty file before prompts begin
+cdevcontainer setup-devcontainer .
+# Complete the interactive setup prompts
 
-# Verify file was created with correct content
+# Verify file was created (empty — Python is managed via devcontainer features)
 cat .tool-versions
-# Should contain: python 3.12.9
+# Should exist and be empty
 
 # Test 2: Project with existing .tool-versions
 mkdir -p /tmp/test-existing-tool-versions
@@ -153,50 +157,52 @@ cd /tmp/test-existing-tool-versions
 echo "python 3.11.5" > .tool-versions
 
 # Run setup
-cdevcontainer setup-devcontainer --manual .
-# Should detect existing file and not prompt to create
+cdevcontainer setup-devcontainer .
+# Should detect existing file; if it contains a Python entry, a notice is shown
+# recommending Python be managed through devcontainer features instead
 
 # Verify original content preserved
 cat .tool-versions
 # Should still contain: python 3.11.5
 ```
 
-### 7. Git Reference Override Test
+### 7. Catalog URL Override Test
 
-**Purpose**: Verify the --ref flag works with different git references
+**Purpose**: Verify the --catalog-url flag works with different git references
 
 ```bash
-# Test 1: Use main branch instead of CLI version
-mkdir -p /tmp/test-ref-main
-cd /tmp/test-ref-main
+# Test 1: Use main branch instead of the auto-resolved semver tag
+mkdir -p /tmp/test-catalog-url-main
+cd /tmp/test-catalog-url-main
 
-# Run setup with main branch
-cdevcontainer setup-devcontainer --ref main --manual .
-# Should clone from main branch instead of CLI version tag
+# Run setup pinned to main branch via --catalog-url
+cdevcontainer setup-devcontainer --catalog-url "https://github.com/caylent-solutions/devcontainer.git@main" .
+# Should clone from main branch instead of the auto-resolved semver tag
 
 # Verify files were created
 ls -la .devcontainer/
 # Should see devcontainer files
 
-# Test 2: Use specific tag
-mkdir -p /tmp/test-ref-tag
-cd /tmp/test-ref-tag
+# Test 2: Use a specific semver tag via --catalog-url
+mkdir -p /tmp/test-catalog-url-tag
+cd /tmp/test-catalog-url-tag
 
-# Run setup with specific tag (use a known existing tag)
-cdevcontainer setup-devcontainer --ref 1.0.0 --manual .
+# Run setup pinned to a specific tag
+cdevcontainer setup-devcontainer --catalog-url "https://github.com/caylent-solutions/devcontainer.git@2.0.0" .
 # Should clone from the specified tag
 
 # Verify files were created
 ls -la .devcontainer/
 # Should see devcontainer files
 
-# Test 3: Invalid reference should fail gracefully
-mkdir -p /tmp/test-ref-invalid
-cd /tmp/test-ref-invalid
+# Test 3: Invalid catalog URL should fail gracefully
+mkdir -p /tmp/test-catalog-url-invalid
+cd /tmp/test-catalog-url-invalid
 
-# Run setup with invalid reference
-cdevcontainer setup-devcontainer --ref nonexistent-branch --manual .
-# Should fail with clear error message about the reference not existing
+# Run setup with an invalid repository URL
+cdevcontainer setup-devcontainer --catalog-url "https://github.com/nonexistent/repo.git" .
+# Should fail with a clear error message about the catalog not being accessible
+# Exit code should be non-zero
 ```
 
 ### 8. Template Create Test
@@ -210,14 +216,16 @@ cdevcontainer template create test-template
 # Follow the interactive prompts with test values:
 # - AWS Config: false
 # - Git branch: main
-# - Python version: 3.12.9
 # - Developer name: Test User
 # - Git provider: github.com
+# - Git auth method: token
 # - Git username: testuser
 # - Git email: test@example.com
 # - Git token: test-token
 # - Extra packages: (leave empty)
 # - Pager: cat
+# - Host proxy: false
+# - No custom env vars
 
 # Verify template was created
 cdevcontainer template list
