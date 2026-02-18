@@ -2,6 +2,59 @@
 
 
 
+## v2.0.1 (2026-02-18)
+
+### Fix
+
+* fix(docs): correct environment variables, runtime install logic, and project-setup docs
+
+* fix(docs): correct environment variables list in README
+
+Remove DEFAULT_PYTHON_VERSION (not a CLI-managed template variable).
+Add missing variables: DEVELOPER_NAME, GIT_AUTH_METHOD, GIT_PROVIDER_URL,
+HOST_PROXY, HOST_PROXY_URL. Add defaults and descriptions for all values.
+
+* fix(docs): document custom environment variable support in templates
+
+* fix(docs): remove DEFAULT_PYTHON_VERSION references, Python is managed via devcontainer features
+
+* fix(docs): clarify primary runtimes use devcontainer features, not asdf
+
+* fix(docs): add ssh-private-key to git hygiene never-commit list and gitignore example
+
+* fix(docs): list all catalog-managed files users must not modify
+
+* fix(docs): add base image to do-not-modify list in devcontainer.json
+
+* fix(docs): document custom scripts, execution context, and chown cleanup for project-setup
+
+* fix(docs): clarify project-setup runs as vscode user, no chown needed ([`626328a`](https://github.com/caylent-solutions/devcontainer/commit/626328ae5038d4296de494935e88705809cef91b))
+
+* fix(docs): validate and fix all documentation for v2.0.0 accuracy
+
+* docs: validate and fix all documentation for v2.0.0 accuracy
+
+- Remove non-existent --force flag from template upgrade docs
+- Remove non-existent --manual and --ref flags from manual testing
+- Replace removed flags with current --catalog-url in test procedures
+- Fix interactive setup prompt list (no Python version; add auth method,
+  host proxy, custom env vars)
+- Fix .tool-versions behavior (auto-created empty, no prompt)
+- Fix code command description (validates, does not generate shell.env)
+- Fix release process docs to reflect fully automated pipeline
+- Remove manual release process (pipeline-only now)
+- Add postcreate-wrapper.sh to catalog structure diagram
+- Add template edit/view commands and recommend edit over manual editing
+- Fix version examples (0.1.0 -&gt; 2.0.0)
+- Fix double-numbered step in CLI README
+- Update Makefile publish target for automated pipeline
+- Replace black/isort/flake8 reference with ruff in backlog doc
+- Add comprehensive catalog creation guide with examples link
+- Link to Caylent DevOps Platform repos as catalog examples
+
+* fix: trailing newline in CONTRIBUTING.md from end-of-file-fixer hook ([`0c0b102`](https://github.com/caylent-solutions/devcontainer/commit/0c0b102d8c69492abfec96e4ac8ecc2e5d60e2fe))
+
+
 ## v2.0.0 (2026-02-18)
 
 ### Breaking
@@ -255,6 +308,8 @@ Refactoring:
 
 ### Chore
 
+* chore(release): 2.0.0 ([`4d058cf`](https://github.com/caylent-solutions/devcontainer/commit/4d058cfeade0cc4c6d58e47ef49e0462ea26eea7))
+
 * chore(release): 2.0.0 ([`79d993a`](https://github.com/caylent-solutions/devcontainer/commit/79d993adc9efb143a09b003cf18ac63ec2873997))
 
 ### Feature
@@ -284,6 +339,10 @@ field that twine validates. ([`9cfbc22`](https://github.com/caylent-solutions/de
 * fix: use crane copy for multi-arch image mirroring (#117) ([`ee677ba`](https://github.com/caylent-solutions/devcontainer/commit/ee677bab00b901d793c8ddb5dfb53c305a573908))
 
 ### Unknown
+
+* Merge pull request #123 from caylent-solutions/release-2.0.0
+
+Release 2.0.0 ([`f692cc0`](https://github.com/caylent-solutions/devcontainer/commit/f692cc0cf85a83315bb3782622c6496e6c4ff057))
 
 * Merge pull request #120 from caylent-solutions/release-2.0.0
 
