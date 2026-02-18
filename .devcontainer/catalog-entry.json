@@ -1,0 +1,13 @@
+{
+  "name": "default",
+  "description": "General-purpose Caylent development environment with Python, Node.js, AWS CLI, Docker, and Kubernetes tools.",
+  "tags": [
+    "general",
+    "multi-language",
+    "aws",
+    "kubernetes"
+  ],
+  "maintainer": "Caylent Platform Team",
+  "min_cli_version": "2.0.0",
+  "catalog_url": "https://github.com/caylent-solutions/devcontainer.git@feature/devcontainer-v2.0.0"
+}

@@ -71,3 +71,6 @@ override.tf.json
 
 # Test files
 output_file.sh
+
+# Environment files
+.devcontainer/ssh-private-key
