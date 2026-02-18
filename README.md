@@ -98,6 +98,14 @@ Before opening any devcontainer, configure these **host-level** settings. Withou
    - **Forward Ports On Open** — uncheck (disable)
    - **Restore Forwarded Ports** — uncheck (disable)
    - **Default Extensions If Installed Locally** — remove `GitHub.copilot` and `GitHub.copilot-chat` from the list (keep `GitHub.vscode-pull-request-github` if desired)
+4. **Disable built-in Copilot extensions** (VS Code 1.96+ bundles Copilot as a built-in extension):
+   - Open Extensions sidebar → type `@builtin copilot` in the search bar
+   - Disable both **GitHub Copilot** and **GitHub Copilot Chat**
+   - This removes the "Finish setup" prompt and Copilot chat panel from VS Code
+5. **Disable Copilot extension unification:**
+   - Search for `chat.extensionUnification.enabled` in Settings
+   - Uncheck **Chat › Extension Unification: Enabled**
+   - This prevents VS Code from merging all Copilot functionality into the chat extension
 
 These settings persist across sessions and only need to be configured once. See [Disabling VS Code Auto Port Forwarding](#-disabling-vs-code-auto-port-forwarding) for details.
 

@@ -28,6 +28,19 @@ These settings must be configured in the developer's local VS Code (not in devco
 |---------|---------------|---------|-----|
 | `remote.defaultExtensionsIfInstalledLocally` | Remove `GitHub.copilot` and `GitHub.copilot-chat` | Includes both | Copilot Chat auto-installs and must be manually dismissed each launch |
 
+### Built-in Copilot Suppression (Quality of life -- prevents unwanted UI)
+
+VS Code 1.96+ bundles Copilot as a built-in extension. Even after removing standalone Copilot extensions, the built-in version shows a "Finish setup" prompt and Copilot chat panel unless these settings are configured:
+
+| Setting | Required Value | Default | Why |
+|---------|---------------|---------|-----|
+| `github.copilot.enable` | `{"*": false}` | `{"*": true}` | Disables Copilot completions and suggestions |
+| `github.copilot.editor.enableAutoCompletions` | `false` | `true` | Disables Copilot inline auto-completions |
+| `github.copilot.renameSuggestions.triggerAutomatically` | `false` | `true` | Disables Copilot rename suggestions |
+| `chat.extensionUnification.enabled` | `false` | `true` | Prevents VS Code from merging Copilot functionality into the chat extension, which causes the "Finish setup" prompt |
+
+Note: These settings are also enforced inside the devcontainer via `devcontainer.json` settings. The host-level configuration prevents the "Finish setup" prompt from appearing before the container builds.
+
 ## Implementation Phases
 
 ### Phase 1: `initializeCommand` Pre-Flight Check
@@ -123,6 +136,8 @@ Fix these settings before opening this devcontainer:
   [FAIL] Auto Forward Ports -- must be disabled (currently: enabled)
   [FAIL] Restore Forwarded Ports -- must be disabled (currently: enabled)
   [FAIL] Default Extensions If Installed Locally -- remove GitHub.copilot, GitHub.copilot-chat
+  [FAIL] Chat Extension Unification -- must be disabled (currently: enabled)
+  [FAIL] Copilot Enable -- must be disabled for all languages (currently: enabled)
   [ OK ] Other Ports Attributes -- correctly configured
 
   After fixing these settings, reopen the devcontainer.
@@ -198,6 +213,8 @@ The check-host-settings.py script should be importable as a module for unit test
 | `test_validate_settings_auto_forward_enabled` | Detects `autoForwardPorts: true` |
 | `test_validate_settings_restore_forwarded_enabled` | Detects `restoreForwardedPorts: true` |
 | `test_validate_settings_copilot_in_default_extensions` | Detects Copilot in extension list |
+| `test_validate_settings_copilot_enable_default` | Detects `github.copilot.enable` not set to `{"*": false}` |
+| `test_validate_settings_extension_unification_enabled` | Detects `chat.extensionUnification.enabled: true` |
 | `test_validate_settings_missing_key_uses_default` | Missing key treated as VS Code default |
 | `test_validate_settings_empty_file` | Empty settings.json uses all defaults |
 | `test_missing_settings_file` | Missing file handled gracefully |
@@ -443,11 +460,17 @@ VS Code supports machine-level policy files that enforce settings and prevent us
   "remote.restoreForwardedPorts": false,
   "remote.otherPortsAttributes": {
     "onAutoForward": "ignore"
-  }
+  },
+  "github.copilot.enable": {
+    "*": false
+  },
+  "github.copilot.editor.enableAutoCompletions": false,
+  "github.copilot.renameSuggestions.triggerAutomatically": false,
+  "chat.extensionUnification.enabled": false
 }
 ```
 
-Note: `remote.defaultExtensionsIfInstalledLocally` may not be policy-capable. This needs verification against the VS Code policy documentation.
+Note: `remote.defaultExtensionsIfInstalledLocally` may not be policy-capable. The `github.copilot.*` and `chat.extensionUnification.*` settings need verification against the VS Code policy documentation for policy-capability.
 
 ### Distribution Methods
 
