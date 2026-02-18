@@ -8,7 +8,7 @@ version = "2.0.0"
 description = "CLI tool for managing Caylent devcontainers"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
-license = "Apache-2.0"
+license = {text = "Apache-2.0"}
 
 authors = [
   { name = "Caylent", email = "solutions-owners@caylent.com" }
