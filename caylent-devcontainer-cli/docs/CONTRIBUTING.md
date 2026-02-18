@@ -50,9 +50,7 @@ For more detailed setup instructions, see the [Quick Start](../README.md#-quick-
 
 We use the following tools to maintain code quality:
 
-- **Black**: For code formatting
-- **isort**: For import sorting
-- **flake8**: For linting
+- **Ruff**: For code formatting and linting (replaces black, isort, flake8)
 - **yamllint**: For YAML validation and formatting
 
 Before submitting a pull request, ensure your code passes all style checks:

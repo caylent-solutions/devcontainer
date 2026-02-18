@@ -50,7 +50,10 @@ def test_validate_standard_profile_functional():
     assert validate_standard_profile(valid_profile) is None
 
     # Missing fields
-    incomplete_profile = {"sso_start_url": "https://example.awsapps.com/start", "sso_region": "us-west-2"}
+    incomplete_profile = {
+        "sso_start_url": "https://example.awsapps.com/start",
+        "sso_region": "us-west-2",
+    }
     error = validate_standard_profile(incomplete_profile)
     assert "Missing required fields" in error
     assert "sso_account_name" in error
@@ -141,7 +144,10 @@ def test_aws_profile_map_standard_format_functional(mock_text, mock_select, mock
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_aws_profile_map
 
     # Mock responses for standard format
-    mock_confirm.return_value.ask.side_effect = [True, False]  # Enable AWS, don't add another profile
+    mock_confirm.return_value.ask.side_effect = [
+        True,
+        False,
+    ]  # Enable AWS, don't add another profile
     mock_select.return_value.ask.return_value = "Standard format (enter profiles one by one)"
 
     # Mock profile input
@@ -171,7 +177,10 @@ def test_aws_profile_map_standard_format_validation_retry(mock_text, mock_select
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_aws_profile_map
 
     # Mock responses
-    mock_confirm.return_value.ask.side_effect = [True, False]  # Enable AWS, don't add another profile
+    mock_confirm.return_value.ask.side_effect = [
+        True,
+        False,
+    ]  # Enable AWS, don't add another profile
     mock_select.return_value.ask.return_value = "Standard format (enter profiles one by one)"
 
     # First attempt - incomplete profile

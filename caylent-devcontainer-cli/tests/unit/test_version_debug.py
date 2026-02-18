@@ -5,10 +5,7 @@ import unittest.mock as mock
 from io import StringIO
 from unittest import TestCase
 
-from caylent_devcontainer_cli.utils.version import (
-    _debug_log,
-    check_for_updates,
-)
+from caylent_devcontainer_cli.utils.version import _debug_log, check_for_updates
 
 
 class TestDebugLogging(TestCase):
@@ -34,7 +31,10 @@ class TestDebugLogging(TestCase):
         """Test debug messages are logged during update check."""
         with mock.patch.dict(os.environ, {"CDEVCONTAINER_SKIP_UPDATE": "1"}):
             check_for_updates()
-            self.assertIn("Update check skipped (reason: global disable env)", mock_stderr.getvalue())
+            self.assertIn(
+                "Update check skipped (reason: global disable env)",
+                mock_stderr.getvalue(),
+            )
 
 
 class TestErrorHandlingMatrix(TestCase):

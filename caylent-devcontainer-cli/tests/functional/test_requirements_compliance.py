@@ -40,7 +40,13 @@ class TestRequirementsCompliance(TestCase):
     def test_skip_update_check_flag_in_cli(self):
         """Test --skip-update-check flag is recognized by CLI."""
         result = subprocess.run(
-            [sys.executable, "-m", "caylent_devcontainer_cli.cli", "--skip-update-check", "--help"],
+            [
+                sys.executable,
+                "-m",
+                "caylent_devcontainer_cli.cli",
+                "--skip-update-check",
+                "--help",
+            ],
             capture_output=True,
             text=True,
         )

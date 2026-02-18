@@ -1,0 +1,45 @@
+# Tinyproxy configuration template
+# Variables resolved at runtime by tinyproxy-daemon.sh:
+#   __USER__, __GROUP__, __LOG_DIR__, __UPSTREAM_HOST__, __UPSTREAM_PORT__, __LISTEN_PORT__
+
+User __USER__
+Group __GROUP__
+
+Port __LISTEN_PORT__
+Bind 0.0.0.0
+
+Timeout 600
+MaxClients 100
+StartServers 5
+MinSpareServers 2
+MaxSpareServers 10
+MaxRequestsPerChild 0
+
+LogFile "__LOG_DIR__/tinyproxy.log"
+LogLevel Info
+
+PidFile "__LOG_DIR__/tinyproxy.pid"
+
+# Allow Docker networks (IPv4 and IPv6)
+Allow 127.0.0.1
+Allow ::1
+Allow 192.168.0.0/16
+Allow 172.16.0.0/12
+Allow 10.0.0.0/8
+
+# Forward traffic to upstream proxy for domains with no subdomain qualifier.
+# The "." match limits forwarding to bare hostnames only; fully-qualified
+# domains go direct, which works when the host has internet access.
+# In locked-down corporate networks, replace "." with the actual domain
+# suffixes that require the upstream proxy.
+Upstream http __UPSTREAM_HOST__:__UPSTREAM_PORT__ "."
+
+# Allow CONNECT for HTTPS tunneling and common service ports
+ConnectPort 443
+ConnectPort 563
+ConnectPort 4318
+ConnectPort 8080
+ConnectPort 8443
+ConnectPort 9418
+
+DisableViaHeader Yes

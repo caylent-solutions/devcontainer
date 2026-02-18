@@ -1,4 +1,4 @@
-.PHONY: help configure install-hooks pre-commit-check github-workflow-yaml-lint yaml-fix
+.PHONY: help configure install-hooks pre-commit-check github-workflow-yaml-lint yaml-fix validate-catalog
 
 help: ## Show this help message
 	@echo "Available make tasks:"
@@ -26,6 +26,12 @@ pre-commit-check: ## Run pre-commit hooks and JSON validation like git hook
 		fi; \
 		echo "✅ $$file is valid JSON"; \
 	done
+
+CATALOG_PATH ?= .
+
+validate-catalog: ## Validate catalog structure using the CLI from this repo
+	pip install -q -e caylent-devcontainer-cli
+	CDEVCONTAINER_SKIP_UPDATE=1 cdevcontainer --skip-update-check catalog validate --local $(CATALOG_PATH)
 
 install-hooks: ## Install git hooks for pre-commit and pre-push
 	@echo "Installing git hooks..."

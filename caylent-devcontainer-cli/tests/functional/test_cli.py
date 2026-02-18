@@ -42,24 +42,6 @@ def test_version_command():
     assert "Caylent Devcontainer CLI" in result.stdout
 
 
-def test_setup_manual_mode(temp_project_dir):
-    """Test the setup-devcontainer command in manual mode."""
-    # Run the setup command with --manual flag
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
-
-    # Check that the command succeeded
-    assert result.returncode == 0
-
-    # Check that the .devcontainer directory was created
-    devcontainer_dir = os.path.join(temp_project_dir, ".devcontainer")
-    assert os.path.isdir(devcontainer_dir)
-
-    # Check that essential files were copied
-    assert os.path.isfile(os.path.join(devcontainer_dir, "devcontainer.json"))
-    assert os.path.isfile(os.path.join(devcontainer_dir, ".devcontainer.postcreate.sh"))
-    assert os.path.isfile(os.path.join(devcontainer_dir, "example-container-env-values.json"))
-
-
 def test_invalid_command():
     """Test an invalid command."""
     result = run_command(["cdevcontainer", "invalid-command"])
@@ -74,6 +56,9 @@ def test_invalid_command():
 def test_template_load_nonexistent():
     """Test loading a nonexistent template."""
     with tempfile.TemporaryDirectory() as temp_dir:
+        # Create .devcontainer dir so resolve_project_root passes
+        os.makedirs(os.path.join(temp_dir, ".devcontainer"))
+
         # Run the template load command with a nonexistent template
         result = run_command(["cdevcontainer", "template", "load", "nonexistent-template"], cwd=temp_dir)
 

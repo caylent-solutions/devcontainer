@@ -17,40 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache system dependencies
-        id: cache-system-deps
-        uses: actions/cache@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          path: /tmp/apt-cache
-          key: system-deps-${{ runner.os }}-${{ runner.arch }}-v3
-
-      - name: Install system dependencies for Python build
-        run: |
-          # Configure apt to use our cache directory
-          sudo mkdir -p /tmp/apt-cache
-          echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
-
-          # Check if we have a cache hit by looking for cached files
-          if [ -d /tmp/apt-cache ] && [ "$(ls -A /tmp/apt-cache)" ]; then
-            echo "Cache hit detected - restoring packages from cache"
-            sudo dpkg -i /tmp/apt-cache/*.deb || true
-            sudo apt-get install -f -y  # Fix any broken dependencies
-          else
-            echo "No cache found - downloading packages"
-            sudo apt-get update
-            sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-              libbz2-dev libreadline-dev libsqlite3-dev curl \
-              libncursesw5-dev xz-utils tk-dev libxml2-dev \
-              libxmlsec1-dev libffi-dev liblzma-dev bc
-          fi
-
-      - name: Fix cache permissions
-        if: always()
-        run: |
-          # Fix permissions on cache directories with appropriate security
-          sudo find /tmp/apt-cache -type d -exec chmod 755 {} + 2>/dev/null || true
-          sudo find /tmp/apt-cache -type f -exec chmod 644 {} + 2>/dev/null || true
-          sudo chown -R $USER:$USER /tmp/apt-cache 2>/dev/null || true
+          python-version: '3.14'
 
       - name: Cache ASDF installation
         uses: actions/cache@v4
@@ -68,14 +38,17 @@ jobs:
           echo "$HOME/.asdf/bin" >> $GITHUB_PATH
           echo "$HOME/.asdf/shims" >> $GITHUB_PATH
           source $HOME/.asdf/asdf.sh
+        shell: bash
 
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
           source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
+          asdf plugin remove python 2>/dev/null || true
           asdf install
           asdf reshim
+        shell: bash
 
       - name: Cache Python dependencies
         uses: actions/cache@v4
@@ -90,31 +63,32 @@ jobs:
       - name: Install CLI
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
+          pip install --upgrade pip
           make install
-          asdf reshim
+        shell: bash
 
       - name: Run pre-commit checks
         run: |
           cd $GITHUB_WORKSPACE
+          source $HOME/.asdf/asdf.sh
           make pre-commit-check
+        shell: bash
 
       - name: Lint
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make lint
+        shell: bash
 
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make publish
+        shell: bash
 
       - name: Run unit tests with coverage threshold
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make unit-test
           coverage json
           coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
@@ -123,25 +97,32 @@ jobs:
             echo "Error: Code coverage is below 90% threshold ($coverage_percent%)"
             exit 1
           fi
+        shell: bash
 
       - name: Run functional tests
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make functional-test
+        shell: bash
+
+      - name: Validate catalog structure
+        run: |
+          cd $GITHUB_WORKSPACE
+          make validate-catalog
+        shell: bash
 
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make coverage
           make coverage-json
+        shell: bash
 
       - name: Print coverage summary
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make coverage-text
+        shell: bash
 
       - name: Send success notification to Slack
         if: success()
@@ -270,39 +251,10 @@ jobs:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
-      - name: Cache system dependencies for release
-        id: cache-system-deps-release
-        uses: actions/cache@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          path: /tmp/apt-cache-release
-          key: system-deps-release-${{ runner.os }}-${{ runner.arch }}-v3
-
-      - name: Install system dependencies
-        run: |
-          # Configure apt to use our cache directory
-          sudo mkdir -p /tmp/apt-cache-release
-          echo 'Dir::Cache::Archives "/tmp/apt-cache-release";' | sudo tee /etc/apt/apt.conf.d/99cache
-
-          # Check if we have a cache hit by looking for cached files
-          if [ -d /tmp/apt-cache-release ] && [ "$(ls -A /tmp/apt-cache-release)" ]; then
-            echo "Cache hit detected - restoring packages from cache"
-            sudo dpkg -i /tmp/apt-cache-release/*.deb || true
-            sudo apt-get install -f -y  # Fix any broken dependencies
-          else
-            echo "No cache found - downloading packages"
-            sudo apt-get update
-            sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-              libbz2-dev libreadline-dev libsqlite3-dev curl libncursesw5-dev \
-              xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev bc gh
-          fi
-
-      - name: Fix release cache permissions
-        if: always()
-        run: |
-          # Fix permissions on release cache directories with appropriate security
-          sudo find /tmp/apt-cache-release -type d -exec chmod 755 {} + 2>/dev/null || true
-          sudo find /tmp/apt-cache-release -type f -exec chmod 644 {} + 2>/dev/null || true
-          sudo chown -R $USER:$USER /tmp/apt-cache-release 2>/dev/null || true
+          python-version: '3.14'
 
       - name: Cache ASDF installation for release
         uses: actions/cache@v4
@@ -321,14 +273,17 @@ jobs:
           echo "$HOME/.asdf/bin" >> $GITHUB_PATH
           echo "$HOME/.asdf/shims" >> $GITHUB_PATH
           source $HOME/.asdf/asdf.sh
+        shell: bash
 
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
           source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
+          asdf plugin remove python 2>/dev/null || true
           asdf install
           asdf reshim
+        shell: bash
 
       - name: Cache Python dependencies for release
         uses: actions/cache@v4
@@ -344,10 +299,9 @@ jobs:
       - name: Install CLI and dependencies
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         run: |
-          source $HOME/.asdf/asdf.sh
           pip install --upgrade pip
           make install
-          asdf reshim
+        shell: bash
 
       - name: Compute next version
         id: semantic-release
@@ -364,6 +318,7 @@ jobs:
             echo "Current version: $NEW_VERSION"
           fi
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+        shell: bash
 
       - name: Generate changelog and update version files
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
@@ -387,6 +342,7 @@ jobs:
 
           # Clean up build artifacts created by semantic-release
           rm -rf dist/ build/ src/caylent_devcontainer_cli.egg-info/
+        shell: bash
 
       - name: Commit changelog and version bump
         id: commit-changes
@@ -449,6 +405,7 @@ jobs:
 
           gh pr merge ${PR_URL} --admin --merge
           echo "✓ Pull request merged successfully"
+        shell: bash
 
       - name: Wait for PR to merge and create Git tag
         env:
@@ -493,6 +450,7 @@ jobs:
           # Clean up the release branch
           echo "Cleaning up release branch: release-$NEW_VERSION"
           git push origin --delete release-$NEW_VERSION || echo "Branch already deleted or doesn't exist"
+        shell: bash
 
       - name: Trigger publish workflow
         env:
@@ -500,3 +458,4 @@ jobs:
         run: |
           NEW_VERSION=$(grep '^version = ' caylent-devcontainer-cli/pyproject.toml | sed 's/.*version = "\([^"]*\)".*/\1/')
           gh workflow run publish.yml -f tag="$NEW_VERSION"
+        shell: bash

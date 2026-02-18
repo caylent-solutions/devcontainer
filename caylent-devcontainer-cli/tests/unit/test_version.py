@@ -60,7 +60,10 @@ class TestVersionUtils(TestCase):
         self.assertTrue(result)
 
     @mock.patch("builtins.input", return_value="2")
-    @mock.patch("caylent_devcontainer_cli.utils.version._get_installation_type_display", return_value="pipx")
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._get_installation_type_display",
+        return_value="pipx",
+    )
     def test_show_update_prompt_continue(self, mock_display, mock_input):
         """Test update prompt with continue option."""
         result = _show_update_prompt("1.0.0", "1.1.0")
@@ -68,7 +71,10 @@ class TestVersionUtils(TestCase):
 
     @mock.patch("builtins.input", return_value="1")
     @mock.patch("caylent_devcontainer_cli.utils.version._show_manual_upgrade_instructions")
-    @mock.patch("caylent_devcontainer_cli.utils.version._get_installation_type_display", return_value="pipx")
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._get_installation_type_display",
+        return_value="pipx",
+    )
     def test_show_update_prompt_exit(self, mock_display, mock_instructions, mock_input):
         """Test update prompt with exit option."""
         result = _show_update_prompt("1.0.0", "1.1.0")
@@ -104,7 +110,10 @@ class TestVersionUtils(TestCase):
         # First call fails, second succeeds
         mock_run.side_effect = [
             FileNotFoundError(),
-            mock.MagicMock(returncode=0, stdout=json.dumps({"venvs": {"caylent-devcontainer-cli": {}}})),
+            mock.MagicMock(
+                returncode=0,
+                stdout=json.dumps({"venvs": {"caylent-devcontainer-cli": {}}}),
+            ),
         ]
         self.assertTrue(_is_installed_with_pipx())
 
@@ -113,29 +122,53 @@ class TestVersionUtils(TestCase):
         result = _is_editable_installation()
         self.assertIsInstance(result, bool)
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_editable_installation", return_value=False)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_installed_with_pipx",
+        return_value=True,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_editable_installation",
+        return_value=False,
+    )
     def test_get_installation_type_display_pipx(self, mock_editable, mock_pipx):
         """Test installation type display for pipx."""
         result = _get_installation_type_display()
         self.assertEqual(result, "pipx")
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_editable_installation", return_value=True)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_installed_with_pipx",
+        return_value=True,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_editable_installation",
+        return_value=True,
+    )
     def test_get_installation_type_display_pipx_editable(self, mock_editable, mock_pipx):
         """Test installation type display for pipx editable."""
         result = _get_installation_type_display()
         self.assertEqual(result, "pipx editable")
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx", return_value=False)
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_editable_installation", return_value=True)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_installed_with_pipx",
+        return_value=False,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_editable_installation",
+        return_value=True,
+    )
     def test_get_installation_type_display_pip_editable(self, mock_editable, mock_pipx):
         """Test installation type display for pip editable."""
         result = _get_installation_type_display()
         self.assertEqual(result, "pip editable")
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx", return_value=False)
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_editable_installation", return_value=False)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_installed_with_pipx",
+        return_value=False,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_editable_installation",
+        return_value=False,
+    )
     def test_get_installation_type_display_pip(self, mock_editable, mock_pipx):
         """Test installation type display for pip."""
         result = _get_installation_type_display()
@@ -237,21 +270,33 @@ class TestVersionUtils(TestCase):
         _debug_log("test message")
         mock_stderr.write.assert_not_called()
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_interactive_shell", return_value=False)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_interactive_shell",
+        return_value=False,
+    )
     def test_check_for_updates_non_interactive(self, mock_interactive):
         """Test update check in non-interactive environment."""
         result = check_for_updates()
         self.assertTrue(result)
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_interactive_shell", return_value=True)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_interactive_shell",
+        return_value=True,
+    )
     @mock.patch("caylent_devcontainer_cli.utils.version._get_latest_version", return_value=None)
     def test_check_for_updates_no_version(self, mock_get_version, mock_interactive):
         """Test update check when version fetch fails."""
         result = check_for_updates()
         self.assertTrue(result)
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_interactive_shell", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._get_latest_version", return_value="1.0.0")
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_interactive_shell",
+        return_value=True,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._get_latest_version",
+        return_value="1.0.0",
+    )
     @mock.patch("caylent_devcontainer_cli.utils.version._version_is_newer", return_value=False)
     @mock.patch("builtins.print")
     def test_check_for_updates_up_to_date(self, mock_print, mock_newer, mock_get_version, mock_interactive):
@@ -260,27 +305,51 @@ class TestVersionUtils(TestCase):
         self.assertTrue(result)
         mock_print.assert_called()
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_interactive_shell", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._get_latest_version", return_value="2.0.0")
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_interactive_shell",
+        return_value=True,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._get_latest_version",
+        return_value="2.0.0",
+    )
     @mock.patch("caylent_devcontainer_cli.utils.version._version_is_newer", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._show_update_prompt", return_value=EXIT_OK)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._show_update_prompt",
+        return_value=EXIT_OK,
+    )
     def test_check_for_updates_continue(self, mock_prompt, mock_newer, mock_get_version, mock_interactive):
         """Test update check with continue choice."""
         result = check_for_updates()
         self.assertTrue(result)
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_interactive_shell", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._get_latest_version", return_value="2.0.0")
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_interactive_shell",
+        return_value=True,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._get_latest_version",
+        return_value="2.0.0",
+    )
     @mock.patch("caylent_devcontainer_cli.utils.version._version_is_newer", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._show_update_prompt", return_value=EXIT_UPGRADE_REQUESTED_ABORT)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._show_update_prompt",
+        return_value=EXIT_UPGRADE_REQUESTED_ABORT,
+    )
     @mock.patch("sys.exit")
     def test_check_for_updates_exit(self, mock_exit, mock_prompt, mock_newer, mock_get_version, mock_interactive):
         """Test update check with exit choice."""
         check_for_updates()
         mock_exit.assert_called_with(EXIT_UPGRADE_REQUESTED_ABORT)
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_interactive_shell", return_value=True)
-    @mock.patch("caylent_devcontainer_cli.utils.version._get_latest_version", side_effect=Exception("error"))
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_interactive_shell",
+        return_value=True,
+    )
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._get_latest_version",
+        side_effect=Exception("error"),
+    )
     def test_check_for_updates_exception(self, mock_get_version, mock_interactive):
         """Test update check with exception."""
         result = check_for_updates()
@@ -314,7 +383,10 @@ class TestVersionUtils(TestCase):
         result = _is_installed_with_pipx()
         self.assertFalse(result)
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx", return_value=True)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_installed_with_pipx",
+        return_value=True,
+    )
     @mock.patch("os.walk")
     def test_is_editable_installation_pipx_with_egg_link(self, mock_walk, mock_pipx):
         """Test editable installation detection with pipx and egg-link."""
@@ -322,7 +394,10 @@ class TestVersionUtils(TestCase):
         result = _is_editable_installation()
         self.assertTrue(result)
 
-    @mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx", return_value=True)
+    @mock.patch(
+        "caylent_devcontainer_cli.utils.version._is_installed_with_pipx",
+        return_value=True,
+    )
     @mock.patch("os.walk")
     def test_is_editable_installation_pipx_no_egg_link(self, mock_walk, mock_pipx):
         """Test editable installation detection with pipx but no egg-link."""
@@ -332,6 +407,9 @@ class TestVersionUtils(TestCase):
 
     def test_is_editable_installation_exception(self):
         """Test editable installation detection with exception."""
-        with mock.patch("caylent_devcontainer_cli.utils.version._is_installed_with_pipx", side_effect=Exception()):
+        with mock.patch(
+            "caylent_devcontainer_cli.utils.version._is_installed_with_pipx",
+            side_effect=Exception(),
+        ):
             result = _is_editable_installation()
             self.assertFalse(result)

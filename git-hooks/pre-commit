@@ -8,7 +8,7 @@ pre-commit run --all-files
 
 # Validate JSON files outside caylent-devcontainer-cli/
 echo "Validating JSON files outside caylent-devcontainer-cli/..."
-for file in $(git diff --cached --name-only | grep -v "^caylent-devcontainer-cli/" | grep "\.json$"); do
+for file in $(git diff --cached --name-only --diff-filter=d | grep -v "^caylent-devcontainer-cli/" | grep "\.json$"); do
   echo "Validating $file"
   if ! jq . "$file" > /dev/null 2>&1; then
     echo "❌ Invalid JSON in $file"

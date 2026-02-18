@@ -8,7 +8,7 @@ def run_command(cmd, cwd=None, input_text=None):
     result = subprocess.run(
         cmd,
         cwd=cwd,
-        input=input_text.encode() if input_text else None,
+        input=input_text if input_text else None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

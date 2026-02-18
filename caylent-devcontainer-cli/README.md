@@ -12,6 +12,9 @@ A command-line tool for managing Caylent devcontainer environments.
    - [Setting Up a Devcontainer](#setting-up-a-devcontainer)
    - [Managing Templates](#managing-templates)
    - [Launching IDEs](#launching-ides)
+   - [Browsing and Validating Catalogs](#browsing-and-validating-catalogs)
+   - [Catalog Tagging](#catalog-tagging)
+   - [Shell Completion](#shell-completion)
 3. [Development](#development)
    - [Setup](#setup)
    - [Testing](#testing)
@@ -60,16 +63,13 @@ cdevcontainer --help
 
 ### Commands
 
+- `catalog`: Browse and validate devcontainer catalog repositories
 - `setup-devcontainer`: Set up a devcontainer in a project directory
 - `code`: Launch IDE (VS Code, Cursor) with the devcontainer environment
-- `env`: Manage environment variables
 - `template`: Manage devcontainer templates
-- `install`: Install the CLI tool to your PATH
-- `uninstall`: Uninstall the CLI tool
 
 ### Global Options
 
-- `-y, --yes`: Automatically answer yes to all prompts
 - `-v, --version`: Show version information
 - `--skip-update-check`: Skip automatic update check
 
@@ -100,6 +100,7 @@ Enter your choice [1]:
 - **Skip mechanisms**: Use `--skip-update-check` flag or set `CDEVCONTAINER_SKIP_UPDATE=1`
 
 **Environment Variables:**
+- `DEVCONTAINER_CATALOG_URL`: Override the default catalog repository URL (e.g., `https://github.com/org/custom-catalog.git@v1.0`). When not set, the CLI auto-resolves the latest semver tag >= 2.0.0 from the default catalog repository. See [Catalog Tagging](#catalog-tagging).
 - `CDEVCONTAINER_SKIP_UPDATE=1`: Globally disable all automatic update checks
 - `CDEVCONTAINER_DEBUG_UPDATE=1`: Enable debug logging for update check process
 
@@ -120,25 +121,36 @@ This will show detailed information about:
 ### Setting Up a Devcontainer
 
 ```bash
-# Interactive setup
+# Interactive setup (auto-resolves the latest semver tag from the default catalog)
 cdevcontainer setup-devcontainer /path/to/your/project
 
-# Manual setup (skip interactive prompts)
-cdevcontainer setup-devcontainer --manual /path/to/your/project
+# Use a specialized catalog (pin to a specific tag)
+export DEVCONTAINER_CATALOG_URL="https://github.com/your-org/catalog.git@v1.0"
+cdevcontainer setup-devcontainer /path/to/your/project
 
-# Use specific git reference (branch, tag, or commit) instead of CLI version
-cdevcontainer setup-devcontainer --ref main /path/to/your/project
-cdevcontainer setup-devcontainer --ref 1.0.0 /path/to/your/project
-cdevcontainer setup-devcontainer --ref feature/new-feature /path/to/your/project
+# Select a specific entry by name (requires DEVCONTAINER_CATALOG_URL)
+cdevcontainer setup-devcontainer --catalog-entry java-backend /path/to/your/project
+
+# Override catalog URL directly (bypasses tag resolution; useful for testing branches)
+cdevcontainer setup-devcontainer --catalog-url "https://github.com/org/repo.git@feature/branch" /path/to/project
+
+# Combine --catalog-url with --catalog-entry
+cdevcontainer setup-devcontainer --catalog-url "https://github.com/org/repo.git@v2.0.0" --catalog-entry java-backend /path/to/project
 ```
 
-The interactive setup will guide you through:
-1. Using an existing template or creating a new one
-2. Configuring environment variables
-3. Selecting pager preference (cat, less, more, most)
-4. Setting up AWS profiles (if enabled)
-5. Selecting AWS CLI output format (json, table, text, yaml) - only if AWS is enabled
-6. Automatically creating a `.tool-versions` file if one doesn't exist to ensure consistent runtime management via asdf
+The setup command will:
+1. Create an empty `.tool-versions` file if one doesn't exist
+2. Detect existing `.devcontainer/` configuration and show version/catalog info
+3. If `.tool-versions` contains a Python entry, recommend managing Python through devcontainer features
+4. Ask whether to replace existing `.devcontainer/` files or keep them
+5. Clone the catalog, discover entries, and copy selected entry files to `.devcontainer/`
+6. Copy common assets from `common/devcontainer-assets/` (shared scripts, host proxy toolkits) into `.devcontainer/`
+7. Copy root project assets from `common/root-project-assets/` (e.g., `CLAUDE.md`, `.claude/`) into the project root
+8. Run informational validation on existing project configuration files
+8. Guide you through interactive template selection or creation
+9. Generate project configuration files via `write_project_files()`
+
+> **Note**: All files and directories in the catalog's `common/devcontainer-assets/` are automatically included in every project — this is how shared scripts (postcreate, functions) and host-side proxy toolkits (`nix-family-os/`, `wsl-family-os/`) are distributed.
 
 ### Managing Templates
 
@@ -148,6 +160,12 @@ cdevcontainer template save my-template
 
 # List available templates
 cdevcontainer template list
+
+# View a template's configuration values
+cdevcontainer template view my-template
+
+# Edit an existing template interactively
+cdevcontainer template edit my-template
 
 # Load a template into a project
 cdevcontainer template load my-template
@@ -188,22 +206,73 @@ cdevcontainer code /path/to/another-project --ide cursor
 - `vscode` - Visual Studio Code (default)
 - `cursor` - Cursor AI IDE
 
+**Options:**
+- `--regenerate-shell-env` - Regenerate `shell.env` from existing JSON configuration without running full setup
+
+**Validation:** Before launching, the code command validates environment variables against both the base configuration and the developer template. If missing variables are detected, you will be prompted to update project files or add the missing variables.
+
 > **Note**: You can run `cdevcontainer code` from within any devcontainer to launch any supported IDE for other projects. This allows you to work on multiple projects simultaneously, each in their own devcontainer environment.
+
+### Browsing and Validating Catalogs
+
+```bash
+# List available devcontainer configurations from the default catalog
+cdevcontainer catalog list
+
+# Filter entries by tags (ANY match)
+cdevcontainer catalog list --tags java,python
+
+# Validate the default catalog
+cdevcontainer catalog validate
+
+# Validate a local catalog directory
+cdevcontainer catalog validate --local /path/to/catalog
+
+# Use a custom catalog repository
+export DEVCONTAINER_CATALOG_URL="https://github.com/org/custom-catalog.git@v1.0"
+cdevcontainer catalog list
+
+# Override catalog URL directly (bypasses tag resolution and DEVCONTAINER_CATALOG_URL)
+cdevcontainer catalog list --catalog-url "https://github.com/org/repo.git@feature/branch"
+cdevcontainer catalog validate --catalog-url "https://github.com/org/repo.git@feature/branch"
+```
+
+The `catalog validate` command performs comprehensive structural and content checks including: VERSION semver validation, devcontainer.json structural checks (name field, container source), common-asset subdirectory validation (nix-family-os, wsl-family-os), executable permission checks on shell scripts, root-project-assets JSON validity, entry directory/name consistency, unknown field detection in catalog-entry.json, and dynamic file conflict detection including subdirectories.
+
+### Catalog Tagging
+
+All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for releases. The CLI relies on tags for deterministic, reproducible behavior:
+
+- **Default catalog**: When `DEVCONTAINER_CATALOG_URL` is not set, the CLI queries `git ls-remote --tags` against the default catalog and selects the latest semver tag >= `2.0.0`. This ensures the CLI always clones a known release rather than the default branch.
+- **Custom catalogs**: When setting `DEVCONTAINER_CATALOG_URL`, use the `@tag` suffix to pin to a specific version (e.g., `https://github.com/org/catalog.git@1.2.0`). Without a tag suffix, the default branch is cloned.
+
+**Recommendations for catalog maintainers:**
+- Tag every release with a semver version (`MAJOR.MINOR.PATCH`)
+- Do not rely on the default branch (`main`) for production use
+- Use annotated tags (`git tag -a 2.1.0 -m "Release 2.1.0"`) for provenance
+- Place shared files in `common/devcontainer-assets/` — everything in this directory is automatically copied into every project's `.devcontainer/` regardless of which entry is selected
+- Place root-level project files in `common/root-project-assets/` — everything in this directory is automatically copied into the **project root** (e.g., `CLAUDE.md`, `.claude/`). This directory is optional.
+- Place entry-specific files (e.g., `devcontainer.json`, `catalog-entry.json`) in `catalog/<name>/`
+
+### Shell Completion
+
+Enable tab completion for all commands, subcommands, and flags. Completions stay in sync automatically after `pipx upgrade`.
+
+```bash
+# Bash — add to ~/.bashrc
+eval "$(cdevcontainer completion bash)"
+
+# Zsh — add to ~/.zshrc
+eval "$(cdevcontainer completion zsh)"
+```
+
+For static file installation, prerequisites, troubleshooting, and verification steps, see the [Shell Completion Guide](docs/SHELL_COMPLETION.md).
 
 ## Development
 
 ### Setup
 
 For development, we recommend using the devcontainer itself. See the [Contributing Guide](docs/CONTRIBUTING.md) for detailed setup instructions.
-
-### Testing
-
-```bash
-# Run unit tests
-make unit-test
-
-# Run functional tests
-make functional-test
 
 ### Testing
 
@@ -233,10 +302,10 @@ make functional-test-report
 ### Code Quality and Validation
 
 ```bash
-# Check code style (Python linting)
+# Check code style (ruff linting and format check)
 make lint
 
-# Format code (Python formatting)
+# Format code (ruff formatting and auto-fix)
 make format
 
 # Check GitHub workflow YAML files (from repository root)

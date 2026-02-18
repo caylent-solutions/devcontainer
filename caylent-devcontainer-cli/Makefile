@@ -12,17 +12,12 @@ install: ## Install the package and dependencies
 	asdf reshim python 2>/dev/null || true
 
 lint: ## Check code formatting and style
-	black --check src tests
-	isort --check-only src tests
-	flake8 src tests
+	ruff check src tests
+	ruff format --check src tests
 
-github-workflow-yaml-lint: ## Check GitHub workflow YAML files for syntax and style issues
-	@which yamllint > /dev/null 2>&1 || (echo "Installing yamllint..." && pip install -q yamllint)
-	@yamllint ../.github/workflows/*.yml
-
-format: ## Format code using black and isort
-	black src tests
-	isort src tests
+format: ## Format code using ruff
+	ruff check --fix src tests
+	ruff format src tests
 
 unit-test: ## Run unit tests with coverage
 	pytest tests/unit -v --cov=src --cov-report=term-missing

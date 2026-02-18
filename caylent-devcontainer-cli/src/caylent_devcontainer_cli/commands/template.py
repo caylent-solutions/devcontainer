@@ -1,110 +1,110 @@
 """Template command for the Caylent Devcontainer CLI."""
 
-import json
 import os
 
-import semver
-
 from caylent_devcontainer_cli import __version__
-from caylent_devcontainer_cli.commands.setup import EXAMPLE_ENV_VALUES
-from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
-from caylent_devcontainer_cli.utils.constants import TEMPLATES_DIR
-from caylent_devcontainer_cli.utils.env import is_single_line_env_var
-from caylent_devcontainer_cli.utils.ui import confirm_action, log
-
-
-def get_missing_single_line_vars(container_env):
-    """Get missing single-line environment variables from EXAMPLE_ENV_VALUES."""
-    missing_vars = {}
-    for key, value in EXAMPLE_ENV_VALUES.items():
-        if key not in container_env and is_single_line_env_var(value):
-            missing_vars[key] = value
-    return missing_vars
-
-
-def prompt_for_missing_vars(missing_vars):
-    """Prompt user for missing environment variables."""
-    import questionary
-
-    updated_vars = {}
-    for var_name, default_value in missing_vars.items():
-        log("INFO", f"New environment variable '{var_name}' needs to be added to your template")
-
-        use_default = questionary.confirm(f"Use default value '{default_value}' for {var_name}?", default=True).ask()
-
-        if use_default:
-            updated_vars[var_name] = default_value
-        else:
-            custom_value = questionary.text(f"Enter custom value for {var_name}:", default=str(default_value)).ask()
-            updated_vars[var_name] = custom_value
-
-    return updated_vars
+from caylent_devcontainer_cli.utils.constants import ENV_VARS_FILENAME, KNOWN_KEYS
+from caylent_devcontainer_cli.utils.fs import (
+    load_json_config,
+    resolve_project_root,
+    write_json_file,
+    write_project_files,
+)
+from caylent_devcontainer_cli.utils.template import (
+    ensure_templates_dir,
+    get_template_names,
+    get_template_path,
+    validate_template,
+)
+from caylent_devcontainer_cli.utils.ui import COLORS, ask_or_exit, confirm_action, exit_cancelled, exit_with_error, log
 
 
 def register_command(subparsers):
     """Register the template command."""
-    template_parser = subparsers.add_parser("template", help="Template management")
-    template_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
+    from caylent_devcontainer_cli.cli import _HelpFormatter, build_env_epilog
+
+    template_parser = subparsers.add_parser(
+        "template",
+        help="Template management",
+        formatter_class=_HelpFormatter,
+        epilog=build_env_epilog("template"),
+    )
     template_subparsers = template_parser.add_subparsers(dest="template_command")
 
-    # 'template save' command
+    # Custom completer for existing template names (used by shtab)
+    _template_complete = {
+        "bash": "_cdevcontainer_template_names",
+        "zsh": "_cdevcontainer_template_names",
+    }
+
+    import shtab
+
+    # 'template save' command (new name — no dynamic completion)
     save_parser = template_subparsers.add_parser("save", help="Save current environment as a template")
     save_parser.add_argument("name", help="Template name")
-    save_parser.add_argument("-p", "--project-root", help="Project root directory (default: current directory)")
-    save_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
+    save_project_root = save_parser.add_argument(
+        "-p",
+        "--project-root",
+        help="Project root directory (default: current directory)",
+    )
+    save_project_root.complete = shtab.DIRECTORY
     save_parser.set_defaults(func=handle_template_save)
 
     # 'template load' command
     load_template_parser = template_subparsers.add_parser("load", help="Load a template into current project")
-    load_template_parser.add_argument("name", help="Template name")
-    load_template_parser.add_argument(
-        "-p", "--project-root", help="Project root directory (default: current directory)"
+    load_name = load_template_parser.add_argument("name", help="Template name")
+    load_name.complete = _template_complete
+    load_project_root = load_template_parser.add_argument(
+        "-p",
+        "--project-root",
+        help="Project root directory (default: current directory)",
     )
-    load_template_parser.add_argument(
-        "-y", "--yes", action="store_true", help="Automatically answer yes to all prompts"
-    )
+    load_project_root.complete = shtab.DIRECTORY
     load_template_parser.set_defaults(func=handle_template_load)
 
     # 'template list' command
     list_parser = template_subparsers.add_parser("list", help="List available templates")
     list_parser.set_defaults(func=handle_template_list)
 
+    # 'template view' command
+    view_parser = template_subparsers.add_parser("view", help="View a template's configuration values")
+    view_name = view_parser.add_argument("name", help="Template name")
+    view_name.complete = _template_complete
+    view_parser.set_defaults(func=handle_template_view)
+
+    # 'template edit' command
+    edit_parser = template_subparsers.add_parser("edit", help="Edit an existing template interactively")
+    edit_name = edit_parser.add_argument("name", help="Template name")
+    edit_name.complete = _template_complete
+    edit_parser.set_defaults(func=handle_template_edit)
+
     # 'template delete' command
     delete_parser = template_subparsers.add_parser("delete", help="Delete one or more templates")
-    delete_parser.add_argument("names", nargs="+", help="Template names to delete")
-    delete_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
+    delete_names = delete_parser.add_argument("names", nargs="+", help="Template names to delete")
+    delete_names.complete = _template_complete
     delete_parser.set_defaults(func=handle_template_delete)
 
-    # 'template create' command
+    # 'template create' command (new name — no dynamic completion)
     create_parser = template_subparsers.add_parser("create", help="Create a new template interactively")
     create_parser.add_argument("name", help="Template name")
-    create_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
     create_parser.set_defaults(func=handle_template_create)
 
     # 'template upgrade' command
     upgrade_parser = template_subparsers.add_parser("upgrade", help="Upgrade a template to the current CLI version")
-    upgrade_parser.add_argument("name", help="Template name to upgrade")
-    upgrade_parser.add_argument("-y", "--yes", action="store_true", help="Automatically answer yes to all prompts")
-    upgrade_parser.add_argument(
-        "-f", "--force", action="store_true", help="Force full upgrade with interactive prompts for missing variables"
-    )
+    upgrade_name = upgrade_parser.add_argument("name", help="Template name to upgrade")
+    upgrade_name.complete = _template_complete
     upgrade_parser.set_defaults(func=handle_template_upgrade)
-
-
-def ensure_templates_dir():
-    """Ensure templates directory exists."""
-    os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
 
 def handle_template_save(args):
     """Handle the template save command."""
-    project_root = args.project_root or os.getcwd()
+    project_root = resolve_project_root(args.project_root)
     save_template(project_root, args.name)
 
 
 def handle_template_load(args):
     """Handle the template load command."""
-    project_root = args.project_root or os.getcwd()
+    project_root = resolve_project_root(args.project_root)
     load_template(project_root, args.name)
 
 
@@ -113,10 +113,43 @@ def handle_template_list(args):
     list_templates()
 
 
+def handle_template_view(args):
+    """Handle the template view command."""
+    view_template(args.name)
+
+
 def handle_template_delete(args):
     """Handle the template delete command."""
     for name in args.names:
         delete_template(name)
+
+
+def handle_template_edit(args):
+    """Handle the template edit command."""
+    edit_template(args.name)
+
+
+def edit_template(template_name):
+    """Edit an existing template interactively.
+
+    Loads the template, validates it, runs the interactive edit flow,
+    updates metadata, and saves.
+    """
+    from caylent_devcontainer_cli.commands.setup_interactive import edit_template_interactive, save_template_to_file
+
+    template_path = get_template_path(template_name)
+
+    if not os.path.exists(template_path):
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
+
+    template_data = load_json_config(template_path)
+    template_data = validate_template(template_data)
+
+    updated = edit_template_interactive(template_data)
+
+    save_template_to_file(updated, template_name)
+
+    log("OK", f"Template '{template_name}' updated successfully")
 
 
 def handle_template_create(args):
@@ -125,23 +158,36 @@ def handle_template_create(args):
 
 
 def create_new_template(template_name):
-    """Create a new template interactively."""
+    """Create a new template interactively.
+
+    Runs the full 17-step interactive creation flow and saves the
+    template with metadata (template_name, template_path, cli_version).
+    """
+    import questionary
+
     from caylent_devcontainer_cli.commands.setup_interactive import create_template_interactive, save_template_to_file
 
     ensure_templates_dir()
 
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     # Check if template already exists
     if os.path.exists(template_path):
-        if not confirm_action(f"Template '{template_name}' already exists. Overwrite?"):
-            log("INFO", "Template creation cancelled")
-            return
+        overwrite = ask_or_exit(
+            questionary.confirm(
+                f"Template '{template_name}' already exists. Overwrite?",
+                default=False,
+            )
+        )
+        if not overwrite:
+            exit_cancelled("Template creation cancelled")
 
     log("INFO", f"Creating new template '{template_name}'")
 
-    # Use current CLI version
+    # Run the full interactive creation flow
     template_data = create_template_interactive()
+
+    # Save with metadata (template_name, template_path added by save_template_to_file)
     save_template_to_file(template_data, template_name)
 
     log("OK", f"Template '{template_name}' created successfully")
@@ -149,190 +195,175 @@ def create_new_template(template_name):
 
 def handle_template_upgrade(args):
     """Handle the template upgrade command."""
-    upgrade_template_file(args.name, force=args.force)
+    upgrade_template_file(args.name)
 
 
 def save_template(project_root, template_name):
     """Save current environment as a template."""
     ensure_templates_dir()
-    env_vars_json = os.path.join(project_root, "devcontainer-environment-variables.json")
+    env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
     if not os.path.exists(env_vars_json):
-        log("ERR", f"No devcontainer-environment-variables.json found in {project_root}")
-        import sys
+        exit_with_error(f"No {ENV_VARS_FILENAME} found in {project_root}")
 
-        sys.exit(1)
-
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     # Ask for confirmation before saving
     if os.path.exists(template_path):
         if not confirm_action(f"This will overwrite the existing template at:\n{template_path}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
     else:
         if not confirm_action(f"This will create a new template at:\n{template_path}"):
-            import sys
-
-            sys.exit(1)
+            exit_cancelled()
 
     try:
         log("INFO", f"Saving template from {env_vars_json}")
 
         # Read the environment variables file
-        with open(env_vars_json, "r") as f:
-            env_data = json.load(f)
+        env_data = load_json_config(env_vars_json)
 
         # Add CLI version information
         env_data["cli_version"] = __version__
 
         # Write to template file
-        with open(template_path, "w") as f:
-            json.dump(env_data, f, indent=2)
-            f.write("\n")  # Add newline at end of file
+        write_json_file(template_path, env_data)
 
         log("OK", f"Template saved as: {template_name} at {template_path}")
     except Exception as e:
-        log("ERR", f"Failed to save template: {e}")
-        import sys
-
-        sys.exit(1)
+        exit_with_error(f"Failed to save template: {e}")
 
 
 def load_template(project_root, template_name):
-    """Load a template into the current project."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    """Load a template into the current project.
+
+    Reads the template from ~/.devcontainer-templates/<name>.json,
+    validates it via validate_template(), and generates all project
+    files via write_project_files().
+    """
+    import questionary
+
+    template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
-        log("ERR", f"Template '{template_name}' not found at {template_path}")
-        import sys
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
 
-        sys.exit(1)
+    env_vars_json = os.path.join(project_root, ENV_VARS_FILENAME)
 
-    env_vars_json = os.path.join(project_root, "devcontainer-environment-variables.json")
-
-    # Ask for confirmation before loading
+    # Confirm overwrite if configuration already exists
     if os.path.exists(env_vars_json):
-        if not confirm_action(f"This will overwrite your existing configuration at:\n{env_vars_json}"):
-            import sys
+        overwrite = ask_or_exit(
+            questionary.confirm(
+                f"This will overwrite your existing configuration at:\n{env_vars_json}",
+                default=False,
+            )
+        )
+        if not overwrite:
+            exit_cancelled("Template load cancelled")
 
-            sys.exit(1)
-    else:
-        if not confirm_action(f"This will create a new configuration at:\n{env_vars_json}"):
-            import sys
+    # Read the template file
+    template_data = load_json_config(template_path)
 
-            sys.exit(1)
+    # Validate template — rejects v1.x, validates structure, checks base keys,
+    # validates constraints, checks auth consistency
+    template_data = validate_template(template_data)
 
-    try:
-        # Read the template file
-        with open(template_path, "r") as f:
-            template_data = json.load(f)
+    # Generate all project files (env vars JSON, shell.env, gitignore, etc.)
+    write_project_files(project_root, template_data, template_name, template_path)
 
-        # Check version compatibility
-        if "cli_version" in template_data:
-            template_version = template_data["cli_version"]
-            current_version = __version__
-
-            try:
-                # Parse versions using semver
-                template_semver = semver.VersionInfo.parse(template_version)
-                current_semver = semver.VersionInfo.parse(current_version)
-
-                # Check if major versions differ
-                if template_semver.major < current_semver.major:
-                    log(
-                        "WARN",
-                        f"Template was created with CLI version {template_version}, "
-                        f"but you're using version {current_version}",
-                    )
-                    print("\nPlease choose one of the following options:")
-                    print("1. Upgrade the profile to the current version")
-                    print("2. Create a new profile from scratch")
-                    print("3. Try to use the profile anyway (may fail)")
-                    print("4. Exit and revert changes")
-
-                    while True:
-                        choice = input("\nEnter your choice (1-4): ").strip()
-                        if choice == "1":
-                            # Upgrade the template
-                            template_data = upgrade_template(template_data)
-                            log("OK", f"Template upgraded to version {current_version}")
-                            break
-                        elif choice == "2":
-                            log("INFO", "Please use 'cdevcontainer template save' to create a new profile")
-                            import sys
-
-                            sys.exit(0)
-                        elif choice == "3":
-                            if not confirm_action("The template format may be incompatible. Continue anyway?"):
-                                log("INFO", "Operation cancelled by user")
-                                import sys
-
-                                sys.exit(0)
-                            break
-                        elif choice == "4":
-                            log("INFO", "Operation cancelled by user")
-                            import sys
-
-                            sys.exit(0)
-                        else:
-                            print("Invalid choice. Please enter a number between 1 and 4.")
-            except ValueError:
-                # If version parsing fails, just continue with the template as is
-                log("WARN", f"Could not parse template version: {template_version}")
-
-        # Write to environment variables file
-        with open(env_vars_json, "w") as f:
-            json.dump(template_data, f, indent=2)
-            f.write("\n")  # Add newline at end of file
-
-        log("OK", f"Template '{template_name}' loaded to {env_vars_json}")
-    except Exception as e:
-        log("ERR", f"Failed to load template: {e}")
-        import sys
-
-        sys.exit(1)
+    log("OK", f"Template '{template_name}' loaded successfully")
 
 
 def list_templates():
     """List available templates."""
     ensure_templates_dir()
-    templates = []
+    template_names = get_template_names()
 
-    for f in os.listdir(TEMPLATES_DIR):
-        if f.endswith(".json"):
-            template_name = f.replace(".json", "")
-            template_path = os.path.join(TEMPLATES_DIR, f)
-
-            # Try to get version information
-            version = "unknown"
-            try:
-                with open(template_path, "r") as file:
-                    data = json.load(file)
-                    if "cli_version" in data:
-                        version = data["cli_version"]
-            except Exception:
-                pass
-
-            templates.append((template_name, version))
-
-    if not templates:
-        from caylent_devcontainer_cli.utils.ui import COLORS
-
+    if not template_names:
         print(f"{COLORS['YELLOW']}No templates found. Create one with 'template save <n>'{COLORS['RESET']}")
         return
 
-    from caylent_devcontainer_cli.utils.ui import COLORS
+    templates = []
+    for name in template_names:
+        template_path = get_template_path(name)
+
+        # Try to get version information
+        version = "unknown"
+        try:
+            data = load_json_config(template_path)
+            if "cli_version" in data:
+                version = data["cli_version"]
+        except SystemExit:
+            pass
+
+        templates.append((name, version))
 
     print(f"{COLORS['CYAN']}Available templates:{COLORS['RESET']}")
-    for template_name, version in sorted(templates):
+    for template_name, version in templates:
         print(f"  - {COLORS['GREEN']}{template_name}{COLORS['RESET']} (created with CLI version {version})")
+
+
+def view_template(template_name):
+    """Display a template's configuration values.
+
+    Reads the template JSON and prints metadata (name, CLI version)
+    followed by environment variables grouped into known and custom.
+    """
+    template_path = get_template_path(template_name)
+
+    if not os.path.exists(template_path):
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
+
+    data = load_json_config(template_path)
+    container_env = data.get("containerEnv", {})
+
+    # Separate known vs custom keys
+    known = {k: v for k, v in sorted(container_env.items()) if k in KNOWN_KEYS}
+    custom = {k: v for k, v in sorted(container_env.items()) if k not in KNOWN_KEYS}
+
+    # Compute column width from all keys
+    all_keys = list(known.keys()) + list(custom.keys())
+    max_key_len = max((len(k) for k in all_keys), default=0)
+
+    print(f"{COLORS['CYAN']}Template:{COLORS['RESET']} {template_name}")
+    print(f"{COLORS['CYAN']}Path:{COLORS['RESET']} {template_path}")
+    print(f"{COLORS['CYAN']}CLI Version:{COLORS['RESET']} {data.get('cli_version', 'unknown')}")
+
+    if known:
+        print(f"\n{COLORS['CYAN']}Environment Variables:{COLORS['RESET']}")
+        for key, value in known.items():
+            padding = " " * (max_key_len - len(key) + 2)
+            print(f"  {key}{padding}{value}")
+
+    if custom:
+        print(f"\n{COLORS['CYAN']}Custom Variables:{COLORS['RESET']}")
+        for key, value in custom.items():
+            padding = " " * (max_key_len - len(key) + 2)
+            print(f"  {key}{padding}{value}")
+
+    if not known and not custom:
+        print(f"\n{COLORS['YELLOW']}No environment variables defined.{COLORS['RESET']}")
+
+    # Display SSH key path if SSH auth is configured
+    ssh_key = data.get("ssh_private_key", "")
+    if container_env.get("GIT_AUTH_METHOD") == "ssh" and ssh_key:
+        print(f"\n{COLORS['CYAN']}SSH Private Key:{COLORS['RESET']} {ssh_key}")
+
+    # Display AWS profiles if present
+    aws_profiles = data.get("aws_profile_map", {})
+    if aws_profiles:
+        print(f"\n{COLORS['CYAN']}AWS Profiles:{COLORS['RESET']}")
+        for profile_name, profile_config in sorted(aws_profiles.items()):
+            print(f"\n  [{COLORS['GREEN']}{profile_name}{COLORS['RESET']}]")
+            if isinstance(profile_config, dict):
+                profile_key_len = max((len(k) for k in profile_config), default=0)
+                for key, value in sorted(profile_config.items()):
+                    padding = " " * (profile_key_len - len(key) + 2)
+                    print(f"    {key}{padding}{value}")
 
 
 def delete_template(template_name):
     """Delete a template."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
         log("ERR", f"Template '{template_name}' not found at {template_path}")
@@ -349,92 +380,45 @@ def delete_template(template_name):
         log("ERR", f"Failed to delete template: {e}")
 
 
-def upgrade_template_with_missing_vars(template_data):
-    """Upgrade template with interactive prompts for missing variables."""
-    from caylent_devcontainer_cli.commands.setup_interactive import upgrade_template
+def upgrade_template_file(template_name):
+    """Upgrade a template to the current CLI version.
 
-    # First do the standard upgrade
-    upgraded_template = upgrade_template(template_data)
-
-    # Check for missing single-line environment variables
-    container_env = upgraded_template.get("containerEnv", {})
-    missing_vars = get_missing_single_line_vars(container_env)
-
-    if missing_vars:
-        log("INFO", f"Found {len(missing_vars)} missing environment variables")
-        new_vars = prompt_for_missing_vars(missing_vars)
-
-        # Add the new variables to the container environment
-        container_env.update(new_vars)
-        upgraded_template["containerEnv"] = container_env
-
-        log("OK", f"Added {len(new_vars)} new environment variables to template")
-    else:
-        log("INFO", "No missing environment variables found")
-
-    return upgraded_template
-
-
-def upgrade_template_file(template_name, force=False):
-    """Upgrade a template to the current CLI version."""
-    template_path = os.path.join(TEMPLATES_DIR, f"{template_name}.json")
+    Reads the template, runs validate_template() to detect and fix all
+    issues (missing keys, invalid values, auth inconsistencies), updates
+    cli_version, and saves. Modifies ONLY the template file — no project
+    files are touched.
+    """
+    template_path = get_template_path(template_name)
 
     if not os.path.exists(template_path):
-        log("ERR", f"Template '{template_name}' not found at {template_path}")
-        import sys
+        exit_with_error(f"Template '{template_name}' not found at {template_path}")
 
-        sys.exit(1)
+    template_data = load_json_config(template_path)
 
-    try:
-        # Read the template file
-        with open(template_path, "r") as f:
-            template_data = json.load(f)
-
-        # Check if force upgrade is requested
-        if force:
-            log("INFO", "Force upgrade requested - performing full upgrade with missing variable detection")
-            upgraded_template = upgrade_template_with_missing_vars(template_data)
-        else:
-            # Check if upgrade is needed
-            if "cli_version" in template_data:
-                template_version = template_data["cli_version"]
-                current_version = __version__
-
-                try:
-                    # Parse versions using semver
-                    template_semver = semver.VersionInfo.parse(template_version)
-                    current_semver = semver.VersionInfo.parse(current_version)
-
-                    if template_semver.major == current_semver.major and template_semver.minor == current_semver.minor:
-                        # Even if the major and minor versions match, ensure the cli_version is updated
-                        template_data["cli_version"] = __version__
-                        with open(template_path, "w") as f:
-                            json.dump(template_data, f, indent=2)
-                            f.write("\n")  # Add newline at end of file
-                        log(
-                            "INFO",
-                            f"Template '{template_name}' version updated from {template_version} to {__version__}",
-                        )
-                        return
-                except ValueError:
-                    # If version parsing fails, proceed with upgrade
-                    pass
-
-            # Upgrade the template
-            upgraded_template = upgrade_template(template_data)
-
-        # Write back to the template file
-        with open(template_path, "w") as f:
-            json.dump(upgraded_template, f, indent=2)
-            f.write("\n")  # Add newline at end of file
-
+    # Already at current version — no changes needed
+    if template_data.get("cli_version") == __version__:
         log(
-            "OK",
-            f"Template '{template_name}' upgraded from version "
-            f"{template_data.get('cli_version', 'unknown')} to {__version__}",
+            "INFO",
+            f"Template '{template_name}' is already at CLI v{__version__}. No changes needed.",
         )
-    except Exception as e:
-        log("ERR", f"Failed to upgrade template: {e}")
-        import sys
+        return
 
-        sys.exit(1)
+    # validate_template() handles all issues:
+    # - Rejects v1.x templates with migration error
+    # - Prompts for missing base keys
+    # - Validates constraint values
+    # - Checks auth consistency
+    # - Detects conflicts
+    template_data = validate_template(template_data)
+
+    # Update cli_version to current
+    template_data["cli_version"] = __version__
+
+    # Save updated template
+    write_json_file(template_path, template_data)
+
+    log(
+        "OK",
+        f"Template '{template_name}' upgraded to CLI v{__version__}. "
+        "Projects using this template will be updated on next `cdevcontainer code` run.",
+    )

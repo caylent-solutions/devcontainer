@@ -21,7 +21,6 @@ def test_prompt_env_values_none_pager(mock_select, mock_text, mock_password):
     mock_select.return_value.ask.side_effect = ["true", None]
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Developer",
         "github.com",
         "user",
@@ -44,7 +43,6 @@ def test_prompt_env_values_none_aws_output(mock_select, mock_text, mock_password
     mock_select.return_value.ask.side_effect = ["true", "cat", None]
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Developer",
         "github.com",
         "user",
@@ -70,7 +68,6 @@ def test_pager_selection_options(mock_select, mock_text, mock_password):
         mock_select.return_value.ask.side_effect = ["false", pager]
         mock_text.return_value.ask.side_effect = [
             "main",
-            "3.12.9",
             "Developer",
             "github.com",
             "user",
@@ -96,7 +93,6 @@ def test_aws_output_selection_options(mock_select, mock_text, mock_password):
         mock_select.return_value.ask.side_effect = ["true", "cat", output_format]
         mock_text.return_value.ask.side_effect = [
             "main",
-            "3.12.9",
             "Developer",
             "github.com",
             "user",
@@ -120,7 +116,6 @@ def test_aws_output_not_prompted_when_aws_disabled(mock_select, mock_text, mock_
     mock_select.return_value.ask.side_effect = ["false", "cat"]
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Developer",
         "github.com",
         "user",
@@ -150,7 +145,6 @@ def test_default_values_selection(mock_select, mock_text, mock_password):
     mock_select.return_value.ask.side_effect = ["true", "cat", "json"]
     mock_text.return_value.ask.side_effect = [
         "main",
-        "3.12.9",
         "Developer",
         "github.com",
         "user",

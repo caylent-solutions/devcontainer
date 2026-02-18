@@ -14,6 +14,7 @@ repos:
       - id: check-merge-conflict
       - id: end-of-file-fixer
       - id: detect-private-key
+        exclude: ^caylent-devcontainer-cli/tests/
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1

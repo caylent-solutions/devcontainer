@@ -1,37 +1,25 @@
-"""Functional tests for the setup-devcontainer command with VERSION file."""
+"""Functional tests for VERSION file handling in setup-devcontainer."""
 
 import os
-import subprocess
+import tempfile
+
+from caylent_devcontainer_cli import __version__
+from caylent_devcontainer_cli.commands.setup import create_version_file
 
 
-def run_command(cmd, cwd=None, input_text=None):
-    """Run a command and return the output."""
-    result = subprocess.run(
-        cmd,
-        cwd=cwd,
-        input=input_text.encode() if input_text else None,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-    return result
+def test_create_version_file_writes_correct_version():
+    """Test that create_version_file writes the current CLI version."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        devcontainer_dir = os.path.join(tmpdir, ".devcontainer")
+        os.makedirs(devcontainer_dir)
 
+        create_version_file(tmpdir)
 
-def test_setup_creates_version_file(temp_project_dir):
-    """Test that setup-devcontainer creates a VERSION file."""
-    # Run the setup command in manual mode
-    result = run_command(["cdevcontainer", "setup-devcontainer", "--manual", temp_project_dir])
+        version_file = os.path.join(devcontainer_dir, "VERSION")
+        assert os.path.isfile(version_file)
 
-    # Check that the command succeeded
-    assert result.returncode == 0
+        with open(version_file, "r") as f:
+            version = f.read().strip()
 
-    # Check that the VERSION file was created
-    version_file = os.path.join(temp_project_dir, ".devcontainer", "VERSION")
-    assert os.path.isfile(version_file)
-
-    # Check that the VERSION file contains a version string
-    with open(version_file, "r") as f:
-        version = f.read().strip()
-
-    assert version, "VERSION file should not be empty"
-    assert "." in version, "VERSION should be in semver format"
+        assert version == __version__
+        assert "." in version, "VERSION should be in semver format"

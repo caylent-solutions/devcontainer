@@ -241,6 +241,134 @@ cdevcontainer template create --help
 # Should display help text for template creation
 ```
 
+### 10. Catalog List Test
+
+**Purpose**: Verify the catalog list command displays available entries
+
+```bash
+# Test 1: List entries from the default catalog
+cdevcontainer catalog list
+# Should display a formatted list of available devcontainer configurations
+# with "default" entry listed first
+
+# Test 2: Filter by tags
+cdevcontainer catalog list --tags general
+# Should only show entries matching the "general" tag
+
+# Test 3: Filter with no matches
+cdevcontainer catalog list --tags nonexistent-tag
+# Should display "No entries found matching tags: nonexistent-tag"
+
+# Test 4: Custom catalog URL
+export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
+cdevcontainer catalog list
+# Should display entries from the specified catalog
+unset DEVCONTAINER_CATALOG_URL
+
+# Test 5: Invalid catalog URL should fail gracefully
+export DEVCONTAINER_CATALOG_URL="https://github.com/nonexistent/repo.git"
+cdevcontainer catalog list
+# Should fail with actionable error message about cloning
+# Exit code should be non-zero
+unset DEVCONTAINER_CATALOG_URL
+```
+
+### 11. Catalog Validate Test
+
+**Purpose**: Verify the catalog validate command checks catalog structure
+
+```bash
+# Test 1: Validate local catalog (this repository)
+cd /path/to/devcontainer
+cdevcontainer catalog validate --local .
+# Should display "Catalog validation passed. N entries found."
+
+# Test 2: Validate remote default catalog
+cdevcontainer catalog validate
+# Should clone and validate the default catalog
+
+# Test 3: Validate invalid directory
+cdevcontainer catalog validate --local /tmp/empty-dir
+# Should fail with validation errors
+
+# Test 4: Validate nonexistent directory
+cdevcontainer catalog validate --local /nonexistent/path
+# Should fail with "Directory not found" error
+```
+
+### 12. Setup-DevContainer Catalog Integration Test
+
+**Purpose**: Verify catalog integration in the setup-devcontainer command
+
+```bash
+# Test 1: --catalog-entry flag requires DEVCONTAINER_CATALOG_URL
+unset DEVCONTAINER_CATALOG_URL
+mkdir -p /tmp/test-catalog-entry
+cdevcontainer setup-devcontainer --catalog-entry my-collection /tmp/test-catalog-entry
+# Should fail with error about DEVCONTAINER_CATALOG_URL not being set
+# Exit code should be non-zero
+
+# Test 2: --catalog-entry flag with env var set
+export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
+mkdir -p /tmp/test-catalog-entry2
+cdevcontainer setup-devcontainer --catalog-entry default /tmp/test-catalog-entry2
+# Should clone the catalog, find the "default" entry, display metadata
+# Ask "Is this correct?" and continue with setup
+unset DEVCONTAINER_CATALOG_URL
+
+# Test 3: Source selection when DEVCONTAINER_CATALOG_URL is set
+export DEVCONTAINER_CATALOG_URL="https://github.com/caylent-solutions/devcontainer.git"
+mkdir -p /tmp/test-source-select
+cdevcontainer setup-devcontainer /tmp/test-source-select
+# Should present a source selection prompt:
+# > Default Caylent General DevContainer
+#   Browse specialized configurations from catalog
+# Select "Default" and verify setup continues normally
+unset DEVCONTAINER_CATALOG_URL
+
+# Test 4: Default setup (no DEVCONTAINER_CATALOG_URL)
+unset DEVCONTAINER_CATALOG_URL
+mkdir -p /tmp/test-default-catalog
+cdevcontainer setup-devcontainer /tmp/test-default-catalog
+# Should auto-clone default catalog and auto-select the default entry
+# No source selection prompt should appear
+```
+
+### 13. Code Command Catalog Integration Test
+
+**Purpose**: Verify catalog integration in the code command (Step 5 Option 1)
+
+```bash
+# Test 1: Step 5 Option 1 with catalog-entry.json present
+# First, set up a project using catalog
+mkdir -p /tmp/test-code-catalog
+cdevcontainer setup-devcontainer /tmp/test-code-catalog
+# Complete the interactive setup
+
+# Verify catalog-entry.json was created in .devcontainer/
+cat /tmp/test-code-catalog/.devcontainer/catalog-entry.json
+# Should contain "name" and "catalog_url" fields
+
+# Now simulate missing variables scenario:
+# Edit the devcontainer-environment-variables.json to remove a key
+# Then run code command
+cdevcontainer code /tmp/test-code-catalog
+# If missing variables detected, select "Update devcontainer configuration and add missing variables"
+# Should show replacement notification, ask for acknowledgement
+# Should clone catalog from catalog-entry.json URL, replace .devcontainer/ files
+
+# Test 2: Step 1 metadata missing — Yes path
+# Create a project with no metadata in project files
+mkdir -p /tmp/test-code-metadata
+mkdir -p /tmp/test-code-metadata/.devcontainer
+echo '{"containerEnv": {"DEVELOPER_NAME": "test"}}' > /tmp/test-code-metadata/devcontainer-environment-variables.json
+echo "export DEVELOPER_NAME='test'" > /tmp/test-code-metadata/shell.env
+cdevcontainer code /tmp/test-code-metadata
+# Should detect missing metadata and prompt
+# Select "Yes — select or create a template to regenerate files"
+# Should run interactive setup to regenerate files
+```
+
 ## Reporting Issues
 
 If any test fails:

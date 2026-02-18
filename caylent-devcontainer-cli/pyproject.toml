@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>=78.1.1", "wheel>=0.40.0"]
+requires = ["setuptools>=78.1.1", "wheel>=0.46.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "caylent-devcontainer-cli"
-version = "1.14.1"
+version = "2.0.0"
 description = "CLI tool for managing Caylent devcontainers"
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = "Apache-2.0"
 
 authors = [
@@ -15,24 +15,23 @@ authors = [
 ]
 
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12"
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14"
 ]
 
 dependencies = [
-  "black~=24.0",
-  "flake8~=7.0",
-  "isort~=6.0",
   "pytest~=7.0",
   "pytest-cov~=4.0",
   "questionary~=2.0.0",
-  "semver~=3.0.0"
+  "semver~=3.0.0",
+  "ruff>=0.9.0",
+  "shtab>=1.7.0"
 ]
 
 [project.scripts]
@@ -47,14 +46,6 @@ where = ["src"]
 
 [tool.setuptools]
 include-package-data = true
-
-[tool.black]
-line-length = 120
-target-version = ["py38"]
-
-[tool.isort]
-profile = "black"
-line_length = 120
 
 [tool.semantic_release]
 version_variable = "src/caylent_devcontainer_cli/__init__.py:__version__"
