@@ -385,43 +385,36 @@ class TestFullCatalogValidation(TestCase):
         self.assertEqual(errors, [], f"Default entry validation errors: {errors}")
 
 
-class TestDevcontainerDirectoryUntouched(TestCase):
-    """Tests that .devcontainer/ has NOT been modified by catalog structure creation."""
+class TestDeployedDevcontainerDirectory(TestCase):
+    """Tests that .devcontainer/ is a complete deployed instance from catalog/default/."""
 
     def setUp(self):
         self.repo_root = _repo_root()
         self.devcontainer_dir = os.path.join(self.repo_root, ".devcontainer")
+        self.default_entry_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR, "default")
+        self.common_assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
 
     def test_devcontainer_directory_exists(self):
-        """.devcontainer/ must still exist."""
+        """.devcontainer/ must exist as a deployed catalog instance."""
         self.assertTrue(os.path.isdir(self.devcontainer_dir))
 
-    def test_devcontainer_is_not_inside_catalog(self):
-        """.devcontainer/ must NOT be inside common/ or catalog/."""
-        common_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR)
-        entries_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR)
-        self.assertFalse(self.devcontainer_dir.startswith(common_dir))
-        self.assertFalse(self.devcontainer_dir.startswith(entries_dir))
+    def test_contains_entry_files(self):
+        """.devcontainer/ must contain all files from catalog/default/."""
+        for item in os.listdir(self.default_entry_dir):
+            deployed = os.path.join(self.devcontainer_dir, item)
+            self.assertTrue(
+                os.path.exists(deployed),
+                f"catalog/default/{item} not found in .devcontainer/",
+            )
 
-    def test_devcontainer_has_own_postcreate(self):
-        """.devcontainer/ must still have its own postcreate script."""
-        filepath = os.path.join(self.devcontainer_dir, ".devcontainer.postcreate.sh")
-        self.assertTrue(os.path.isfile(filepath))
-
-    def test_devcontainer_has_own_functions(self):
-        """.devcontainer/ must still have its own devcontainer-functions.sh."""
-        filepath = os.path.join(self.devcontainer_dir, "devcontainer-functions.sh")
-        self.assertTrue(os.path.isfile(filepath))
-
-    def test_devcontainer_has_own_devcontainer_json(self):
-        """.devcontainer/ must still have its own devcontainer.json."""
-        filepath = os.path.join(self.devcontainer_dir, "devcontainer.json")
-        self.assertTrue(os.path.isfile(filepath))
-
-    def test_no_catalog_entry_in_devcontainer(self):
-        """.devcontainer/ must NOT contain a catalog-entry.json."""
-        filepath = os.path.join(self.devcontainer_dir, CATALOG_ENTRY_FILENAME)
-        self.assertFalse(os.path.isfile(filepath))
+    def test_contains_common_asset_files(self):
+        """.devcontainer/ must contain all files from common/devcontainer-assets/."""
+        for item in os.listdir(self.common_assets_dir):
+            deployed = os.path.join(self.devcontainer_dir, item)
+            self.assertTrue(
+                os.path.exists(deployed),
+                f"common/devcontainer-assets/{item} not found in .devcontainer/",
+            )
 
 
 class TestCommonRootAssetsDirectory(TestCase):
