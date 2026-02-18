@@ -147,7 +147,7 @@ def prompt_with_confirmation(
         else:
             display_value = str(answer)
 
-        log("INFO", f"You entered: {display_value}")
+        print(f"  You entered: {display_value}", file=sys.stderr)
 
         confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
         if confirmed:

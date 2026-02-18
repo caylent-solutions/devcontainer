@@ -23,44 +23,12 @@ jobs:
           git fetch origin ${{ github.base_ref }}
           git checkout -b pr-validation origin/${{ github.base_ref }}
           git merge --no-commit --no-ff ${{ github.event.pull_request.head.sha }}
+        shell: bash
 
-      - name: Cache system dependencies
-        id: cache-system-deps
-        uses: actions/cache@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          path: /tmp/apt-cache
-          key: system-deps-${{ runner.os }}-${{ runner.arch }}-v3
-
-      - name: Install system dependencies for Python build
-        run: |
-          # Configure apt to use our cache directory
-          sudo mkdir -p /tmp/apt-cache
-          echo 'Dir::Cache::Archives "/tmp/apt-cache";' | sudo tee /etc/apt/apt.conf.d/99cache
-
-          # Check if cache was restored and packages are available
-          if [[ "${{ steps.cache-system-deps.outputs.cache-hit }}" == "true" ]] && [ -d /tmp/apt-cache ] && [ "$(ls -A /tmp/apt-cache)" ]; then
-            echo "✅ Using cached system dependencies"
-            # Install from cache without updating package lists
-            sudo dpkg -i /tmp/apt-cache/*.deb 2>/dev/null || true
-            sudo apt-get install -f -y  # Fix any dependency issues
-          else
-            echo "📦 Installing system dependencies (no cache hit)"
-            sudo apt-get update
-            # Note: Use backslash continuation for multi-line apt-get install commands
-            # Each continuation line should be indented and start with package names
-            sudo apt-get install -y build-essential libssl-dev zlib1g-dev \
-              libbz2-dev libreadline-dev libsqlite3-dev curl \
-              libncursesw5-dev xz-utils tk-dev libxml2-dev \
-              libxmlsec1-dev libffi-dev liblzma-dev bc
-          fi
-
-      - name: Fix cache permissions
-        if: always()
-        run: |
-          # Fix permissions on cache directories with appropriate security
-          sudo find /tmp/apt-cache -type d -exec chmod 755 {} + 2>/dev/null || true
-          sudo find /tmp/apt-cache -type f -exec chmod 644 {} + 2>/dev/null || true
-          sudo chown -R $USER:$USER /tmp/apt-cache 2>/dev/null || true
+          python-version: '3.14'
 
       - name: Cache ASDF installation
         uses: actions/cache@v4
@@ -78,14 +46,18 @@ jobs:
           echo "$HOME/.asdf/bin" >> $GITHUB_PATH
           echo "$HOME/.asdf/shims" >> $GITHUB_PATH
           source $HOME/.asdf/asdf.sh
+        shell: bash
 
       - name: Install ASDF plugins and tools
         run: |
           cd $GITHUB_WORKSPACE
           source $HOME/.asdf/asdf.sh
-          cat .tool-versions | cut -d' ' -f1 | xargs -I{} asdf plugin add {} || true
+          cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
+          # Remove stale python/pip shims from cached ASDF (Python is managed by setup-python)
+          rm -f ~/.asdf/shims/python* ~/.asdf/shims/pip* ~/.asdf/shims/coverage* 2>/dev/null || true
           asdf reshim
+        shell: bash
 
       - name: Cache Python dependencies
         uses: actions/cache@v4
@@ -100,32 +72,32 @@ jobs:
       - name: Install CLI
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           pip install --upgrade pip
           make install
-          asdf reshim
+        shell: bash
 
       - name: Run pre-commit checks
         run: |
           cd $GITHUB_WORKSPACE
+          source $HOME/.asdf/asdf.sh
           make pre-commit-check
+        shell: bash
 
       - name: Lint
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make lint
+        shell: bash
 
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make publish
+        shell: bash
 
       - name: Run unit tests with coverage threshold
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make unit-test
           coverage json
           coverage_percent=$(python -c "import json; f=open('coverage.json'); print(json.load(f)['totals']['percent_covered'])")
@@ -134,31 +106,32 @@ jobs:
             echo "Error: Code coverage is below 90% threshold ($coverage_percent%)"
             exit 1
           fi
+        shell: bash
 
       - name: Run functional tests
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make functional-test
+        shell: bash
 
       - name: Validate catalog structure
         run: |
           cd $GITHUB_WORKSPACE
-          source $HOME/.asdf/asdf.sh
           make validate-catalog
+        shell: bash
 
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make coverage
           make coverage-json
+        shell: bash
 
       - name: Print coverage summary
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli
-          source $HOME/.asdf/asdf.sh
           make coverage-text
+        shell: bash
 
       - name: Find code owners
         id: codeowners
@@ -196,6 +169,7 @@ jobs:
           UNIQUE_OWNERS=$(echo "$OWNERS" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ' | xargs)
           echo "Final owners: $UNIQUE_OWNERS"
           echo "owners=$UNIQUE_OWNERS" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Send PR review request to Slack
         if: success()

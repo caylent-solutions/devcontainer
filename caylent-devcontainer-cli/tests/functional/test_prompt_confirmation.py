@@ -18,16 +18,16 @@ class TestPromptWithConfirmationEndToEnd:
     def test_text_input_confirmed_on_first_try(self, capsys):
         """Text input confirmed immediately returns value."""
         mock_text = MagicMock()
-        mock_text.ask.return_value = "github.com"
+        mock_text.ask.return_value = "my-test-value"
         mock_confirm = MagicMock()
         mock_confirm.ask.return_value = True
 
         with patch("questionary.confirm", return_value=mock_confirm):
             result = prompt_with_confirmation(lambda: mock_text)
 
-        assert result == "github.com"
+        assert result == "my-test-value"
         captured = capsys.readouterr()
-        assert "github.com" in captured.err
+        assert "my-test-value" in captured.err
         assert "You entered" in captured.err
 
     def test_password_input_masked_in_display(self, capsys):
