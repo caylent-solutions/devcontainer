@@ -206,4 +206,3 @@ Before merging to `main`:
 3. Use [conventional commits](https://www.conventionalcommits.org/) to control version bumps (see [Commit Message Conventions](#commit-message-conventions))
 
 After merge, the pipeline automatically handles version bumping, changelog generation, tagging, and publishing to PyPI.
-
