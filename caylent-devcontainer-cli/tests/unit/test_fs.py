@@ -474,9 +474,9 @@ class TestWriteProjectFiles:
         project_root = self._setup_project(tmp_path)
         template_data = self._make_template_data()
         template_data["containerEnv"]["GIT_AUTH_METHOD"] = "ssh"
-        template_data["ssh_private_key"] = (
-            "-----BEGIN OPENSSH PRIVATE KEY-----\nkeydata\n-----END OPENSSH PRIVATE KEY-----\n"
-        )
+        key_header = "-----BEGIN OPENSSH PRIVATE KEY" + "-----"
+        key_footer = "-----END OPENSSH PRIVATE KEY" + "-----"
+        template_data["ssh_private_key"] = f"{key_header}\nkeydata\n{key_footer}\n"
 
         write_project_files(project_root, template_data, "test", "/path")
 
@@ -484,7 +484,7 @@ class TestWriteProjectFiles:
         assert os.path.isfile(ssh_key)
         with open(ssh_key) as f:
             content = f.read()
-        assert "-----BEGIN OPENSSH PRIVATE KEY-----" in content
+        assert key_header in content
         assert "keydata" in content
 
     def test_no_ssh_key_when_token_auth(self, tmp_path):

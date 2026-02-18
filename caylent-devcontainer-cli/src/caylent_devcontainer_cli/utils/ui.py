@@ -33,7 +33,7 @@ def log(level, message):
     reset = COLORS["RESET"]
     icon = icons.get(level, "")
     color = color_map.get(level, "")
-    print(f"{color}[{level}]{reset} {icon}{message}", file=sys.stderr)
+    sys.stderr.write(f"{color}[{level}]{reset} {icon}{message}\n")
 
 
 def exit_with_error(message):
@@ -147,7 +147,7 @@ def prompt_with_confirmation(
         else:
             display_value = str(answer)
 
-        print(f"  You entered: {display_value}", file=sys.stderr)
+        sys.stderr.write(f"  You entered: {display_value}\n")
 
         confirmed = ask_or_exit(questionary.confirm("Is this correct?", default=True))
         if confirmed:

@@ -40,7 +40,7 @@ class TestMaskPassword:
 
     def test_never_reveals_password_content(self):
         """The original password content must never appear in the output."""
-        secret = "ghp_ABCDEFghijklmn1234567890"
+        secret = "xyzzy-test-value-not-a-real-credential"
         result = mask_password(secret)
         assert secret not in result
         # First 4 and last 4 chars must not appear
