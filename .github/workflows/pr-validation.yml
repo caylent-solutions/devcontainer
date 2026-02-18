@@ -138,7 +138,7 @@ jobs:
         run: |
           DEFAULT_OWNER=""
           if [ -f ".github/CODEOWNERS" ]; then
-            DEFAULT_OWNER=$(grep -E "^\*" .github/CODEOWNERS | awk '{print $2}')
+            DEFAULT_OWNER=$(grep -E "^\*" .github/CODEOWNERS | awk '{print $2}' || true)
           fi
 
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} ${{ github.event.pull_request.head.sha }})
@@ -149,7 +149,7 @@ jobs:
             for FILE in $CHANGED_FILES; do
               while [[ "$FILE" == */* ]]; do
                 DIR=$(dirname "$FILE")
-                MATCH=$(grep -E "^$DIR/" .github/CODEOWNERS | awk '{for(i=2;i<=NF;i++) print $i}')
+                MATCH=$(grep -E "^$DIR/" .github/CODEOWNERS | awk '{for(i=2;i<=NF;i++) print $i}' || true)
                 if [ -n "$MATCH" ]; then
                   SPECIFIC_OWNERS="$SPECIFIC_OWNERS $MATCH"
                   break
@@ -165,7 +165,11 @@ jobs:
             OWNERS="$SPECIFIC_OWNERS"
           fi
 
-          UNIQUE_OWNERS=$(echo "$OWNERS" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ' | xargs)
+          if [ -n "$OWNERS" ]; then
+            UNIQUE_OWNERS=$(echo "$OWNERS" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ' | xargs)
+          else
+            UNIQUE_OWNERS=""
+          fi
           echo "Final owners: $UNIQUE_OWNERS"
           echo "owners=$UNIQUE_OWNERS" >> $GITHUB_OUTPUT
         shell: bash
