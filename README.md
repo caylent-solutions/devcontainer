@@ -214,15 +214,20 @@ When running `cdevcontainer setup-devcontainer`, you'll be guided through config
 
 The interactive setup will create a `devcontainer-environment-variables.json` file with your settings.
 
-The `devcontainer-environment-variables.json` file supports these values:
+The `devcontainer-environment-variables.json` file supports these values (inside `containerEnv`):
 - `AWS_CONFIG_ENABLED` (default: `true`) - Set to `false` to disable AWS configuration
+- `AWS_DEFAULT_OUTPUT` (default: `json`) - Choose from: json, table, text, yaml (only when AWS enabled)
 - `DEFAULT_GIT_BRANCH` (e.g. `main`)
-- `DEFAULT_PYTHON_VERSION` (e.g. `3.12.9`)
-- Git credentials: `GIT_USER`, `GIT_USER_EMAIL`, `GIT_TOKEN`
-- AWS SSO and account information (required if `AWS_CONFIG_ENABLED=true`)
-- Extra Ubuntu LTS packages: `EXTRA_APT_PACKAGES`
+- `DEVELOPER_NAME` - Your name, used in the devcontainer
+- `EXTRA_APT_PACKAGES` - Space-separated list of extra Ubuntu packages to install
+- `GIT_AUTH_METHOD` (default: `token`) - Choose from: token, ssh
+- `GIT_PROVIDER_URL` (default: `github.com`) - Git provider hostname (no protocol prefix)
+- `GIT_TOKEN` - Personal access token (only when `GIT_AUTH_METHOD=token`)
+- `GIT_USER` - Git username
+- `GIT_USER_EMAIL` - Git email for commits
+- `HOST_PROXY` (default: `false`) - Set to `true` to enable host proxy support
+- `HOST_PROXY_URL` - Proxy URL (only when `HOST_PROXY=true`, e.g. `http://host.docker.internal:3128`)
 - `PAGER` (default: `cat`) - Choose from: cat, less, more, most
-- `AWS_DEFAULT_OUTPUT` (default: `json`) - Choose from: json, table, text, yaml
 
 #### Client/Project Templates
 
