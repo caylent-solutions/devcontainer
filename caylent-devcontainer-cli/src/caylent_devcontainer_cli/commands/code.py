@@ -11,6 +11,7 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ASSETS_DIR,
     CATALOG_COMMON_DIR,
     CATALOG_ENTRY_FILENAME,
+    CATALOG_ROOT_ASSETS_DIR,
     ENV_VARS_FILENAME,
     SHELL_ENV_FILENAME,
 )
@@ -294,6 +295,7 @@ def _replace_from_catalog_entry(project_root, catalog_entry_path):
     from caylent_devcontainer_cli.utils.catalog import (
         clone_catalog_repo,
         copy_entry_to_project,
+        copy_root_assets_to_project,
         discover_entries,
         find_entry_by_name,
     )
@@ -325,6 +327,10 @@ def _replace_from_catalog_entry(project_root, catalog_entry_path):
         common_assets = os.path.join(temp_dir, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
         copy_entry_to_project(selected.path, common_assets, target_devcontainer, catalog_url)
         log("OK", f"Entry '{entry_name}' files replaced in .devcontainer/")
+
+        root_assets = os.path.join(temp_dir, CATALOG_COMMON_DIR, CATALOG_ROOT_ASSETS_DIR)
+        copy_root_assets_to_project(root_assets, project_root)
+        log("OK", "Root project assets replaced.")
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 

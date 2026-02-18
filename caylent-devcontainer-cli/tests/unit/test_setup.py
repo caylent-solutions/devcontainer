@@ -986,6 +986,46 @@ class TestSelectAndCopyCatalog:
         # check_min_cli_version should not be called for None min_cli_version
         mock_version.assert_not_called()
 
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_root_assets_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.check_min_cli_version",
+        return_value=True,
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.clone_catalog_repo",
+        return_value="/tmp/catalog",
+    )
+    @patch(
+        "caylent_devcontainer_cli.utils.catalog.resolve_default_catalog_url",
+        return_value="https://example.com/repo.git@2.1.0",
+    )
+    def test_calls_copy_root_assets_after_entry_copy(
+        self,
+        mock_resolve,
+        mock_clone,
+        mock_version,
+        mock_discover,
+        mock_copy_entry,
+        mock_copy_root,
+        mock_rmtree,
+    ):
+        """copy_root_assets_to_project must be called after copy_entry_to_project."""
+        entry = _make_entry()
+        mock_discover.return_value = [entry]
+
+        with patch.dict(os.environ, {}, clear=True):
+            _select_and_copy_catalog("/target")
+
+        mock_copy_entry.assert_called_once()
+        mock_copy_root.assert_called_once()
+        # Verify root assets path and target
+        call_args = mock_copy_root.call_args[0]
+        assert call_args[0] == "/tmp/catalog/common/root-project-assets"
+        assert call_args[1] == "/target"
+
 
 # ─── _prompt_source_selection ────────────────────────────────────────────────
 

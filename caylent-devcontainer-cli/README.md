@@ -145,7 +145,8 @@ The setup command will:
 4. Ask whether to replace existing `.devcontainer/` files or keep them
 5. Clone the catalog, discover entries, and copy selected entry files to `.devcontainer/`
 6. Copy common assets from `common/devcontainer-assets/` (shared scripts, host proxy toolkits) into `.devcontainer/`
-7. Run informational validation on existing project configuration files
+7. Copy root project assets from `common/root-project-assets/` (e.g., `CLAUDE.md`, `.claude/`) into the project root
+8. Run informational validation on existing project configuration files
 8. Guide you through interactive template selection or creation
 9. Generate project configuration files via `write_project_files()`
 
@@ -248,6 +249,7 @@ All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for rele
 - Do not rely on the default branch (`main`) for production use
 - Use annotated tags (`git tag -a 2.1.0 -m "Release 2.1.0"`) for provenance
 - Place shared files in `common/devcontainer-assets/` — everything in this directory is automatically copied into every project's `.devcontainer/` regardless of which entry is selected
+- Place root-level project files in `common/root-project-assets/` — everything in this directory is automatically copied into the **project root** (e.g., `CLAUDE.md`, `.claude/`). This directory is optional.
 - Place entry-specific files (e.g., `devcontainer.json`, `catalog-entry.json`) in `catalog/<name>/`
 
 ### Shell Completion

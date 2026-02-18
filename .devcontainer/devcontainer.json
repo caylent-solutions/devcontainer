@@ -179,9 +179,13 @@
         "telemetry.telemetryLevel": "off",
         "remote.autoForwardPorts": false,
         "remote.autoForwardPortsSource": "process",
+        "remote.restoreForwardedPorts": false,
         "remote.otherPortsAttributes": {
           "onAutoForward": "ignore"
-        }
+        },
+        "remote.defaultExtensionsIfInstalledLocally": [
+          "GitHub.vscode-pull-request-github"
+        ]
       }
     }
   },

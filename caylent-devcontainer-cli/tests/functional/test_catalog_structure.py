@@ -26,6 +26,7 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ENTRY_FILENAME,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_REQUIRED_ENTRY_FILES,
+    CATALOG_ROOT_ASSETS_DIR,
     DEFAULT_CATALOG_URL,
 )
 
@@ -421,3 +422,51 @@ class TestDevcontainerDirectoryUntouched(TestCase):
         """.devcontainer/ must NOT contain a catalog-entry.json."""
         filepath = os.path.join(self.devcontainer_dir, CATALOG_ENTRY_FILENAME)
         self.assertFalse(os.path.isfile(filepath))
+
+
+class TestCommonRootAssetsDirectory(TestCase):
+    """Tests for the common/root-project-assets/ directory structure."""
+
+    def setUp(self):
+        self.repo_root = _repo_root()
+        self.root_assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ROOT_ASSETS_DIR)
+
+    def test_root_assets_directory_exists(self):
+        """common/root-project-assets/ directory must exist."""
+        self.assertTrue(os.path.isdir(self.root_assets_dir))
+
+    def test_root_assets_contains_claude_md(self):
+        """CLAUDE.md must be present in root-project-assets."""
+        filepath = os.path.join(self.root_assets_dir, "CLAUDE.md")
+        self.assertTrue(os.path.isfile(filepath))
+
+    def test_root_assets_contains_claude_settings_dir(self):
+        """.claude/ directory must be present in root-project-assets."""
+        dirpath = os.path.join(self.root_assets_dir, ".claude")
+        self.assertTrue(os.path.isdir(dirpath))
+
+    def test_root_assets_claude_settings_json_valid(self):
+        """.claude/settings.json must be valid JSON."""
+        filepath = os.path.join(self.root_assets_dir, ".claude", "settings.json")
+        self.assertTrue(os.path.isfile(filepath))
+        with open(filepath) as f:
+            data = json.load(f)
+        self.assertIsInstance(data, dict)
+
+    def test_root_assets_claude_settings_local_json_valid(self):
+        """.claude/settings.local.json must be valid JSON."""
+        filepath = os.path.join(self.root_assets_dir, ".claude", "settings.local.json")
+        self.assertTrue(os.path.isfile(filepath))
+        with open(filepath) as f:
+            data = json.load(f)
+        self.assertIsInstance(data, dict)
+
+    def test_root_assets_claude_md_matches_repo_root(self):
+        """CLAUDE.md in root-project-assets must match repo root CLAUDE.md."""
+        root_claude = os.path.join(self.repo_root, "CLAUDE.md")
+        assets_claude = os.path.join(self.root_assets_dir, "CLAUDE.md")
+        with open(root_claude) as f:
+            root_content = f.read()
+        with open(assets_claude) as f:
+            assets_content = f.read()
+        self.assertEqual(root_content, assets_content)

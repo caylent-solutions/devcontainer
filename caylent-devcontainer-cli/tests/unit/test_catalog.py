@@ -11,6 +11,7 @@ from caylent_devcontainer_cli.utils.catalog import (
     EntryInfo,
     clone_catalog_repo,
     copy_entry_to_project,
+    copy_root_assets_to_project,
     detect_file_conflicts,
     discover_entries,
     discover_entry_paths,
@@ -1281,3 +1282,147 @@ class TestResolveDefaultCatalogUrl(TestCase):
         mock_resolve.side_effect = SystemExit("No catalog tags >= 2.0.0 found")
         with self.assertRaises(SystemExit):
             resolve_default_catalog_url()
+
+
+class TestCopyRootAssetsToProject(TestCase):
+    """Test copy_root_assets_to_project() file copying to project root."""
+
+    def test_copies_files_to_project_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root_assets = os.path.join(tmp, "root-assets")
+            project = os.path.join(tmp, "project")
+            os.makedirs(root_assets)
+            os.makedirs(project)
+
+            with open(os.path.join(root_assets, "CLAUDE.md"), "w") as f:
+                f.write("# Standards")
+
+            copy_root_assets_to_project(root_assets, project)
+
+            copied = os.path.join(project, "CLAUDE.md")
+            self.assertTrue(os.path.isfile(copied))
+            with open(copied) as f:
+                self.assertEqual(f.read(), "# Standards")
+
+    def test_copies_directories_to_project_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root_assets = os.path.join(tmp, "root-assets")
+            project = os.path.join(tmp, "project")
+            os.makedirs(os.path.join(root_assets, ".claude"))
+            os.makedirs(project)
+
+            with open(os.path.join(root_assets, ".claude", "settings.json"), "w") as f:
+                json.dump({"permissions": {"allow": []}}, f)
+
+            copy_root_assets_to_project(root_assets, project)
+
+            copied = os.path.join(project, ".claude", "settings.json")
+            self.assertTrue(os.path.isfile(copied))
+            with open(copied) as f:
+                data = json.load(f)
+            self.assertIn("permissions", data)
+
+    def test_overwrites_existing_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root_assets = os.path.join(tmp, "root-assets")
+            project = os.path.join(tmp, "project")
+            os.makedirs(root_assets)
+            os.makedirs(project)
+
+            with open(os.path.join(project, "CLAUDE.md"), "w") as f:
+                f.write("old content")
+            with open(os.path.join(root_assets, "CLAUDE.md"), "w") as f:
+                f.write("new content")
+
+            copy_root_assets_to_project(root_assets, project)
+
+            with open(os.path.join(project, "CLAUDE.md")) as f:
+                self.assertEqual(f.read(), "new content")
+
+    def test_skips_when_directory_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = os.path.join(tmp, "project")
+            os.makedirs(project)
+
+            # Should not raise when root_assets_path does not exist
+            copy_root_assets_to_project(os.path.join(tmp, "nonexistent"), project)
+
+            # Project should be unmodified
+            self.assertEqual(os.listdir(project), [])
+
+    def test_preserves_other_project_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root_assets = os.path.join(tmp, "root-assets")
+            project = os.path.join(tmp, "project")
+            os.makedirs(root_assets)
+            os.makedirs(project)
+
+            # Existing project file
+            with open(os.path.join(project, "README.md"), "w") as f:
+                f.write("# My Project")
+
+            # Root asset
+            with open(os.path.join(root_assets, "CLAUDE.md"), "w") as f:
+                f.write("# Standards")
+
+            copy_root_assets_to_project(root_assets, project)
+
+            # Both files should exist
+            self.assertTrue(os.path.isfile(os.path.join(project, "README.md")))
+            self.assertTrue(os.path.isfile(os.path.join(project, "CLAUDE.md")))
+            with open(os.path.join(project, "README.md")) as f:
+                self.assertEqual(f.read(), "# My Project")
+
+    def test_merges_into_existing_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root_assets = os.path.join(tmp, "root-assets")
+            project = os.path.join(tmp, "project")
+            os.makedirs(os.path.join(root_assets, ".claude"))
+            os.makedirs(os.path.join(project, ".claude"))
+
+            # Existing file in project .claude/
+            with open(os.path.join(project, ".claude", "existing.json"), "w") as f:
+                json.dump({"existing": True}, f)
+
+            # New file from root assets
+            with open(os.path.join(root_assets, ".claude", "settings.json"), "w") as f:
+                json.dump({"new": True}, f)
+
+            copy_root_assets_to_project(root_assets, project)
+
+            # Both files should exist in .claude/
+            self.assertTrue(os.path.isfile(os.path.join(project, ".claude", "existing.json")))
+            self.assertTrue(os.path.isfile(os.path.join(project, ".claude", "settings.json")))
+
+
+class TestValidateCommonAssetsRootAssets(TestCase):
+    """Test validate_common_assets() with root-project-assets."""
+
+    def test_root_assets_file_instead_of_dir_is_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            # Create valid common assets
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            os.makedirs(assets_dir)
+            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
+                with open(os.path.join(assets_dir, filename), "w") as f:
+                    f.write("#!/bin/bash")
+
+            # Create root-project-assets as a file (invalid)
+            root_assets_path = os.path.join(tmp, "common", "root-project-assets")
+            with open(root_assets_path, "w") as f:
+                f.write("not a directory")
+
+            errors = validate_common_assets(tmp)
+            self.assertTrue(any("root-project-assets" in e and "not a directory" in e for e in errors))
+
+    def test_no_root_assets_dir_is_valid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            # Create valid common assets without root-project-assets
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            os.makedirs(assets_dir)
+            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
+                with open(os.path.join(assets_dir, filename), "w") as f:
+                    f.write("#!/bin/bash")
+
+            errors = validate_common_assets(tmp)
+            self.assertEqual(errors, [])

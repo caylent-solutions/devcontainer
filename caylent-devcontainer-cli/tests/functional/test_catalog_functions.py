@@ -9,6 +9,7 @@ from unittest.mock import patch
 from caylent_devcontainer_cli.utils.catalog import (
     clone_catalog_repo,
     copy_entry_to_project,
+    copy_root_assets_to_project,
     discover_entries,
     parse_catalog_url,
     validate_catalog,
@@ -411,3 +412,71 @@ class TestValidateCatalogEndToEnd(TestCase):
 
             errors = validate_catalog(tmp)
             self.assertTrue(any("Duplicate entry name" in e for e in errors))
+
+
+class TestCopyEntryAndRootAssetsEndToEnd(TestCase):
+    """End-to-end test: copy_entry_to_project + copy_root_assets_to_project together."""
+
+    def _create_catalog(self, tmp_dir):
+        """Create a realistic catalog with entry, common assets, and root assets."""
+        # Common devcontainer assets
+        assets_dir = os.path.join(tmp_dir, "common", "devcontainer-assets")
+        os.makedirs(assets_dir)
+        for filename in CATALOG_REQUIRED_COMMON_ASSETS:
+            with open(os.path.join(assets_dir, filename), "w") as f:
+                f.write("#!/bin/bash\necho test")
+
+        # Root project assets
+        root_assets_dir = os.path.join(tmp_dir, "common", "root-project-assets")
+        os.makedirs(os.path.join(root_assets_dir, ".claude"))
+        with open(os.path.join(root_assets_dir, "CLAUDE.md"), "w") as f:
+            f.write("# Engineering Standards")
+        with open(os.path.join(root_assets_dir, ".claude", "settings.json"), "w") as f:
+            json.dump({"permissions": {"allow": ["Read"]}}, f)
+
+        # Catalog entry
+        entry_dir = os.path.join(tmp_dir, "catalog", "default")
+        os.makedirs(entry_dir)
+        with open(os.path.join(entry_dir, CATALOG_ENTRY_FILENAME), "w") as f:
+            json.dump({"name": "default", "description": "Default entry"}, f)
+        with open(os.path.join(entry_dir, "devcontainer.json"), "w") as f:
+            json.dump(
+                {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh"},
+                f,
+            )
+        with open(os.path.join(entry_dir, CATALOG_VERSION_FILENAME), "w") as f:
+            f.write("1.0.0")
+
+        return entry_dir, assets_dir, root_assets_dir
+
+    def test_produces_correct_project_layout(self):
+        """Both .devcontainer/ and root assets are correctly placed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            entry_dir, assets_dir, root_assets_dir = self._create_catalog(tmp)
+
+            project = os.path.join(tmp, "my-project")
+            devcontainer_target = os.path.join(project, ".devcontainer")
+            os.makedirs(project)
+
+            copy_entry_to_project(entry_dir, assets_dir, devcontainer_target, "https://example.com/repo.git")
+            copy_root_assets_to_project(root_assets_dir, project)
+
+            # .devcontainer/ files
+            self.assertTrue(os.path.isfile(os.path.join(devcontainer_target, "devcontainer.json")))
+            self.assertTrue(os.path.isfile(os.path.join(devcontainer_target, CATALOG_ENTRY_FILENAME)))
+            for asset in CATALOG_REQUIRED_COMMON_ASSETS:
+                self.assertTrue(
+                    os.path.isfile(os.path.join(devcontainer_target, asset)),
+                    f"Missing common asset: {asset}",
+                )
+
+            # Root project assets
+            self.assertTrue(os.path.isfile(os.path.join(project, "CLAUDE.md")))
+            self.assertTrue(os.path.isfile(os.path.join(project, ".claude", "settings.json")))
+
+            # Verify content
+            with open(os.path.join(project, "CLAUDE.md")) as f:
+                self.assertEqual(f.read(), "# Engineering Standards")
+            with open(os.path.join(project, ".claude", "settings.json")) as f:
+                data = json.load(f)
+            self.assertEqual(data["permissions"]["allow"], ["Read"])

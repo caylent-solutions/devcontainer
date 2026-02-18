@@ -1087,6 +1087,48 @@ class TestReplaceFromCatalogEntry:
         assert "my-col" in captured.err
         assert "replaced" in captured.err
 
+    @patch("shutil.rmtree")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_root_assets_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.copy_entry_to_project")
+    @patch("caylent_devcontainer_cli.utils.catalog.find_entry_by_name")
+    @patch("caylent_devcontainer_cli.utils.catalog.discover_entries")
+    @patch("caylent_devcontainer_cli.utils.catalog.clone_catalog_repo")
+    def test_calls_copy_root_assets_after_entry_copy(
+        self,
+        mock_clone,
+        mock_discover,
+        mock_find,
+        mock_copy_entry,
+        mock_copy_root,
+        mock_rmtree,
+        tmp_path,
+    ):
+        """copy_root_assets_to_project must be called after copy_entry_to_project."""
+        entry_file = tmp_path / "catalog-entry.json"
+        entry_file.write_text(
+            json.dumps(
+                {
+                    "name": "my-collection",
+                    "catalog_url": "https://github.com/org/catalog.git",
+                }
+            )
+        )
+
+        mock_clone.return_value = "/tmp/catalog-xyz"
+        mock_selected = MagicMock()
+        mock_selected.path = "/tmp/catalog-xyz/catalog/my-collection"
+        mock_discover.return_value = [mock_selected]
+        mock_find.return_value = mock_selected
+
+        _replace_from_catalog_entry(str(tmp_path), str(entry_file))
+
+        mock_copy_entry.assert_called_once()
+        mock_copy_root.assert_called_once()
+        # Verify root assets path and project root
+        call_args = mock_copy_root.call_args[0]
+        assert call_args[0] == "/tmp/catalog-xyz/common/root-project-assets"
+        assert call_args[1] == str(tmp_path)
+
 
 # =============================================================================
 # Backward compat tests

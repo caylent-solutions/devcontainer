@@ -28,6 +28,7 @@ from caylent_devcontainer_cli.utils.constants import (
     CATALOG_NAME_PATTERN,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_REQUIRED_ENTRY_FILES,
+    CATALOG_ROOT_ASSETS_DIR,
     CATALOG_TAG_PATTERN,
     DEFAULT_CATALOG_URL,
     MIN_CATALOG_TAG_VERSION,
@@ -419,6 +420,31 @@ def copy_entry_to_project(
             f.write("\n")
 
 
+def copy_root_assets_to_project(
+    root_assets_path: str,
+    project_root: str,
+) -> None:
+    """Copy root-level project assets from catalog to the project root.
+
+    Copies files/dirs from ``common/root-project-assets/`` into *project_root*.
+    This distributes standardized root-level files (e.g. ``CLAUDE.md``,
+    ``.claude/``) to all projects when a catalog entry is installed.
+
+    If *root_assets_path* does not exist the call is a no-op — root project
+    assets are an optional part of a catalog.
+    """
+    if not os.path.isdir(root_assets_path):
+        return
+
+    for item in os.listdir(root_assets_path):
+        src = os.path.join(root_assets_path, item)
+        dst = os.path.join(project_root, item)
+        if os.path.isdir(src):
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        else:
+            shutil.copy2(src, dst)
+
+
 def validate_catalog_entry(data: Dict[str, Any]) -> List[str]:
     """Validate a catalog-entry.json dictionary and return a list of errors.
 
@@ -583,6 +609,8 @@ def validate_entry(entry_dir: str) -> List[str]:
 def validate_common_assets(catalog_root: str) -> List[str]:
     """Validate that the catalog has the required common/devcontainer-assets/ directory.
 
+    Also validates ``common/root-project-assets/`` when present (optional).
+
     Returns a list of errors (empty if valid).
     """
     errors: List[str] = []
@@ -596,6 +624,11 @@ def validate_common_assets(catalog_root: str) -> List[str]:
         filepath = os.path.join(assets_dir, filename)
         if not os.path.isfile(filepath):
             errors.append(f"Missing required common asset: {CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{filename}")
+
+    # Validate root-project-assets when present (optional directory)
+    root_assets_dir = os.path.join(catalog_root, CATALOG_COMMON_DIR, CATALOG_ROOT_ASSETS_DIR)
+    if os.path.exists(root_assets_dir) and not os.path.isdir(root_assets_dir):
+        errors.append(f"{CATALOG_COMMON_DIR}/{CATALOG_ROOT_ASSETS_DIR} exists but is not a directory")
 
     return errors
 

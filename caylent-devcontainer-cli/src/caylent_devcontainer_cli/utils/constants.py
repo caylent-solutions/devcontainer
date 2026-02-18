@@ -26,6 +26,7 @@ CATALOG_COMMON_DIR = "common"
 CATALOG_ASSETS_DIR = "devcontainer-assets"
 CATALOG_ENTRIES_DIR = "catalog"
 CATALOG_VERSION_FILENAME = "VERSION"
+CATALOG_ROOT_ASSETS_DIR = "root-project-assets"
 
 # Required files in common/devcontainer-assets/
 CATALOG_REQUIRED_COMMON_ASSETS = (

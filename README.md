@@ -12,6 +12,7 @@
 - [🐍 Python Install Logic](#-python-install-logic)
 - [🔄 Rebuilding the Devcontainer](#-rebuilding-the-devcontainer)
 - [🐳 Docker-in-Docker Support](#-docker-in-docker-support)
+- [🔌 Disabling VS Code Auto Port Forwarding](#-disabling-vs-code-auto-port-forwarding)
 - [📡 Debug Ports](#-debug-ports)
 - [🧩 JetBrains Compatibility](#-jetbrains-compatibility)
 - [📁 File Reference](#-file-reference)
@@ -84,6 +85,21 @@ These extensions are auto-installed on container start and work with both VS Cod
 > ```
 >
 > This prevents issues with shell scripts and other text files when running in WSL environments. The devcontainer includes automatic line ending conversion for WSL compatibility.
+
+### VS Code / Cursor Host Settings
+
+Before opening any devcontainer, configure these **host-level** settings. Without this, VS Code will forward ports used by internal services and auto-install unwanted extensions.
+
+1. Open Settings (Cmd/Ctrl + ,)
+2. Search for "Remote" or navigate to **Features > Remote**
+3. Configure these settings:
+   - **Auto Forward Ports** — uncheck (disable)
+   - **Auto Forward Ports Source** — set to `hybrid`
+   - **Forward Ports On Open** — uncheck (disable)
+   - **Restore Forwarded Ports** — uncheck (disable)
+   - **Default Extensions If Installed Locally** — remove `GitHub.copilot` and `GitHub.copilot-chat` from the list (keep `GitHub.vscode-pull-request-github` if desired)
+
+These settings persist across sessions and only need to be configured once. See [Disabling VS Code Auto Port Forwarding](#-disabling-vs-code-auto-port-forwarding) for details.
 
 ### IDE Command Line Setup
 
@@ -612,6 +628,27 @@ docker swarm init
 
 ---
 
+## 🔌 Disabling VS Code Auto Port Forwarding
+
+VS Code automatically detects and forwards ports from processes running inside the devcontainer to the host. This includes any listening socket found by VS Code's port scanning. While convenient for web development, this causes port conflicts in environments that use host-side proxies (e.g., tinyproxy for corporate proxy support).
+
+The `devcontainer.json` includes settings to disable this behavior inside the container (`remote.autoForwardPorts: false`, `remote.autoForwardPortsSource: "process"`, and `remote.otherPortsAttributes.onAutoForward: "ignore"`). However, VS Code also has **host-level settings** that must be configured before opening any Remote or Dev Container connection.
+
+**Required VS Code Host Settings** (set these on your local machine before connecting):
+
+1. Open VS Code Settings (Cmd/Ctrl + ,)
+2. Search for "Remote" or navigate to **Features > Remote**
+3. Disable/configure these settings:
+   - **Auto Forward Ports** — uncheck (disable)
+   - **Auto Forward Ports Source** — set to `hybrid`
+   - **Forward Ports On Open** — uncheck (disable)
+   - **Restore Forwarded Ports** — uncheck (disable)
+   - **Default Extensions If Installed Locally** — remove `GitHub.copilot` and `GitHub.copilot-chat` from the list. These extensions are auto-installed in remote environments when present locally, which causes unwanted Copilot prompts inside devcontainers.
+
+These settings persist across VS Code sessions and only need to be configured once.
+
+---
+
 ## 📡 Debug Ports
 
 | Port      | Purpose                  |
@@ -750,9 +787,10 @@ Organizations can create their own specialized catalogs with custom entries, sha
 
 ### Key Concepts
 
-- **Catalog** — A Git repository with `common/devcontainer-assets/` (shared files) and `catalog/` (one or more entries)
+- **Catalog** — A Git repository with `common/devcontainer-assets/` (shared files), `common/root-project-assets/` (root-level project files), and `catalog/` (one or more entries)
 - **Entry** — A directory under `catalog/` containing `catalog-entry.json`, `devcontainer.json`, and `VERSION`
 - **Common assets** — Files and directories in `common/devcontainer-assets/` that are **automatically copied into every project's `.devcontainer/`** when an entry is installed. This includes shared scripts (postcreate, functions, project-setup) and host-side proxy toolkits (`nix-family-os/`, `wsl-family-os/`). Any file or directory added to `common/devcontainer-assets/` is distributed to all projects regardless of which entry is selected.
+- **Root project assets** — Files and directories in `common/root-project-assets/` that are **automatically copied into the project root** (not `.devcontainer/`) when an entry is installed. This is used for standardized root-level files such as `CLAUDE.md` (AI coding standards) and `.claude/` (Claude Code configuration). This directory is optional — catalogs without it still work normally.
 
 ### Catalog Commands
 
@@ -782,6 +820,9 @@ catalog-repo/
       project-setup.sh                 # Project-setup template (required)
       nix-family-os/                   # Host proxy toolkit for macOS/Linux
       wsl-family-os/                   # Host proxy toolkit for Windows/WSL
+    root-project-assets/               # Root-level project files (optional)
+      CLAUDE.md                        # AI coding standards
+      .claude/                         # Claude Code configuration
   catalog/
     <entry-name>/
       catalog-entry.json               # Entry metadata (required)
@@ -790,6 +831,8 @@ catalog-repo/
 ```
 
 Everything in `common/devcontainer-assets/` is automatically copied into every project's `.devcontainer/` directory — this is how shared scripts and proxy toolkits are distributed to all projects. Entry-specific files are copied first, then common assets are overlaid (common assets take precedence on name collisions).
+
+Everything in `common/root-project-assets/` is automatically copied into the **project root** directory — this distributes standardized root-level files (such as `CLAUDE.md` and `.claude/` configuration) to all projects when an entry is installed.
 
 ### Creating a Custom Catalog
 
