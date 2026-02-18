@@ -186,8 +186,7 @@ class TestVersionUpdated:
         assert match is not None, "Could not find version field in pyproject.toml"
 
         assert __version__ == match.group(1), (
-            f"Version mismatch: __init__.py has '{__version__}' "
-            f"but pyproject.toml has '{match.group(1)}'"
+            f"Version mismatch: __init__.py has '{__version__}' but pyproject.toml has '{match.group(1)}'"
         )
 
     def test_python_requires_3_10(self):
