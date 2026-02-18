@@ -589,13 +589,23 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
 
 ---
 
-## 🐍 Python Install Logic
+## 🐍 Primary Runtime Installation
 
-Python is managed through devcontainer features configured in `devcontainer.json`. The `.tool-versions` file is used for pinning other tool versions via `asdf` (e.g., `jq`, `pre-commit`).
+Primary runtimes (Python, Node.js, Java, etc.) should be installed via devcontainer **features** in `devcontainer.json`, not via `asdf` and `.tool-versions`. VS Code and Cursor need to discover the primary runtime before `asdf` runs during the postcreate phase — installing runtimes through features ensures the IDE can detect and configure language support (IntelliSense, debugging, linting) on first launch.
+
+```json
+{
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.14"
+    }
+  }
+}
+```
+
+The `.tool-versions` file is used for pinning **supplementary tools** via `asdf` (e.g., `jq`, `pre-commit`, `terraform`) — tools that the IDE does not need to know about at startup.
 
 > ✅ **Automatic .tool-versions creation**: The setup command automatically creates an empty `.tool-versions` file in your project root if one does not exist. Add tool entries as needed for your project.
-
-Then rebuild the container.
 
 ---
 
