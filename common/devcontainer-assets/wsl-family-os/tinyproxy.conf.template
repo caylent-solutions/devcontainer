@@ -10,6 +10,10 @@ Bind 0.0.0.0
 
 Timeout 600
 MaxClients 100
+StartServers 5
+MinSpareServers 2
+MaxSpareServers 10
+MaxRequestsPerChild 0
 
 LogFile "__LOG_DIR__/tinyproxy.log"
 LogLevel Info
