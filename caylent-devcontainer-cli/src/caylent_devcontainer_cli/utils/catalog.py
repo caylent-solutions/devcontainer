@@ -685,8 +685,7 @@ def validate_entry(entry_dir: str, common_assets_dir: Optional[str] = None) -> L
             dir_name = os.path.basename(entry_dir)
             if entry_name and dir_name != entry_name:
                 errors.append(
-                    f"Directory name '{dir_name}' does not match "
-                    f"'{CATALOG_ENTRY_FILENAME}' name '{entry_name}'"
+                    f"Directory name '{dir_name}' does not match " f"'{CATALOG_ENTRY_FILENAME}' name '{entry_name}'"
                 )
         except json.JSONDecodeError as e:
             errors.append(f"Invalid JSON in {CATALOG_ENTRY_FILENAME}: {e}")
@@ -735,27 +734,20 @@ def validate_common_assets(catalog_root: str) -> List[str]:
     for filename in CATALOG_EXECUTABLE_COMMON_ASSETS:
         filepath = os.path.join(assets_dir, filename)
         if os.path.isfile(filepath) and not os.access(filepath, os.X_OK):
-            errors.append(
-                f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{filename} "
-                "must have the executable bit set"
-            )
+            errors.append(f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{filename} " "must have the executable bit set")
 
     # Subdirectory validation (proxy toolkits)
     for subdir in CATALOG_COMMON_SUBDIRS:
         subdir_path = os.path.join(assets_dir, subdir)
         if not os.path.isdir(subdir_path):
-            errors.append(
-                f"Missing required subdirectory: "
-                f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/"
-            )
+            errors.append(f"Missing required subdirectory: " f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/")
             continue
 
         for req_file in CATALOG_COMMON_SUBDIR_REQUIRED_FILES:
             req_path = os.path.join(subdir_path, req_file)
             if not os.path.isfile(req_path):
                 errors.append(
-                    f"Missing required file: "
-                    f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/{req_file}"
+                    f"Missing required file: " f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/{req_file}"
                 )
 
         # Executable permission checks on subdirectory shell scripts
@@ -763,8 +755,7 @@ def validate_common_assets(catalog_root: str) -> List[str]:
             filepath = os.path.join(subdir_path, filename)
             if os.path.isfile(filepath) and not os.access(filepath, os.X_OK):
                 errors.append(
-                    f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/{filename} "
-                    "must have the executable bit set"
+                    f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/{filename} " "must have the executable bit set"
                 )
 
     # Validate root-project-assets when present (optional directory)

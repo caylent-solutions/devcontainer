@@ -1730,6 +1730,7 @@ class TestValidateCommonAssetsExtended(TestCase):
             _create_valid_common_assets(assets_dir)
             # Remove one subdirectory
             import shutil
+
             shutil.rmtree(os.path.join(assets_dir, "nix-family-os"))
             errors = validate_common_assets(tmp)
             self.assertTrue(any("nix-family-os" in e and "Missing" in e for e in errors))

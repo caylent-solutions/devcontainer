@@ -71,13 +71,15 @@ DEVCONTAINER_CONTAINER_SOURCE_FIELDS = (
 )
 
 # Allowed top-level fields in catalog-entry.json (unknown fields = error)
-CATALOG_ENTRY_ALLOWED_FIELDS = frozenset({
-    "name",
-    "description",
-    "tags",
-    "maintainer",
-    "min_cli_version",
-})
+CATALOG_ENTRY_ALLOWED_FIELDS = frozenset(
+    {
+        "name",
+        "description",
+        "tags",
+        "maintainer",
+        "min_cli_version",
+    }
+)
 
 # Reusable semver pattern (X.Y.Z)
 SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
