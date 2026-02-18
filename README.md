@@ -229,6 +229,8 @@ The `devcontainer-environment-variables.json` file supports these values (inside
 - `HOST_PROXY_URL` - Proxy URL (only when `HOST_PROXY=true`, e.g. `http://host.docker.internal:3128`)
 - `PAGER` (default: `cat`) - Choose from: cat, less, more, most
 
+In addition to the built-in variables above, the template creation flow supports **custom environment variables**. You can add any number of free-form key-value pairs — useful for API tokens, AI agent credentials, feature flags, or any project-specific configuration your devcontainer needs. Custom variables are injected into `containerEnv` alongside the built-in ones and are available inside the container at runtime.
+
 #### Client/Project Templates
 
 The `setup-devcontainer` command will ask if you want to:
