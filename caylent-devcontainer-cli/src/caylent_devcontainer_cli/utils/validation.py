@@ -188,12 +188,15 @@ def detect_validation_issues(project_root: str, config_data: Dict[str, Any]) -> 
             result.missing_base_keys[key] = default_value
 
     # --- Step 1: Validate required metadata ---
-    result.metadata_present = all(key in config_data for key in _REQUIRED_METADATA)
+    result.metadata_present = all(
+        isinstance(config_data.get(key), str) and config_data.get(key).strip()
+        for key in _REQUIRED_METADATA
+    )
 
     if result.metadata_present:
-        result.template_name = config_data.get("template_name")
-        result.template_path = config_data.get("template_path")
-        result.cli_version = config_data.get("cli_version")
+        result.template_name = config_data["template_name"]
+        result.template_path = config_data["template_path"]
+        result.cli_version = config_data["cli_version"]
     else:
         # Cannot proceed to Steps 2-3 without metadata
         log(

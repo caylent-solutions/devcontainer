@@ -46,9 +46,8 @@ jobs:
           source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
-          # Remove stale python/pip shims from cached ASDF (Python is managed by setup-python)
-          rm -f ~/.asdf/shims/python* ~/.asdf/shims/pip* ~/.asdf/shims/coverage* 2>/dev/null || true
           asdf reshim
+          rm -f ~/.asdf/shims/python* ~/.asdf/shims/pip* ~/.asdf/shims/coverage* 2>/dev/null || true
         shell: bash
 
       - name: Cache Python dependencies
@@ -282,9 +281,8 @@ jobs:
           source $HOME/.asdf/asdf.sh
           cut -d' ' -f1 .tool-versions | xargs -I{} asdf plugin add {} || true
           asdf install
-          # Remove stale python/pip shims from cached ASDF (Python is managed by setup-python)
-          rm -f ~/.asdf/shims/python* ~/.asdf/shims/pip* ~/.asdf/shims/coverage* 2>/dev/null || true
           asdf reshim
+          rm -f ~/.asdf/shims/python* ~/.asdf/shims/pip* ~/.asdf/shims/coverage* 2>/dev/null || true
         shell: bash
 
       - name: Cache Python dependencies for release

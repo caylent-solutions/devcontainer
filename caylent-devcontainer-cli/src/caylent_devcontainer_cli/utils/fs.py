@@ -81,7 +81,8 @@ def write_shell_env(
             val = json.dumps(value)
         else:
             val = str(value)
-        export_lines.append(f"export {key}='{val}'")
+        escaped_val = val.replace("'", "'\\''")
+        export_lines.append(f"export {key}='{escaped_val}'")
 
     # Static container values (sorted into exports)
     static_vars = {
@@ -212,10 +213,13 @@ def _ensure_gitignore_entries(project_root: str) -> None:
     if not missing:
         return
 
+    has_env_header = any(line == "# Environment files" for line in existing_lines)
+
     with open(gitignore_path, "a") as f:
         if existing_lines and existing_lines[-1] != "":
             f.write("\n")
-        f.write("# Environment files\n")
+        if not has_env_header:
+            f.write("# Environment files\n")
         for entry in missing:
             f.write(entry + "\n")
 

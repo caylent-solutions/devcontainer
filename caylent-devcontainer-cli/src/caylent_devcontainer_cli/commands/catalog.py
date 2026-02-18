@@ -91,10 +91,9 @@ def handle_catalog_list(args):
         # Validate common assets exist
         asset_errors = validate_common_assets(temp_dir)
         if asset_errors:
-            log(
-                "ERR",
-                "Catalog repo is missing required directory: common/devcontainer-assets/",
-            )
+            log("ERR", "Common assets validation failed:")
+            for error in asset_errors:
+                log("ERR", f"  - {error}")
             sys.exit(1)
 
         # Discover entries (skip incomplete ones missing devcontainer.json)
