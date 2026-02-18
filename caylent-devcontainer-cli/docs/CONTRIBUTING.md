@@ -197,93 +197,12 @@ When adding new features:
 
 ### Automated Release
 
-Releases are automatically published to PyPI when a new tag is pushed to GitHub.
+The release pipeline is fully automated. When changes to CLI files are merged to `main`, the CI pipeline computes the next semantic version, generates the changelog, creates and merges a release PR, tags the release, and triggers the publish workflow. A human approval gate on the `pypi` environment ensures releases are intentional and immutable.
+
+Before merging to `main`:
 
 1. Ensure all tests pass (`make test`)
 2. Perform the [manual tests](MANUAL_TESTING.md) to verify functionality
-3. Create and push a new tag following semantic versioning:
-   ```bash
-   git tag -a X.Y.Z -m "Release X.Y.Z"
-   git push origin X.Y.Z
-   ```
+3. Use [conventional commits](https://www.conventionalcommits.org/) to control version bumps (see [Commit Message Conventions](#commit-message-conventions))
 
-The GitHub Actions workflow will validate the tag format, build the package, and publish it to PyPI.
-
-### Manual Release Process
-
-Follow these steps for a manual release:
-
-1. Start from the latest main branch:
-   ```bash
-   git checkout main
-   git pull origin main
-   ```
-
-2. Create a release branch:
-   ```bash
-   git checkout -b release-X.Y.Z
-   ```
-
-3. Update version numbers in the following files:
-   - `src/caylent_devcontainer_cli/__init__.py`: Update `__version__ = "X.Y.Z"`
-   - `pyproject.toml`: Update `version = "X.Y.Z"`
-
-4. Update the CHANGELOG.md with the new version and changes:
-   ```markdown
-   # CHANGELOG
-
-   ## vX.Y.Z (YYYY-MM-DD)
-
-   ### Category (Fix, Feature, etc.)
-
-   * description of the change
-   ```
-
-5. Run tests to ensure everything passes:
-   ```bash
-   cd caylent-devcontainer-cli
-   make test
-   ```
-
-7. Commit the version changes:
-   ```bash
-   git add src/caylent_devcontainer_cli/__init__.py pyproject.toml CHANGELOG.md
-   git commit -m "chore(release): X.Y.Z"
-   ```
-
-8. Push the branch and create a pull request:
-   ```bash
-   git push -u origin release-X.Y.Z
-   ```
-
-   Create a PR from the release branch to main through the GitHub interface.
-
-9. After the PR is reviewed and merged to main, checkout main and pull:
-   ```bash
-   git checkout main
-   git pull origin main
-   ```
-
-10. Create and push a git tag:
-    ```bash
-    git tag -a "X.Y.Z" -m "Release X.Y.Z"
-    git push origin X.Y.Z
-    ```
-
-11. Build the package:
-    ```bash
-    cd caylent-devcontainer-cli
-    make clean
-    make build
-    make distcheck
-    ```
-
-12. Upload to PyPI (requires PyPI credentials):
-    ```bash
-    python -m twine upload dist/*
-    ```
-
-13. Verify the package is available on PyPI:
-    ```bash
-    pip install caylent-devcontainer-cli==X.Y.Z
-    ```
+After merge, the pipeline automatically handles version bumping, changelog generation, tagging, and publishing to PyPI.

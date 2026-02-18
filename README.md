@@ -47,7 +47,7 @@ This repository provides the **base development container** configuration used a
 - `fix-line-endings.py` — automatic Windows line ending conversion for WSL compatibility
 - `cdevcontainer` — Caylent Devcontainer CLI tool for environment management
 - Git, AWS CLI, Docker, Python, `asdf`, aliases, shell profile injection
-- Extension support for Amazon Q and GitHub Copilot
+- Extension support for Claude Code, AWS Toolkit, and developer productivity tools
 
 ---
 
@@ -55,12 +55,14 @@ This repository provides the **base development container** configuration used a
 
 The devcontainer installs:
 
-- ✅ Amazon Q extension (VS Code/Cursor compatible)
-- ✅ GitHub Copilot + Copilot Chat
+- ✅ Claude Code extension (AI coding assistant, VS Code/Cursor compatible)
+- ✅ AWS Toolkit (CloudFormation, resource management, SSO integration)
 - ✅ GitLens, YAML, Python, Docker, Makefile Tools
-- ✅ Jinja, spell checking
+- ✅ Jinja, spell checking, ESLint, Angular
 
 These extensions are auto-installed on container start and work with both VS Code and Cursor.
+
+> ℹ️ **GitHub Copilot is explicitly disabled** in this devcontainer. The configuration sets `github.copilot.enable: false` and `chat.extensionUnification.enabled: false` to prevent Copilot from activating. See [VS Code / Cursor Host Settings](#vs-code--cursor-host-settings) for steps to disable it at the host level too.
 
 ---
 
@@ -142,13 +144,13 @@ pipx install caylent-devcontainer-cli
 You can also install a specific version:
 
 ```bash
-pipx install caylent-devcontainer-cli==1.1.0
+pipx install caylent-devcontainer-cli==2.0.0
 ```
 
 To install directly from GitHub (alternative method):
 
 ```bash
-pipx install git+https://github.com/caylent-solutions/devcontainer.git@1.1.0#subdirectory=caylent-devcontainer-cli
+pipx install git+https://github.com/caylent-solutions/devcontainer.git@2.0.0#subdirectory=caylent-devcontainer-cli
 ```
 
 If you don't have pipx installed, install it first:
@@ -202,11 +204,13 @@ When running `cdevcontainer setup-devcontainer`, you'll be guided through config
 
 - AWS configuration (enabled by default)
 - Git branch and credentials
-- Python version
+- Git authentication method (token or SSH)
 - Developer information
+- Host proxy configuration
 - Extra Ubuntu packages
 - Pager selection (cat, less, more, most)
 - AWS CLI output format (json, table, text, yaml) - only if AWS is enabled
+- Custom environment variables
 
 The interactive setup will create a `devcontainer-environment-variables.json` file with your settings.
 
@@ -235,10 +239,14 @@ You can also manage templates directly:
 # Create a new template interactively
 cdevcontainer template create client1
 
-
+# Edit an existing template interactively (recommended over manual file editing)
+cdevcontainer template edit client1
 
 # Save current environment as a template
 cdevcontainer template save client1
+
+# View a template's configuration values
+cdevcontainer template view client1
 
 # List available templates
 cdevcontainer template list
@@ -252,13 +260,9 @@ cdevcontainer template delete template1 template2
 
 # Upgrade a template to the current CLI version
 cdevcontainer template upgrade my-template
-
-
-
-# Force upgrade with interactive prompts for missing variables
-cdevcontainer template upgrade --force my-template
-cdevcontainer template upgrade -f my-template
 ```
+
+> **Recommended**: Use `cdevcontainer template edit` to modify templates instead of editing JSON files manually. The interactive editor handles SSH key validation, auth method switching, and environment variable constraints correctly. Manual editing can introduce issues, especially with SSH-based Git authentication where the SSH private key content must be validated.
 
 When loading a template:
 1. The CLI copies the template from `~/.devcontainer-templates/client1.json`
@@ -279,30 +283,23 @@ Templates are saved with version information that tracks which CLI version creat
 
 This version checking ensures templates remain compatible as the CLI evolves.
 
-#### Force Upgrade for Missing Variables
+#### Template Upgrade
 
-The CLI can detect when your templates are missing new environment variables that have been added to newer versions. Use the `--force` flag to interactively add missing variables:
+The `template upgrade` command validates and updates a template to the current CLI version. It detects missing keys, invalid values, and auth inconsistencies, then prompts you to fix them interactively:
 
 ```bash
-# Force upgrade with interactive prompts for missing variables
-cdevcontainer template upgrade --force my-template
+cdevcontainer template upgrade my-template
 ```
 
-During a force upgrade:
-- The CLI detects missing single-line environment variables
-- For each missing variable, you can choose the default value or enter a custom value
-- Only simple string variables are prompted (complex objects are skipped)
-- The template is updated with your choices
+#### Missing Variable Detection
 
-#### Missing Variable Warnings
+When running `cdevcontainer code <path>`, the CLI validates environment variables against both the base configuration and the developer template. If missing variables are detected:
 
-When running `cdevcontainer code <path>`, the CLI checks for missing environment variables in your configuration. If missing variables are detected:
-
-- A colorful warning displays the missing variables
-- Instructions are provided to:
-  1. Run `cdevcontainer template upgrade --force <template-name>` to upgrade the template
-  2. Run `cdevcontainer template load --project-root <project-root> <template-name>` to load the upgraded template into the project
-- You can choose to exit and upgrade, or continue with potential issues
+- A warning displays the missing variables with their expected values
+- You are prompted to choose an action:
+  1. **Update devcontainer configuration and add missing variables** — adds variables and replaces `.devcontainer/` files from the catalog
+  2. **Only add the missing variables to existing files** — adds variables without touching `.devcontainer/`
+  3. **Open without changes** — launches the IDE as-is (may cause issues)
 
 This ensures your development environment stays up-to-date with the latest requirements.
 
@@ -353,8 +350,6 @@ The setup will:
 Create `.devcontainer/aws-profile-map.json` and define your AWS SSO accounts using the JSON format shown above.
 
 > ⚠️ This file is required only when AWS configuration is enabled (`AWS_CONFIG_ENABLED=true`).
->
-> AWS configuration is completely optional and not required for using Amazon Q.
 
 ---
 
@@ -375,9 +370,9 @@ cdevcontainer code /path/to/your-project --ide cursor
 ```
 
 This will:
-- Generate `shell.env` from your `devcontainer-environment-variables.json`
-- Load the environment variables
-- Launch VS Code
+- Validate your `devcontainer-environment-variables.json` and `shell.env` files
+- Detect and prompt to resolve any missing environment variables
+- Launch your IDE (VS Code or Cursor)
 - Display a confirmation message
 
 > ⚠️ **Note**: After VS Code launches, you'll need to accept the prompt to reopen in container.
@@ -458,19 +453,18 @@ These variables are not needed when `CICD=true` as they're handled by the CI/CD 
 
 ## 🧩 Post-Launch Setup
 
-### 🧠 GitHub Copilot
+### 🤖 Claude Code
 
-- Auto-installed
-- Login prompt appears if not authenticated
-- To verify: open any `.py` file and type a comment — suggestions will appear
+- Auto-installed as the `anthropic.claude-code` extension
+- The login prompt is suppressed by default (`claude-code.disableLoginPrompt: true`)
+- To use: open the Claude Code sidebar or run `claude` from the integrated terminal
+- Authenticate via the terminal by running `claude` and following the browser login flow
 
-### 🤖 Amazon Q
+### 🧰 AWS Toolkit
 
-- Open the Amazon Q sidebar (left bar in VS Code/Cursor) or use Command+Shift+P and type "AmazonQ: Open Chat"
-- Click **Sign in** and follow the browser flow
-- Enter your SSO start URL, select your region and Pro account
-- Authentication will complete via browser
-- No AWS profile configuration is required if you only want to use Amazon Q
+- Auto-installed as the `amazonwebservices.aws-toolkit-vscode` extension
+- Provides CloudFormation linting, resource management, and SSO integration
+- AWS SSO prompts are suppressed by default — connect manually via the AWS sidebar or `aws sso login`
 
 ---
 
@@ -859,6 +853,7 @@ catalog-repo/
     devcontainer-assets/
       .devcontainer.postcreate.sh      # Shared postcreate hook (required)
       devcontainer-functions.sh         # Shared shell functions (required)
+      postcreate-wrapper.sh            # Postcreate wrapper script (required)
       project-setup.sh                 # Project-setup template (required)
       nix-family-os/                   # Host proxy toolkit for macOS/Linux
       wsl-family-os/                   # Host proxy toolkit for Windows/WSL
@@ -878,13 +873,16 @@ Everything in `common/root-project-assets/` is automatically copied into the **p
 
 ### Creating a Custom Catalog
 
-See the catalog documentation in any catalog repository's README.md for the full guide covering:
+See the [Catalog Creation Guide](docs/CATALOG_CREATION.md) for the full guide covering:
 
 - Catalog repo structure and required files
+- Step-by-step instructions for creating a new catalog
 - Adding and validating catalog entries
-- The `postCreateCommand` reference
+- Tagging, releases, and distribution
 - The 3-layer customization model (catalog entries, developer templates, project-setup.sh)
 - Distribution via `DEVCONTAINER_CATALOG_URL`
+
+For working examples, see the [Caylent DevOps Platform repositories](https://github.com/search?q=topic%3Acaylent-devops-platform+org%3Acaylent-solutions&type=Repositories).
 
 ---
 
