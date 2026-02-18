@@ -22,6 +22,7 @@
 - [DevContainer Catalogs](#devcontainer-catalogs)
 - [ECR Public Image Mirror](#ecr-public-image-mirror)
 - [🤝 Contributing](#-contributing)
+- [🔒 Host Proxy Setup (Required for Caylent)](#-host-proxy-setup-required-for-caylent)
 
 ## 🚀 Overview
 
@@ -987,3 +988,14 @@ The `pre-commit-check` task runs automatically in CI/CD and includes:
 
 > All PRs must pass CI, maintain 85% test coverage, and be reviewed before merge.
 > See [CONTRIBUTING.md](caylent-devcontainer-cli/docs/CONTRIBUTING.md) for detailed guidelines.
+
+---
+
+## 🔒 Host Proxy Setup (Required for Caylent)
+
+Caylent engineering projects require a host-side proxy for devcontainer network access. You **must** configure tinyproxy on your host machine before building a devcontainer.
+
+Choose the guide for your operating system:
+
+- **macOS / Linux**: [Host Proxy Setup Guide](.devcontainer/nix-family-os/README.md)
+- **Windows / WSL**: [Host Proxy Setup Guide](.devcontainer/wsl-family-os/README.md)
