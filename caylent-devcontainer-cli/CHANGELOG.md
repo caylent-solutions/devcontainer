@@ -2,7 +2,23 @@
 
 
 
+## v2.0.3 (2026-02-18)
+
+### Fix
+
+* fix(ci): add concurrency group to prevent release pipeline race conditions
+
+Add concurrency group &#39;release-pipeline&#39; with cancel-in-progress: false
+to both main-validation.yml and publish.yml. This serializes pipeline
+runs so multiple merges to main are processed in order, preventing
+duplicate version computation and failed commits. ([`5effca2`](https://github.com/caylent-solutions/devcontainer/commit/5effca2aef60a2100d5f8fc605a4f4eba5b79745))
+
+
 ## v2.0.2 (2026-02-18)
+
+### Chore
+
+* chore(release): 2.0.2 ([`97580e5`](https://github.com/caylent-solutions/devcontainer/commit/97580e5b6d08de6b8ebeda70b49d483be7f941f2))
 
 ### Fix
 
@@ -10,6 +26,12 @@
 
 Upgrade github/codeql-action/init and github/codeql-action/analyze from v3 to v4 in both codeql-analysis.yml and main-validation.yml
 CodeQL Action v3 will be deprecated in December 2026: https://github.blog/changelog/2025-10-28-upcoming-deprecation-of-codeql-action-v3/ ([`06fea64`](https://github.com/caylent-solutions/devcontainer/commit/06fea6444470cf50006a5d8c71a66e2f24bd8e3c))
+
+### Unknown
+
+* Merge pull request #132 from caylent-solutions/release-2.0.2
+
+Release 2.0.2 ([`f649d6f`](https://github.com/caylent-solutions/devcontainer/commit/f649d6f21f4b2d1f2375eba77a6405114e92cb72))
 
 
 ## v2.0.1 (2026-02-18)
