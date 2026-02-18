@@ -694,7 +694,41 @@ JetBrains IDEs (like PyCharm) support Devcontainers via [JetBrains Gateway](http
 
 ## 🧪 Validate Your Config
 
-To validate your configuration, verify the `devcontainer-environment-variables.json` file is valid JSON and contains the expected keys:
+### Catalog Validation
+
+The CLI includes a comprehensive catalog validation command that checks structural integrity, content correctness, and consistency across the entire catalog:
+
+```bash
+# Validate the default catalog (remote)
+cdevcontainer catalog validate
+
+# Validate a local catalog directory
+cdevcontainer catalog validate --local /path/to/catalog
+
+# Validate using the Makefile target (installs CLI from this repo first)
+make validate-catalog
+```
+
+The `catalog validate` command checks:
+
+| Area | Check |
+|------|-------|
+| Common assets | Required files present (`postcreate`, `functions`, `wrapper`, `project-setup`) |
+| Common assets | Subdirectories exist (`nix-family-os/`, `wsl-family-os/`) with required files |
+| Common assets | Shell scripts have executable permission |
+| Common assets | All `.json` files in `root-project-assets/` are valid JSON |
+| Per-entry | Required files present (`catalog-entry.json`, `devcontainer.json`, `VERSION`) |
+| Per-entry | `VERSION` contains valid semver (X.Y.Z) |
+| Per-entry | `devcontainer.json` has `name` field and at least one container source (`image`/`build`/`dockerFile`/`dockerComposeFile`) |
+| Per-entry | `postCreateCommand` references postcreate scripts |
+| Per-entry | Directory name matches `catalog-entry.json` `name` field |
+| Per-entry | No file conflicts with common assets (including subdirectories) |
+| Per-entry | `catalog-entry.json` has valid name pattern, description, tags, and no unknown fields |
+| Cross-entry | No duplicate entry names |
+
+### JSON Validation
+
+To validate your `devcontainer-environment-variables.json` file is valid JSON:
 
 ```bash
 python3 -c "import json; json.load(open('devcontainer-environment-variables.json'))" && echo "Valid JSON"
@@ -896,6 +930,9 @@ This repository includes comprehensive quality checks:
 ```bash
 # Run all pre-commit checks (formatting, linting, YAML validation, security)
 make pre-commit-check
+
+# Validate catalog structure using the CLI from this repo
+make validate-catalog
 
 # Check GitHub workflow YAML files specifically
 make github-workflow-yaml-lint

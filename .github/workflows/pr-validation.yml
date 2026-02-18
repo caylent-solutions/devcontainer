@@ -141,6 +141,12 @@ jobs:
           source $HOME/.asdf/asdf.sh
           make functional-test
 
+      - name: Validate catalog structure
+        run: |
+          cd $GITHUB_WORKSPACE
+          source $HOME/.asdf/asdf.sh
+          make validate-catalog
+
       - name: Generate coverage report
         run: |
           cd $GITHUB_WORKSPACE/caylent-devcontainer-cli

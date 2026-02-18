@@ -42,4 +42,13 @@ if git diff --name-only HEAD @{u} 2>/dev/null | grep -q "^caylent-devcontainer-c
   echo "✅ All tests and linting passed!"
 fi
 
+# Always validate catalog structure
+echo "Running catalog validation..."
+cd "$ROOT_DIR"
+if ! make validate-catalog; then
+  echo "❌ Catalog validation failed. Please fix the issues before pushing."
+  exit 1
+fi
+echo "✅ Catalog validation passed!"
+
 exit 0

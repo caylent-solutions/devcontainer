@@ -12,7 +12,6 @@ Layout:
 
 import json
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -23,15 +22,23 @@ from caylent_devcontainer_cli import __version__
 from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ASSETS_DIR,
     CATALOG_COMMON_DIR,
+    CATALOG_COMMON_SUBDIR_REQUIRED_FILES,
+    CATALOG_COMMON_SUBDIRS,
     CATALOG_ENTRIES_DIR,
+    CATALOG_ENTRY_ALLOWED_FIELDS,
     CATALOG_ENTRY_FILENAME,
+    CATALOG_EXECUTABLE_COMMON_ASSETS,
+    CATALOG_EXECUTABLE_SUBDIR_ASSETS,
     CATALOG_NAME_PATTERN,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_REQUIRED_ENTRY_FILES,
     CATALOG_ROOT_ASSETS_DIR,
     CATALOG_TAG_PATTERN,
+    CATALOG_VERSION_FILENAME,
     DEFAULT_CATALOG_URL,
+    DEVCONTAINER_CONTAINER_SOURCE_FIELDS,
     MIN_CATALOG_TAG_VERSION,
+    SEMVER_PATTERN,
 )
 
 
@@ -92,10 +99,9 @@ def compare_semver(version_a: str, version_b: str) -> int:
     Raises:
         ValueError: If either version is not valid semver (X.Y.Z).
     """
-    pattern = re.compile(r"^\d+\.\d+\.\d+$")
-    if not pattern.match(version_a):
+    if not SEMVER_PATTERN.match(version_a):
         raise ValueError(f"Invalid semver: '{version_a}'")
-    if not pattern.match(version_b):
+    if not SEMVER_PATTERN.match(version_b):
         raise ValueError(f"Invalid semver: '{version_b}'")
 
     parts_a = tuple(int(x) for x in version_a.split("."))
@@ -285,7 +291,6 @@ def resolve_latest_catalog_tag(clone_url: str, min_version: str) -> str:
         stderr_snippet = result.stderr.strip()
         raise SystemExit(f"Failed to query tags from '{clone_url}'" + (f": {stderr_snippet}" if stderr_snippet else ""))
 
-    semver_pattern = re.compile(r"^\d+\.\d+\.\d+$")
     candidates: List[str] = []
 
     for line in result.stdout.strip().splitlines():
@@ -299,7 +304,7 @@ def resolve_latest_catalog_tag(clone_url: str, min_version: str) -> str:
         if ref.endswith("^{}"):
             continue
         tag = ref.removeprefix("refs/tags/")
-        if semver_pattern.match(tag) and compare_semver(tag, min_version) >= 0:
+        if SEMVER_PATTERN.match(tag) and compare_semver(tag, min_version) >= 0:
             candidates.append(tag)
 
     if not candidates:
@@ -488,8 +493,13 @@ def validate_catalog_entry(data: Dict[str, Any]) -> List[str]:
         version = data["min_cli_version"]
         if not isinstance(version, str):
             errors.append("'min_cli_version' must be a string")
-        elif not re.match(r"^\d+\.\d+\.\d+$", version):
+        elif not SEMVER_PATTERN.match(version):
             errors.append(f"'min_cli_version' must be semver (X.Y.Z). Got: '{version}'")
+
+    # Unknown fields
+    unknown_fields = set(data.keys()) - CATALOG_ENTRY_ALLOWED_FIELDS
+    if unknown_fields:
+        errors.append(f"Unknown fields in {CATALOG_ENTRY_FILENAME}: {', '.join(sorted(unknown_fields))}")
 
     return errors
 
@@ -568,11 +578,89 @@ def validate_postcreate_command(devcontainer_json_path: str) -> List[str]:
     return errors
 
 
-def validate_entry(entry_dir: str) -> List[str]:
+def validate_version_file(entry_dir: str) -> List[str]:
+    """Validate that the VERSION file contains a valid semver string (X.Y.Z).
+
+    Returns a list of errors (empty if valid).  If the file does not exist
+    the check is skipped — missing files are already caught by
+    ``validate_entry_structure``.
+    """
+    errors: List[str] = []
+    version_path = os.path.join(entry_dir, CATALOG_VERSION_FILENAME)
+
+    if not os.path.isfile(version_path):
+        return errors
+
+    try:
+        with open(version_path) as f:
+            content = f.read().strip()
+    except OSError as e:
+        errors.append(f"Cannot read {CATALOG_VERSION_FILENAME}: {e}")
+        return errors
+
+    if not content:
+        errors.append(f"{CATALOG_VERSION_FILENAME} is empty")
+    elif not SEMVER_PATTERN.match(content):
+        errors.append(f"{CATALOG_VERSION_FILENAME} must be valid semver (X.Y.Z). Got: '{content}'")
+
+    return errors
+
+
+def validate_devcontainer_json(devcontainer_json_path: str) -> List[str]:
+    """Validate structural requirements of devcontainer.json.
+
+    Checks:
+    - ``name`` field is present and a non-empty string.
+    - At least one container source field (``image``, ``build``,
+      ``dockerFile``, ``dockerComposeFile``) is present.
+    - Delegates to ``validate_postcreate_command`` for postCreateCommand.
+
+    Returns a list of errors (empty if valid).
+    """
+    errors: List[str] = []
+
+    if not os.path.isfile(devcontainer_json_path):
+        errors.append(f"devcontainer.json not found at {devcontainer_json_path}")
+        return errors
+
+    try:
+        with open(devcontainer_json_path) as f:
+            config = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        errors.append(f"Failed to parse devcontainer.json: {e}")
+        return errors
+
+    # name field
+    name = config.get("name")
+    if not isinstance(name, str) or not name:
+        errors.append("devcontainer.json: 'name' is required and must be a non-empty string")
+
+    # Container source — at least one must be present
+    has_source = any(field in config for field in DEVCONTAINER_CONTAINER_SOURCE_FIELDS)
+    if not has_source:
+        errors.append(
+            "devcontainer.json: must contain at least one container source field "
+            f"({', '.join(DEVCONTAINER_CONTAINER_SOURCE_FIELDS)})"
+        )
+
+    # postCreateCommand validation (delegate)
+    errors.extend(validate_postcreate_command(devcontainer_json_path))
+
+    return errors
+
+
+def validate_entry(entry_dir: str, common_assets_dir: Optional[str] = None) -> List[str]:
     """Run all validations on a single catalog entry directory.
 
-    Validates structure, catalog-entry.json content, file conflicts,
-    and postCreateCommand.
+    Validates structure, VERSION content, catalog-entry.json content
+    (including directory/name consistency), file conflicts, and
+    devcontainer.json structure.
+
+    Args:
+        entry_dir: Path to the catalog entry directory.
+        common_assets_dir: Path to ``common/devcontainer-assets/``.  When
+            provided, the full directory listing is used for conflict
+            detection instead of the hardcoded required-assets tuple.
 
     Returns a list of all errors found.
     """
@@ -581,27 +669,43 @@ def validate_entry(entry_dir: str) -> List[str]:
     # 1. Structure validation
     errors.extend(validate_entry_structure(entry_dir))
 
-    # 2. catalog-entry.json content validation
+    # 2. VERSION content validation
+    errors.extend(validate_version_file(entry_dir))
+
+    # 3. catalog-entry.json content validation + directory/name consistency
     entry_path = os.path.join(entry_dir, CATALOG_ENTRY_FILENAME)
     if os.path.isfile(entry_path):
         try:
             with open(entry_path) as f:
                 entry_data = json.load(f)
             errors.extend(validate_catalog_entry(entry_data))
+
+            # Directory name must match catalog-entry.json name
+            entry_name = entry_data.get("name", "")
+            dir_name = os.path.basename(entry_dir)
+            if entry_name and dir_name != entry_name:
+                errors.append(
+                    f"Directory name '{dir_name}' does not match "
+                    f"'{CATALOG_ENTRY_FILENAME}' name '{entry_name}'"
+                )
         except json.JSONDecodeError as e:
             errors.append(f"Invalid JSON in {CATALOG_ENTRY_FILENAME}: {e}")
         except OSError as e:
             errors.append(f"Cannot read {CATALOG_ENTRY_FILENAME}: {e}")
 
-    # 3. File conflict detection
-    conflicts = detect_file_conflicts(entry_dir, CATALOG_REQUIRED_COMMON_ASSETS)
+    # 4. File conflict detection — use full common assets listing when available
+    if common_assets_dir and os.path.isdir(common_assets_dir):
+        conflict_items = tuple(os.listdir(common_assets_dir))
+    else:
+        conflict_items = CATALOG_REQUIRED_COMMON_ASSETS
+    conflicts = detect_file_conflicts(entry_dir, conflict_items)
     for conflict in conflicts:
         errors.append(f"Entry contains '{conflict}' which conflicts with " f"common/{CATALOG_ASSETS_DIR}/{conflict}")
 
-    # 4. postCreateCommand validation
+    # 5. devcontainer.json structural validation (name, container source, postCreateCommand)
     devcontainer_json = os.path.join(entry_dir, "devcontainer.json")
     if os.path.isfile(devcontainer_json):
-        errors.extend(validate_postcreate_command(devcontainer_json))
+        errors.extend(validate_devcontainer_json(devcontainer_json))
 
     return errors
 
@@ -609,7 +713,9 @@ def validate_entry(entry_dir: str) -> List[str]:
 def validate_common_assets(catalog_root: str) -> List[str]:
     """Validate that the catalog has the required common/devcontainer-assets/ directory.
 
-    Also validates ``common/root-project-assets/`` when present (optional).
+    Checks required files, required subdirectories (proxy toolkits),
+    executable permissions on shell scripts, and JSON validity in
+    ``common/root-project-assets/`` when present.
 
     Returns a list of errors (empty if valid).
     """
@@ -625,10 +731,58 @@ def validate_common_assets(catalog_root: str) -> List[str]:
         if not os.path.isfile(filepath):
             errors.append(f"Missing required common asset: {CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{filename}")
 
+    # Executable permission checks on common asset shell scripts
+    for filename in CATALOG_EXECUTABLE_COMMON_ASSETS:
+        filepath = os.path.join(assets_dir, filename)
+        if os.path.isfile(filepath) and not os.access(filepath, os.X_OK):
+            errors.append(
+                f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{filename} "
+                "must have the executable bit set"
+            )
+
+    # Subdirectory validation (proxy toolkits)
+    for subdir in CATALOG_COMMON_SUBDIRS:
+        subdir_path = os.path.join(assets_dir, subdir)
+        if not os.path.isdir(subdir_path):
+            errors.append(
+                f"Missing required subdirectory: "
+                f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/"
+            )
+            continue
+
+        for req_file in CATALOG_COMMON_SUBDIR_REQUIRED_FILES:
+            req_path = os.path.join(subdir_path, req_file)
+            if not os.path.isfile(req_path):
+                errors.append(
+                    f"Missing required file: "
+                    f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/{req_file}"
+                )
+
+        # Executable permission checks on subdirectory shell scripts
+        for filename in CATALOG_EXECUTABLE_SUBDIR_ASSETS:
+            filepath = os.path.join(subdir_path, filename)
+            if os.path.isfile(filepath) and not os.access(filepath, os.X_OK):
+                errors.append(
+                    f"{CATALOG_COMMON_DIR}/{CATALOG_ASSETS_DIR}/{subdir}/{filename} "
+                    "must have the executable bit set"
+                )
+
     # Validate root-project-assets when present (optional directory)
     root_assets_dir = os.path.join(catalog_root, CATALOG_COMMON_DIR, CATALOG_ROOT_ASSETS_DIR)
     if os.path.exists(root_assets_dir) and not os.path.isdir(root_assets_dir):
         errors.append(f"{CATALOG_COMMON_DIR}/{CATALOG_ROOT_ASSETS_DIR} exists but is not a directory")
+    elif os.path.isdir(root_assets_dir):
+        # Validate all .json files are parseable
+        for dirpath, _dirnames, filenames in os.walk(root_assets_dir):
+            for filename in filenames:
+                if filename.endswith(".json"):
+                    json_path = os.path.join(dirpath, filename)
+                    rel_path = os.path.relpath(json_path, catalog_root)
+                    try:
+                        with open(json_path) as f:
+                            json.load(f)
+                    except (json.JSONDecodeError, OSError) as e:
+                        errors.append(f"Invalid JSON in {rel_path}: {e}")
 
     return errors
 
@@ -671,9 +825,10 @@ def validate_catalog(catalog_root: str) -> List[str]:
         return errors
 
     # 3. Validate each entry and check name uniqueness
+    common_assets_dir = os.path.join(catalog_root, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
     seen_names: Dict[str, str] = {}
     for entry_dir in entry_dirs:
-        entry_errors = validate_entry(entry_dir)
+        entry_errors = validate_entry(entry_dir, common_assets_dir=common_assets_dir)
         rel_path = os.path.relpath(entry_dir, catalog_root)
         for error in entry_errors:
             errors.append(f"[{rel_path}] {error}")

@@ -21,20 +21,50 @@ from caylent_devcontainer_cli.utils.catalog import (
     validate_catalog,
     validate_catalog_entry,
     validate_common_assets,
+    validate_devcontainer_json,
     validate_entry,
     validate_entry_structure,
     validate_postcreate_command,
+    validate_version_file,
 )
 from caylent_devcontainer_cli.utils.constants import (
+    CATALOG_COMMON_SUBDIR_REQUIRED_FILES,
+    CATALOG_COMMON_SUBDIRS,
+    CATALOG_ENTRY_ALLOWED_FIELDS,
     CATALOG_ENTRY_FILENAME,
+    CATALOG_EXECUTABLE_COMMON_ASSETS,
+    CATALOG_EXECUTABLE_SUBDIR_ASSETS,
     CATALOG_NAME_PATTERN,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_REQUIRED_ENTRY_FILES,
     CATALOG_TAG_PATTERN,
     CATALOG_VERSION_FILENAME,
     DEFAULT_CATALOG_URL,
+    DEVCONTAINER_CONTAINER_SOURCE_FIELDS,
     MIN_CATALOG_TAG_VERSION,
+    SEMVER_PATTERN,
 )
+
+
+def _create_valid_common_assets(assets_dir):
+    """Create a fully valid common/devcontainer-assets/ directory."""
+    os.makedirs(assets_dir, exist_ok=True)
+    for filename in CATALOG_REQUIRED_COMMON_ASSETS:
+        filepath = os.path.join(assets_dir, filename)
+        with open(filepath, "w") as f:
+            f.write("#!/bin/bash\n")
+        os.chmod(filepath, 0o755)
+    for subdir in CATALOG_COMMON_SUBDIRS:
+        subdir_path = os.path.join(assets_dir, subdir)
+        os.makedirs(subdir_path, exist_ok=True)
+        for req_file in CATALOG_COMMON_SUBDIR_REQUIRED_FILES:
+            filepath = os.path.join(subdir_path, req_file)
+            with open(filepath, "w") as f:
+                f.write("#!/bin/bash\n" if req_file.endswith(".sh") else "# placeholder\n")
+        for exec_file in CATALOG_EXECUTABLE_SUBDIR_ASSETS:
+            filepath = os.path.join(subdir_path, exec_file)
+            if os.path.isfile(filepath):
+                os.chmod(filepath, 0o755)
 
 
 class TestCatalogEntry(TestCase):
@@ -462,10 +492,7 @@ class TestValidateCommonAssets(TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
-            os.makedirs(assets_dir)
-            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-                with open(os.path.join(assets_dir, filename), "w") as f:
-                    f.write("#!/bin/bash")
+            _create_valid_common_assets(assets_dir)
             errors = validate_common_assets(tmp)
             self.assertEqual(errors, [])
 
@@ -481,68 +508,63 @@ class TestValidateCommonAssets(TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
-            os.makedirs(assets_dir)
-            # Create all but project-setup.sh
-            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-                if filename != "project-setup.sh":
-                    with open(os.path.join(assets_dir, filename), "w") as f:
-                        f.write("")
+            _create_valid_common_assets(assets_dir)
+            # Remove one required asset
+            os.remove(os.path.join(assets_dir, "project-setup.sh"))
             errors = validate_common_assets(tmp)
-            self.assertEqual(len(errors), 1)
-            self.assertIn("project-setup.sh", errors[0])
+            self.assertTrue(any("project-setup.sh" in e for e in errors))
 
 
 class TestValidateEntry(TestCase):
     """Test full entry validation."""
 
-    def _create_valid_entry(self, tmp_dir):
-        """Create a minimal valid entry in tmp_dir."""
-        entry = {"name": "test-app", "description": "Test application"}
-        with open(os.path.join(tmp_dir, CATALOG_ENTRY_FILENAME), "w") as f:
+    def _create_valid_entry(self, parent_dir, entry_name="test-app"):
+        """Create a minimal valid entry in parent_dir/<entry_name>."""
+        entry_dir = os.path.join(parent_dir, entry_name)
+        os.makedirs(entry_dir, exist_ok=True)
+        entry = {"name": entry_name, "description": "Test application"}
+        with open(os.path.join(entry_dir, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump(entry, f)
-        devcontainer = {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode"}
-        with open(os.path.join(tmp_dir, "devcontainer.json"), "w") as f:
+        devcontainer = {
+            "name": "caylent-devcontainer",
+            "image": "mcr.microsoft.com/devcontainers/base:noble",
+            "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+        }
+        with open(os.path.join(entry_dir, "devcontainer.json"), "w") as f:
             json.dump(devcontainer, f)
-        with open(os.path.join(tmp_dir, CATALOG_VERSION_FILENAME), "w") as f:
+        with open(os.path.join(entry_dir, CATALOG_VERSION_FILENAME), "w") as f:
             f.write("1.0.0")
+        return entry_dir
 
     def test_valid_entry(self):
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_entry(tmp)
-            errors = validate_entry(tmp)
+            entry_dir = self._create_valid_entry(tmp)
+            errors = validate_entry(entry_dir)
             self.assertEqual(errors, [])
 
     def test_invalid_entry_json(self):
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_entry(tmp)
+            entry_dir = self._create_valid_entry(tmp)
             # Overwrite with invalid entry
-            with open(os.path.join(tmp, CATALOG_ENTRY_FILENAME), "w") as f:
+            with open(os.path.join(entry_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump({"name": "A"}, f)  # uppercase, no description
-            errors = validate_entry(tmp)
+            errors = validate_entry(entry_dir)
             self.assertTrue(len(errors) >= 2)  # name pattern + missing description
 
     def test_conflict_with_common_assets(self):
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_entry(tmp)
-            with open(os.path.join(tmp, "devcontainer-functions.sh"), "w") as f:
+            entry_dir = self._create_valid_entry(tmp)
+            with open(os.path.join(entry_dir, "devcontainer-functions.sh"), "w") as f:
                 f.write("")
-            errors = validate_entry(tmp)
+            errors = validate_entry(entry_dir)
             self.assertTrue(any("conflicts with" in e for e in errors))
 
     def test_broken_json_in_entry(self):
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmp:
-            self._create_valid_entry(tmp)
-            with open(os.path.join(tmp, CATALOG_ENTRY_FILENAME), "w") as f:
+            entry_dir = self._create_valid_entry(tmp)
+            with open(os.path.join(entry_dir, CATALOG_ENTRY_FILENAME), "w") as f:
                 f.write("not json")
-            errors = validate_entry(tmp)
+            errors = validate_entry(entry_dir)
             self.assertTrue(any("Invalid JSON" in e for e in errors))
 
 
@@ -551,20 +573,19 @@ class TestValidateCatalog(TestCase):
 
     def _create_valid_catalog(self, tmp_dir):
         """Create a minimal valid catalog structure."""
-        # Common assets
         assets_dir = os.path.join(tmp_dir, "common", "devcontainer-assets")
-        os.makedirs(assets_dir)
-        for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-            with open(os.path.join(assets_dir, filename), "w") as f:
-                f.write("#!/bin/bash")
+        _create_valid_common_assets(assets_dir)
 
-        # One entry
         col_dir = os.path.join(tmp_dir, "catalog", "default")
         os.makedirs(col_dir)
         entry = {"name": "default", "description": "Default entry"}
         with open(os.path.join(col_dir, CATALOG_ENTRY_FILENAME), "w") as f:
             json.dump(entry, f)
-        devcontainer = {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode"}
+        devcontainer = {
+            "name": "caylent-devcontainer",
+            "image": "mcr.microsoft.com/devcontainers/base:noble",
+            "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+        }
         with open(os.path.join(col_dir, "devcontainer.json"), "w") as f:
             json.dump(devcontainer, f)
         with open(os.path.join(col_dir, CATALOG_VERSION_FILENAME), "w") as f:
@@ -582,7 +603,6 @@ class TestValidateCatalog(TestCase):
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
-            # Only create entry, no common
             col_dir = os.path.join(tmp, "catalog", "app")
             os.makedirs(col_dir)
             entry = {"name": "app", "description": "App"}
@@ -590,7 +610,11 @@ class TestValidateCatalog(TestCase):
                 json.dump(entry, f)
             with open(os.path.join(col_dir, "devcontainer.json"), "w") as f:
                 json.dump(
-                    {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh"},
+                    {
+                        "name": "caylent-devcontainer",
+                        "image": "mcr.microsoft.com/devcontainers/base:noble",
+                        "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh",
+                    },
                     f,
                 )
             with open(os.path.join(col_dir, CATALOG_VERSION_FILENAME), "w") as f:
@@ -603,10 +627,7 @@ class TestValidateCatalog(TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
-            os.makedirs(assets_dir)
-            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-                with open(os.path.join(assets_dir, filename), "w") as f:
-                    f.write("")
+            _create_valid_common_assets(assets_dir)
             errors = validate_catalog(tmp)
             self.assertTrue(any("No entries found" in e for e in errors))
 
@@ -621,7 +642,11 @@ class TestValidateCatalog(TestCase):
             entry = {"name": "default", "description": "Duplicate name"}
             with open(os.path.join(col2, CATALOG_ENTRY_FILENAME), "w") as f:
                 json.dump(entry, f)
-            devcontainer = {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh"}
+            devcontainer = {
+                "name": "caylent-devcontainer",
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh",
+            }
             with open(os.path.join(col2, "devcontainer.json"), "w") as f:
                 json.dump(devcontainer, f)
             with open(os.path.join(col2, CATALOG_VERSION_FILENAME), "w") as f:
@@ -1400,14 +1425,9 @@ class TestValidateCommonAssetsRootAssets(TestCase):
 
     def test_root_assets_file_instead_of_dir_is_error(self):
         with tempfile.TemporaryDirectory() as tmp:
-            # Create valid common assets
             assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
-            os.makedirs(assets_dir)
-            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-                with open(os.path.join(assets_dir, filename), "w") as f:
-                    f.write("#!/bin/bash")
+            _create_valid_common_assets(assets_dir)
 
-            # Create root-project-assets as a file (invalid)
             root_assets_path = os.path.join(tmp, "common", "root-project-assets")
             with open(root_assets_path, "w") as f:
                 f.write("not a directory")
@@ -1417,12 +1437,378 @@ class TestValidateCommonAssetsRootAssets(TestCase):
 
     def test_no_root_assets_dir_is_valid(self):
         with tempfile.TemporaryDirectory() as tmp:
-            # Create valid common assets without root-project-assets
             assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
-            os.makedirs(assets_dir)
-            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-                with open(os.path.join(assets_dir, filename), "w") as f:
-                    f.write("#!/bin/bash")
+            _create_valid_common_assets(assets_dir)
 
             errors = validate_common_assets(tmp)
             self.assertEqual(errors, [])
+
+
+class TestValidateVersionFile(TestCase):
+    """Test VERSION file content validation."""
+
+    def test_valid_semver(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "VERSION"), "w") as f:
+                f.write("1.0.0")
+            errors = validate_version_file(tmp)
+            self.assertEqual(errors, [])
+
+    def test_valid_semver_with_whitespace(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "VERSION"), "w") as f:
+                f.write("  2.1.3  \n")
+            errors = validate_version_file(tmp)
+            self.assertEqual(errors, [])
+
+    def test_invalid_format_v_prefix(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "VERSION"), "w") as f:
+                f.write("v1.0.0")
+            errors = validate_version_file(tmp)
+            self.assertTrue(any("semver" in e for e in errors))
+
+    def test_invalid_format_two_parts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "VERSION"), "w") as f:
+                f.write("1.0")
+            errors = validate_version_file(tmp)
+            self.assertTrue(any("semver" in e for e in errors))
+
+    def test_empty_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "VERSION"), "w") as f:
+                f.write("")
+            errors = validate_version_file(tmp)
+            self.assertTrue(any("empty" in e for e in errors))
+
+    def test_missing_file_skipped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            errors = validate_version_file(tmp)
+            self.assertEqual(errors, [])
+
+    def test_invalid_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "VERSION"), "w") as f:
+                f.write("latest")
+            errors = validate_version_file(tmp)
+            self.assertTrue(any("semver" in e for e in errors))
+
+
+class TestValidateDevcontainerJson(TestCase):
+    """Test devcontainer.json structural validation."""
+
+    def test_valid_with_image(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "name": "test-container",
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertEqual(errors, [])
+
+    def test_valid_with_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "name": "test-container",
+                "build": {"dockerfile": "Dockerfile"},
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertEqual(errors, [])
+
+    def test_valid_with_docker_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "name": "test-container",
+                "dockerFile": "Dockerfile",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertEqual(errors, [])
+
+    def test_valid_with_docker_compose_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "name": "test-container",
+                "dockerComposeFile": "docker-compose.yml",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertEqual(errors, [])
+
+    def test_missing_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertTrue(any("'name' is required" in e for e in errors))
+
+    def test_empty_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "name": "",
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertTrue(any("'name' is required" in e for e in errors))
+
+    def test_missing_container_source(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "name": "test-container",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertTrue(any("container source" in e for e in errors))
+
+    def test_invalid_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            with open(path, "w") as f:
+                f.write("not json")
+            errors = validate_devcontainer_json(path)
+            self.assertTrue(any("parse" in e.lower() for e in errors))
+
+    def test_file_not_found(self):
+        errors = validate_devcontainer_json("/nonexistent/devcontainer.json")
+        self.assertTrue(any("not found" in e for e in errors))
+
+    def test_delegates_postcreate_validation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "devcontainer.json")
+            config = {
+                "name": "test-container",
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "echo hello",
+            }
+            with open(path, "w") as f:
+                json.dump(config, f)
+            errors = validate_devcontainer_json(path)
+            self.assertTrue(any("postcreate" in e for e in errors))
+
+
+class TestValidateCatalogEntryUnknownFields(TestCase):
+    """Test unknown field detection in catalog-entry.json."""
+
+    def test_unknown_field_detected(self):
+        data = {
+            "name": "test-app",
+            "description": "Test",
+            "unknown_field": "value",
+        }
+        errors = validate_catalog_entry(data)
+        self.assertTrue(any("Unknown fields" in e for e in errors))
+        self.assertTrue(any("unknown_field" in e for e in errors))
+
+    def test_multiple_unknown_fields(self):
+        data = {
+            "name": "test-app",
+            "description": "Test",
+            "foo": 1,
+            "bar": 2,
+        }
+        errors = validate_catalog_entry(data)
+        self.assertTrue(any("Unknown fields" in e for e in errors))
+        self.assertTrue(any("bar" in e and "foo" in e for e in errors))
+
+    def test_all_known_fields_pass(self):
+        data = {
+            "name": "test-app",
+            "description": "Test",
+            "tags": ["test"],
+            "maintainer": "team",
+            "min_cli_version": "2.0.0",
+        }
+        errors = validate_catalog_entry(data)
+        self.assertEqual(errors, [])
+
+
+class TestValidateEntryExtended(TestCase):
+    """Test extended entry validation (VERSION, dir/name, devcontainer.json)."""
+
+    def test_invalid_version_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            entry_dir = os.path.join(tmp, "test-app")
+            os.makedirs(entry_dir)
+            entry = {"name": "test-app", "description": "Test"}
+            with open(os.path.join(entry_dir, CATALOG_ENTRY_FILENAME), "w") as f:
+                json.dump(entry, f)
+            devcontainer = {
+                "name": "caylent-devcontainer",
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(os.path.join(entry_dir, "devcontainer.json"), "w") as f:
+                json.dump(devcontainer, f)
+            with open(os.path.join(entry_dir, CATALOG_VERSION_FILENAME), "w") as f:
+                f.write("not-semver")
+            errors = validate_entry(entry_dir)
+            self.assertTrue(any("semver" in e for e in errors))
+
+    def test_directory_name_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            entry_dir = os.path.join(tmp, "wrong-dir-name")
+            os.makedirs(entry_dir)
+            entry = {"name": "correct-name", "description": "Test"}
+            with open(os.path.join(entry_dir, CATALOG_ENTRY_FILENAME), "w") as f:
+                json.dump(entry, f)
+            devcontainer = {
+                "name": "caylent-devcontainer",
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(os.path.join(entry_dir, "devcontainer.json"), "w") as f:
+                json.dump(devcontainer, f)
+            with open(os.path.join(entry_dir, CATALOG_VERSION_FILENAME), "w") as f:
+                f.write("1.0.0")
+            errors = validate_entry(entry_dir)
+            self.assertTrue(any("does not match" in e for e in errors))
+
+    def test_subdirectory_conflict_with_common_assets_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            # Create common assets dir with a subdirectory
+            common_dir = os.path.join(tmp, "common")
+            os.makedirs(common_dir)
+            with open(os.path.join(common_dir, "script.sh"), "w") as f:
+                f.write("")
+            os.makedirs(os.path.join(common_dir, "nix-family-os"))
+
+            # Create entry that has a conflicting subdirectory
+            entry_dir = os.path.join(tmp, "test-app")
+            os.makedirs(entry_dir)
+            entry = {"name": "test-app", "description": "Test"}
+            with open(os.path.join(entry_dir, CATALOG_ENTRY_FILENAME), "w") as f:
+                json.dump(entry, f)
+            devcontainer = {
+                "name": "caylent-devcontainer",
+                "image": "mcr.microsoft.com/devcontainers/base:noble",
+                "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+            }
+            with open(os.path.join(entry_dir, "devcontainer.json"), "w") as f:
+                json.dump(devcontainer, f)
+            with open(os.path.join(entry_dir, CATALOG_VERSION_FILENAME), "w") as f:
+                f.write("1.0.0")
+            # Add conflicting subdir
+            os.makedirs(os.path.join(entry_dir, "nix-family-os"))
+
+            errors = validate_entry(entry_dir, common_assets_dir=common_dir)
+            self.assertTrue(any("nix-family-os" in e and "conflicts" in e for e in errors))
+
+
+class TestValidateCommonAssetsExtended(TestCase):
+    """Test extended common assets validation (subdirs, permissions, JSON)."""
+
+    def test_missing_subdirectory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            _create_valid_common_assets(assets_dir)
+            # Remove one subdirectory
+            import shutil
+            shutil.rmtree(os.path.join(assets_dir, "nix-family-os"))
+            errors = validate_common_assets(tmp)
+            self.assertTrue(any("nix-family-os" in e and "Missing" in e for e in errors))
+
+    def test_missing_subdir_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            _create_valid_common_assets(assets_dir)
+            # Remove a required file from a subdirectory
+            os.remove(os.path.join(assets_dir, "nix-family-os", "tinyproxy.conf.template"))
+            errors = validate_common_assets(tmp)
+            self.assertTrue(any("tinyproxy.conf.template" in e for e in errors))
+
+    def test_non_executable_script(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            _create_valid_common_assets(assets_dir)
+            # Remove executable bit from a script
+            os.chmod(os.path.join(assets_dir, ".devcontainer.postcreate.sh"), 0o644)
+            errors = validate_common_assets(tmp)
+            self.assertTrue(any("executable" in e and ".devcontainer.postcreate.sh" in e for e in errors))
+
+    def test_non_executable_subdir_script(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            _create_valid_common_assets(assets_dir)
+            # Remove executable bit from subdir script
+            os.chmod(os.path.join(assets_dir, "nix-family-os", "tinyproxy-daemon.sh"), 0o644)
+            errors = validate_common_assets(tmp)
+            self.assertTrue(any("executable" in e and "tinyproxy-daemon.sh" in e for e in errors))
+
+    def test_root_project_assets_invalid_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            _create_valid_common_assets(assets_dir)
+            # Create root-project-assets with invalid JSON
+            root_assets = os.path.join(tmp, "common", "root-project-assets", ".claude")
+            os.makedirs(root_assets)
+            with open(os.path.join(root_assets, "settings.json"), "w") as f:
+                f.write("not valid json")
+            errors = validate_common_assets(tmp)
+            self.assertTrue(any("Invalid JSON" in e and "settings.json" in e for e in errors))
+
+    def test_root_project_assets_valid_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
+            _create_valid_common_assets(assets_dir)
+            # Create root-project-assets with valid JSON
+            root_assets = os.path.join(tmp, "common", "root-project-assets", ".claude")
+            os.makedirs(root_assets)
+            with open(os.path.join(root_assets, "settings.json"), "w") as f:
+                json.dump({"permissions": {}}, f)
+            errors = validate_common_assets(tmp)
+            self.assertEqual(errors, [])
+
+
+class TestNewConstants(TestCase):
+    """Verify new catalog constants are properly defined."""
+
+    def test_semver_pattern_matches_valid(self):
+        self.assertIsNotNone(SEMVER_PATTERN.match("1.0.0"))
+        self.assertIsNotNone(SEMVER_PATTERN.match("10.20.30"))
+
+    def test_semver_pattern_rejects_invalid(self):
+        self.assertIsNone(SEMVER_PATTERN.match("v1.0.0"))
+        self.assertIsNone(SEMVER_PATTERN.match("1.0"))
+        self.assertIsNone(SEMVER_PATTERN.match(""))
+
+    def test_common_subdirs_defined(self):
+        self.assertIn("nix-family-os", CATALOG_COMMON_SUBDIRS)
+        self.assertIn("wsl-family-os", CATALOG_COMMON_SUBDIRS)
+
+    def test_container_source_fields_defined(self):
+        self.assertIn("image", DEVCONTAINER_CONTAINER_SOURCE_FIELDS)
+        self.assertIn("build", DEVCONTAINER_CONTAINER_SOURCE_FIELDS)
+
+    def test_entry_allowed_fields_defined(self):
+        self.assertIn("name", CATALOG_ENTRY_ALLOWED_FIELDS)
+        self.assertIn("description", CATALOG_ENTRY_ALLOWED_FIELDS)
+        self.assertIn("tags", CATALOG_ENTRY_ALLOWED_FIELDS)
+        self.assertIn("maintainer", CATALOG_ENTRY_ALLOWED_FIELDS)
+        self.assertIn("min_cli_version", CATALOG_ENTRY_ALLOWED_FIELDS)

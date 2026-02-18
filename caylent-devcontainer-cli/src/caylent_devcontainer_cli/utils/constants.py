@@ -43,6 +43,45 @@ CATALOG_REQUIRED_ENTRY_FILES = (
     CATALOG_VERSION_FILENAME,
 )
 
+# Subdirectories expected in common/devcontainer-assets/
+CATALOG_COMMON_SUBDIRS = ("nix-family-os", "wsl-family-os")
+
+# Required files within each common asset subdirectory
+CATALOG_COMMON_SUBDIR_REQUIRED_FILES = (
+    "README.md",
+    "tinyproxy.conf.template",
+    "tinyproxy-daemon.sh",
+)
+
+# Shell scripts that must have the executable bit set
+CATALOG_EXECUTABLE_COMMON_ASSETS = (
+    ".devcontainer.postcreate.sh",
+    "devcontainer-functions.sh",
+    "postcreate-wrapper.sh",
+    "project-setup.sh",
+)
+CATALOG_EXECUTABLE_SUBDIR_ASSETS = ("tinyproxy-daemon.sh",)
+
+# Container source fields — at least one must exist in devcontainer.json
+DEVCONTAINER_CONTAINER_SOURCE_FIELDS = (
+    "image",
+    "build",
+    "dockerFile",
+    "dockerComposeFile",
+)
+
+# Allowed top-level fields in catalog-entry.json (unknown fields = error)
+CATALOG_ENTRY_ALLOWED_FIELDS = frozenset({
+    "name",
+    "description",
+    "tags",
+    "maintainer",
+    "min_cli_version",
+})
+
+# Reusable semver pattern (X.Y.Z)
+SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
+
 # catalog-entry.json name pattern: lowercase, dash-separated, min 2 chars
 CATALOG_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9-]*[a-z0-9]$")
 

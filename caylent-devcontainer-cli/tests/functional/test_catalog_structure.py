@@ -15,19 +15,27 @@ from caylent_devcontainer_cli.utils.catalog import (
     validate_catalog,
     validate_catalog_entry,
     validate_common_assets,
+    validate_devcontainer_json,
     validate_entry,
     validate_entry_structure,
     validate_postcreate_command,
+    validate_version_file,
 )
 from caylent_devcontainer_cli.utils.constants import (
     CATALOG_ASSETS_DIR,
     CATALOG_COMMON_DIR,
+    CATALOG_COMMON_SUBDIR_REQUIRED_FILES,
+    CATALOG_COMMON_SUBDIRS,
     CATALOG_ENTRIES_DIR,
+    CATALOG_ENTRY_ALLOWED_FIELDS,
     CATALOG_ENTRY_FILENAME,
+    CATALOG_EXECUTABLE_COMMON_ASSETS,
+    CATALOG_EXECUTABLE_SUBDIR_ASSETS,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_REQUIRED_ENTRY_FILES,
     CATALOG_ROOT_ASSETS_DIR,
     DEFAULT_CATALOG_URL,
+    DEVCONTAINER_CONTAINER_SOURCE_FIELDS,
 )
 
 
@@ -381,7 +389,8 @@ class TestFullCatalogValidation(TestCase):
     def test_validate_entry_passes_for_default(self):
         """validate_entry() must return no errors for catalog/default/."""
         entry_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR, "default")
-        errors = validate_entry(entry_dir)
+        common_assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
+        errors = validate_entry(entry_dir, common_assets_dir=common_assets_dir)
         self.assertEqual(errors, [], f"Default entry validation errors: {errors}")
 
 
@@ -463,3 +472,116 @@ class TestCommonRootAssetsDirectory(TestCase):
         with open(assets_claude) as f:
             assets_content = f.read()
         self.assertEqual(root_content, assets_content)
+
+
+class TestEnhancedValidationChecks(TestCase):
+    """Tests for the 8 enhanced validation checks against the real repo."""
+
+    def setUp(self):
+        self.repo_root = _repo_root()
+        self.assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ASSETS_DIR)
+        self.entry_dir = os.path.join(self.repo_root, CATALOG_ENTRIES_DIR, "default")
+
+    def test_validate_version_file_passes(self):
+        """validate_version_file() must return no errors for default entry."""
+        errors = validate_version_file(self.entry_dir)
+        self.assertEqual(errors, [], f"VERSION validation errors: {errors}")
+
+    def test_validate_devcontainer_json_passes(self):
+        """validate_devcontainer_json() must return no errors for default entry."""
+        devcontainer_path = os.path.join(self.entry_dir, "devcontainer.json")
+        errors = validate_devcontainer_json(devcontainer_path)
+        self.assertEqual(errors, [], f"devcontainer.json validation errors: {errors}")
+
+    def test_devcontainer_json_has_name_field(self):
+        """devcontainer.json must have a 'name' field."""
+        devcontainer_path = os.path.join(self.entry_dir, "devcontainer.json")
+        with open(devcontainer_path) as f:
+            config = json.load(f)
+        self.assertIn("name", config)
+        self.assertIsInstance(config["name"], str)
+        self.assertTrue(len(config["name"]) > 0)
+
+    def test_devcontainer_json_has_container_source(self):
+        """devcontainer.json must have at least one container source field."""
+        devcontainer_path = os.path.join(self.entry_dir, "devcontainer.json")
+        with open(devcontainer_path) as f:
+            config = json.load(f)
+        has_source = any(field in config for field in DEVCONTAINER_CONTAINER_SOURCE_FIELDS)
+        self.assertTrue(
+            has_source,
+            f"devcontainer.json must have one of {DEVCONTAINER_CONTAINER_SOURCE_FIELDS}",
+        )
+
+    def test_entry_directory_name_matches_entry_name(self):
+        """Directory name must match catalog-entry.json 'name' field for all entries."""
+        entry_paths = discover_entry_paths(self.repo_root)
+        for entry_path in entry_paths:
+            entry_file = os.path.join(entry_path, CATALOG_ENTRY_FILENAME)
+            with open(entry_file) as f:
+                data = json.load(f)
+            dir_name = os.path.basename(entry_path)
+            self.assertEqual(
+                dir_name,
+                data["name"],
+                f"Directory '{dir_name}' does not match entry name '{data['name']}'",
+            )
+
+    def test_all_executable_scripts_have_exec_bit(self):
+        """All shell scripts in CATALOG_EXECUTABLE_COMMON_ASSETS must be executable."""
+        for filename in CATALOG_EXECUTABLE_COMMON_ASSETS:
+            filepath = os.path.join(self.assets_dir, filename)
+            self.assertTrue(
+                os.access(filepath, os.X_OK),
+                f"{filename} must be executable",
+            )
+
+    def test_all_subdir_executable_scripts_have_exec_bit(self):
+        """All shell scripts in common asset subdirectories must be executable."""
+        for subdir in CATALOG_COMMON_SUBDIRS:
+            for filename in CATALOG_EXECUTABLE_SUBDIR_ASSETS:
+                filepath = os.path.join(self.assets_dir, subdir, filename)
+                self.assertTrue(
+                    os.access(filepath, os.X_OK),
+                    f"{subdir}/{filename} must be executable",
+                )
+
+    def test_common_subdirectories_have_required_files(self):
+        """Each common asset subdirectory must contain its required files."""
+        for subdir in CATALOG_COMMON_SUBDIRS:
+            subdir_path = os.path.join(self.assets_dir, subdir)
+            for req_file in CATALOG_COMMON_SUBDIR_REQUIRED_FILES:
+                filepath = os.path.join(subdir_path, req_file)
+                self.assertTrue(
+                    os.path.isfile(filepath),
+                    f"Missing required file: {subdir}/{req_file}",
+                )
+
+    def test_root_project_assets_json_files_valid(self):
+        """All .json files in root-project-assets must be valid JSON."""
+        root_assets_dir = os.path.join(self.repo_root, CATALOG_COMMON_DIR, CATALOG_ROOT_ASSETS_DIR)
+        if not os.path.isdir(root_assets_dir):
+            return
+        for dirpath, _dirnames, filenames in os.walk(root_assets_dir):
+            for filename in filenames:
+                if filename.endswith(".json"):
+                    filepath = os.path.join(dirpath, filename)
+                    with open(filepath) as f:
+                        try:
+                            json.load(f)
+                        except json.JSONDecodeError:
+                            self.fail(f"Invalid JSON in root-project-assets: {filepath}")
+
+    def test_catalog_entry_no_unknown_fields(self):
+        """catalog-entry.json must not contain unknown fields."""
+        entry_paths = discover_entry_paths(self.repo_root)
+        for entry_path in entry_paths:
+            entry_file = os.path.join(entry_path, CATALOG_ENTRY_FILENAME)
+            with open(entry_file) as f:
+                data = json.load(f)
+            unknown = set(data.keys()) - CATALOG_ENTRY_ALLOWED_FIELDS
+            self.assertEqual(
+                unknown,
+                set(),
+                f"Unknown fields in {os.path.basename(entry_path)}/{CATALOG_ENTRY_FILENAME}: {unknown}",
+            )

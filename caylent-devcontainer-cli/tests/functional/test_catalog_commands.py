@@ -21,11 +21,35 @@ from caylent_devcontainer_cli.utils.catalog import (
     validate_catalog_entry_env,
 )
 from caylent_devcontainer_cli.utils.constants import (
+    CATALOG_COMMON_SUBDIR_REQUIRED_FILES,
+    CATALOG_COMMON_SUBDIRS,
     CATALOG_ENTRY_FILENAME,
+    CATALOG_EXECUTABLE_COMMON_ASSETS,
+    CATALOG_EXECUTABLE_SUBDIR_ASSETS,
     CATALOG_REQUIRED_COMMON_ASSETS,
     CATALOG_VERSION_FILENAME,
     DEFAULT_CATALOG_URL,
 )
+
+
+def _create_valid_common_assets(assets_dir):
+    """Create a fully valid common/devcontainer-assets/ directory structure."""
+    os.makedirs(assets_dir, exist_ok=True)
+    for filename in CATALOG_REQUIRED_COMMON_ASSETS:
+        filepath = os.path.join(assets_dir, filename)
+        with open(filepath, "w") as f:
+            f.write("#!/bin/bash\n")
+        if filename in CATALOG_EXECUTABLE_COMMON_ASSETS:
+            os.chmod(filepath, 0o755)
+    for subdir in CATALOG_COMMON_SUBDIRS:
+        subdir_path = os.path.join(assets_dir, subdir)
+        os.makedirs(subdir_path, exist_ok=True)
+        for req_file in CATALOG_COMMON_SUBDIR_REQUIRED_FILES:
+            filepath = os.path.join(subdir_path, req_file)
+            with open(filepath, "w") as f:
+                f.write("#!/bin/bash\n" if req_file.endswith(".sh") else "# placeholder\n")
+            if req_file in CATALOG_EXECUTABLE_SUBDIR_ASSETS:
+                os.chmod(filepath, 0o755)
 
 
 class TestCatalogListEndToEnd(TestCase):
@@ -185,10 +209,7 @@ class TestCatalogValidateEndToEnd(TestCase):
     def _create_valid_catalog(self, tmp_dir):
         """Create a complete valid catalog for testing."""
         assets_dir = os.path.join(tmp_dir, "common", "devcontainer-assets")
-        os.makedirs(assets_dir)
-        for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-            with open(os.path.join(assets_dir, filename), "w") as f:
-                f.write("#!/bin/bash\n")
+        _create_valid_common_assets(assets_dir)
 
         col_dir = os.path.join(tmp_dir, "catalog", "default")
         os.makedirs(col_dir)
@@ -205,7 +226,11 @@ class TestCatalogValidateEndToEnd(TestCase):
             )
         with open(os.path.join(col_dir, "devcontainer.json"), "w") as f:
             json.dump(
-                {"postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode"},
+                {
+                    "name": "caylent-devcontainer",
+                    "image": "mcr.microsoft.com/devcontainers/base:noble",
+                    "postCreateCommand": "bash .devcontainer/.devcontainer.postcreate.sh vscode",
+                },
                 f,
             )
         with open(os.path.join(col_dir, CATALOG_VERSION_FILENAME), "w") as f:
@@ -275,12 +300,9 @@ class TestCatalogValidateEndToEnd(TestCase):
     def test_validate_local_with_multiple_errors(self):
         """Validate reports all errors, not just the first one."""
         with tempfile.TemporaryDirectory() as tmp:
-            # Create assets but bad entry
+            # Create valid common assets but bad entry
             assets_dir = os.path.join(tmp, "common", "devcontainer-assets")
-            os.makedirs(assets_dir)
-            for filename in CATALOG_REQUIRED_COMMON_ASSETS:
-                with open(os.path.join(assets_dir, filename), "w") as f:
-                    f.write("#!/bin/bash\n")
+            _create_valid_common_assets(assets_dir)
 
             col_dir = os.path.join(tmp, "catalog", "broken")
             os.makedirs(col_dir)

@@ -237,6 +237,8 @@ cdevcontainer catalog list --catalog-url "https://github.com/org/repo.git@featur
 cdevcontainer catalog validate --catalog-url "https://github.com/org/repo.git@feature/branch"
 ```
 
+The `catalog validate` command performs comprehensive structural and content checks including: VERSION semver validation, devcontainer.json structural checks (name field, container source), common-asset subdirectory validation (nix-family-os, wsl-family-os), executable permission checks on shell scripts, root-project-assets JSON validity, entry directory/name consistency, unknown field detection in catalog-entry.json, and dynamic file conflict detection including subdirectories.
+
 ### Catalog Tagging
 
 All catalog repositories should use semver tags (e.g. `2.0.0`, `2.1.0`) for releases. The CLI relies on tags for deterministic, reproducible behavior:
