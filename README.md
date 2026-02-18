@@ -580,9 +580,20 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
   - The `postCreateCommand` field in `.devcontainer/devcontainer.json`
   - The `image` field in `.devcontainer/devcontainer.json` — the base image is maintained by the catalog and includes infrastructure (ECR mirror, scheduled updates) that your project depends on. Only change this if you are hosting an equivalent image yourself.
 - **DO modify** `.devcontainer/project-setup.sh` for your project needs
+- **DO add** custom scripts to `.devcontainer/` — the project-setup script can call any number of additional scripts you place there
 - **DO customize** `.devcontainer/devcontainer.json` for IDE settings, extensions, and features (but not `postCreateCommand` or `image`)
 - This approach ensures you can receive devcontainer updates without conflicts
-- The project-setup script runs with the same permissions and environment as the main setup
+
+#### Execution Context
+
+The main postcreate script (`.devcontainer.postcreate.sh`) runs as **root**. It configures shell profiles, installs tools, sets up Git and AWS, then fixes ownership with `chown -R vscode:vscode /home/vscode`.
+
+The project-setup script (`project-setup.sh`) runs **after** the main postcreate as the **container user** (`vscode`). Because the postcreate script configures shell profiles (`.bashrc`, `.zshrc`) and tools for the `vscode` user's future shell sessions — not the current root shell — be aware that paths and environment may differ from your interactive terminal. If your project-setup script installs anything with `sudo` that creates files under `/home/vscode`, add a chown cleanup at the end of your script:
+
+```bash
+# At the end of project-setup.sh — fix ownership for any root-created files
+sudo chown -R vscode:vscode /home/vscode
+```
 
 ### 📝 Example Use Cases
 
