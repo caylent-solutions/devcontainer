@@ -436,7 +436,6 @@ When running in CI/CD mode, you still need to set these core environment variabl
 env:
   CICD: "true"                           # Enable CI/CD mode
   DEFAULT_GIT_BRANCH: "main"              # Required: Git branch for aliases
-  DEFAULT_PYTHON_VERSION: "3.12.9"        # Required: Python version to install
   EXTRA_APT_PACKAGES: ""                  # Optional: Additional Ubuntu packages
   PAGER: "cat"                            # Optional: Pager for command output (defaults to cat)
   AWS_DEFAULT_OUTPUT: "json"              # Optional: AWS CLI output format (defaults to json)
@@ -592,20 +591,9 @@ This works for all supported IDEs including VS Code, Cursor, and others that sup
 
 ## 🐍 Python Install Logic
 
-- `.tool-versions` present with Python? → installs that pinned Python version
-- Not present or no Python entry? → installs fallback version from:
-```json
-"DEFAULT_PYTHON_VERSION": "3.12.9"
-```
+Python is managed through devcontainer features configured in `devcontainer.json`. The `.tool-versions` file is used for pinning other tool versions via `asdf` (e.g., `jq`, `pre-commit`).
 
-> ✅ **Automatic .tool-versions creation**: The setup command will automatically check for a `.tool-versions` file in your project root. If not found, it will create one with your chosen Python version to ensure consistent runtime management via asdf.
-
-> ✅ Best practice: commit `.tool-versions` to your repo:
-```bash
-echo "python 3.12.9" > .tool-versions
-git add .tool-versions
-git commit -m "Add Python version pin for devcontainer"
-```
+> ✅ **Automatic .tool-versions creation**: The setup command automatically creates an empty `.tool-versions` file in your project root if one does not exist. Add tool entries as needed for your project.
 
 Then rebuild the container.
 
