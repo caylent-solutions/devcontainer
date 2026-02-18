@@ -1,6 +1,6 @@
 # Engineering and Automation Standards
 
-This document defines the coding standards, automation principles, and operational guidelines for the ea-discovery-case-service project. Claude Code will automatically reference these rules when working on this codebase.
+This document defines the coding standards, automation principles, and operational guidelines for this project. Claude Code will automatically reference these rules when working on this codebase.
 
 ---
 
@@ -168,7 +168,7 @@ When a function, class, or pattern is replaced by a new implementation:
 
 2. **Dependencies**
    - Explicitly declare and isolate dependencies
-   - Use `build.gradle` for all dependencies
+   - Use the project's dependency manifest for all dependencies
    - Never rely on implicit system-wide packages
 
 3. **Config**
@@ -232,14 +232,6 @@ When a function, class, or pattern is replaced by a new implementation:
 
 Write code that follows the conventions, patterns, and best practices of the specific technology:
 
-**Java/Spring Boot:**
-- Use Spring's dependency injection annotations (`@Autowired`, `@Component`, `@Service`)
-- Follow JavaBeans conventions for getters/setters
-- Use Optional for nullable return values
-- Leverage Java 17+ features (records, pattern matching, text blocks)
-- Follow Spring Boot conventions for configuration and auto-configuration
-- Use Spring's stereotype annotations appropriately
-
 **General Guidelines:**
 - Write code that looks natural to experienced developers in that language
 - Use language-specific idioms and patterns
@@ -282,20 +274,6 @@ kubectl scale deployment myapp --replicas=3
 kubectl set resources deployment myapp --limits=memory=512Mi,cpu=500m
 ```
 
-✅ **Declarative (Correct):**
-```java
-@Configuration
-public class DatabaseConfig {
-    @Bean
-    public DataSource dataSource() {
-        // Declare desired configuration
-        return DataSourceBuilder.create()
-            .url(environment.getProperty("database.url"))
-            .build();
-    }
-}
-```
-
 ### Environment-Agnostic Artifacts
 
 **All build artifacts must be environment-agnostic.**
@@ -303,20 +281,20 @@ public class DatabaseConfig {
 **Required:**
 - Build once, deploy anywhere
 - No environment-specific code or configuration baked into artifacts
-- JAR/WAR files must be identical across all environments
+- Build artifacts must be identical across all environments
 - Container images must be environment-neutral
 - All environment-specific configuration injected at runtime
 
 **Implementation:**
 - Use environment variables for all environment-specific values
-- Externalize configuration using Spring profiles and property sources
+- Externalize configuration using the framework's configuration mechanisms
 - Container images should not contain environment-specific config
 - Build artifacts reference configuration templates, not actual values
 - Use ConfigMaps and Secrets in Kubernetes for runtime configuration
 
 **Anti-patterns to avoid:**
 - Building separate artifacts for dev/staging/production
-- Environment-specific property files baked into JAR
+- Environment-specific config files baked into build artifacts
 - Hard-coded environment detection logic
 - Different Docker images per environment
 
@@ -324,18 +302,18 @@ public class DatabaseConfig {
 
 ✅ **Correct (Environment-Agnostic):**
 ```dockerfile
-FROM openjdk:17-jre-slim
-COPY target/app.jar /app.jar
+FROM runtime-base:version
+COPY build/app /app
 # Configuration injected at runtime via environment variables
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["/app/server"]
 ```
 
 ❌ **Incorrect (Environment-Specific):**
 ```dockerfile
-FROM openjdk:17-jre-slim
-COPY target/app.jar /app.jar
-COPY config/production.properties /config/application.properties
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+FROM runtime-base:version
+COPY build/app /app
+COPY config/production.conf /config/app.conf
+ENTRYPOINT ["/app/server"]
 ```
 
 ### Immutable Deployments
@@ -415,8 +393,8 @@ This principle applies to:
 
 **Required approach:**
 - Externalize all configuration via environment variables or configuration files
-- Use configuration properties from `application.yml` or `application.properties`
-- Inject dependencies and configuration through Spring's dependency injection
+- Use the framework's configuration mechanisms for all settings
+- Inject dependencies and configuration through the framework's dependency injection
 - Load test data from external files or configuration
 - Use parameterized tests with data providers
 - Make all thresholds, limits, and boundaries configurable
@@ -441,29 +419,24 @@ This principle applies to:
 **When writing or fixing tests, NEVER create stub tests.**
 
 ❌ **Prohibited Test Patterns:**
-```java
-@Test
-public void testSomething() {
+```
+test "something" {
     // TODO: Implement test
-    assertTrue(true); // NEVER DO THIS
+    assert(true)             // NEVER DO THIS: always passes
 }
 
-@Test
-public void testFeature() {
-    // Stub test that always passes
-    assertNotNull(new Object()); // NEVER DO THIS
+test "feature" {
+    assert(new Object() != null)  // NEVER DO THIS: meaningless assertion
 }
 ```
 
 ✅ **Required Test Patterns:**
-```java
-@Test
-public void testUserCreation() {
-    // Real test with actual behavior validation
-    User user = userService.createUser("test@example.com");
-    assertNotNull(user);
-    assertEquals("test@example.com", user.getEmail());
-    verify(userRepository).save(any(User.class));
+```
+test "user is created with correct email" {
+    user = userService.create(email: "test@example.com")
+    assertNotNull(user)
+    assertEquals(user.email, "test@example.com")
+    assertCalledOnce(userRepository.save)
 }
 ```
 
@@ -585,7 +558,7 @@ rules:
 ### Authentication and Authorization
 
 **Required:**
-- Use Spring Security for all authentication and authorization
+- Use the framework's built-in security features for authentication and authorization
 - Implement proper session management with secure cookies
 - Use strong password policies (complexity, rotation)
 - Implement multi-factor authentication (MFA) where required
@@ -676,29 +649,30 @@ rules:
 ### SQL Injection Prevention
 
 **Required:**
-- Use JPA/Hibernate or parameterized queries exclusively
+- Use an ORM framework or parameterized queries exclusively
 - Never concatenate user input into SQL queries
-- Use named parameters in native queries
+- Use named or positional parameters in all queries
 - Validate all input before database operations
 
 **Prohibited:**
-```java
+```
 // NEVER do this
-String query = "SELECT * FROM users WHERE username = '" + username + "'";
+query = "SELECT * FROM users WHERE username = '" + username + "'"
+execute(query)
 ```
 
 **Required:**
-```java
-// ALWAYS do this
-@Query("SELECT u FROM User u WHERE u.username = :username")
-User findByUsername(@Param("username") String username);
+```
+// ALWAYS do this — parameterized query
+query = "SELECT * FROM users WHERE username = :username"
+execute(query, params: {username: username})
 ```
 
 ### Cross-Site Scripting (XSS) Prevention
 
 **Required:**
 - Escape all output by default
-- Use templating engines with auto-escaping (Thymeleaf)
+- Use templating engines with auto-escaping
 - Implement Content Security Policy headers
 - Validate and sanitize all user input
 - Use context-aware encoding (HTML, JavaScript, URL, CSS)
@@ -1031,26 +1005,17 @@ A prompt is complete when:
 
 ## Project-Specific Context
 
-### Technology Stack
-
-- **Language:** Java 17
-- **Framework:** Spring Boot 3.x
-- **Build Tool:** Gradle
-- **Container:** Docker with DevContainer support
-- **CI/CD:** GitHub Actions
-- **Deployment:** Kubernetes with ArgoCD
-
 ### Critical Files (Require Manual Review)
 
 These files should be modified with care and reviewed before changes:
 
 **Build & Configuration:**
-- `build.gradle`, `settings.gradle`, `gradle.properties`
+- Dependency manifests (e.g., `build.gradle`, `pom.xml`, `package.json`, `requirements.txt`) and their lock files
 - `.devcontainer/**`
 - `.tool-versions`
 - `shell.env`
-- `config/checkstyle/*.xml`
-- `src/main/resources/application*.yml`
+- Static analysis and linter configuration files
+- Application configuration files (`application*.yml`, `*.properties`, `*.toml`, etc.)
 
 **CI/CD & Deployment:**
 - `.github/workflows/*.yml`
