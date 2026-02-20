@@ -286,13 +286,13 @@ class TestProjectSetupShLifecycle(TestCase):
             content = f.read()
         self.assertIn("set -euo pipefail", content)
 
-    def test_project_setup_sources_devcontainer_functions(self):
-        """project-setup.sh must source devcontainer-functions.sh."""
-        filepath = os.path.join(self.assets_dir, "project-setup.sh")
+    def test_postcreate_injects_devcontainer_functions_via_bash_env(self):
+        """Postcreate script must inject devcontainer-functions.sh via BASH_ENV when executing project-setup.sh."""
+        filepath = os.path.join(self.assets_dir, ".devcontainer.postcreate.sh")
         with open(filepath) as f:
             content = f.read()
+        self.assertIn("BASH_ENV", content)
         self.assertIn("devcontainer-functions.sh", content)
-        self.assertIn("source", content)
 
     def test_postcreate_checks_project_setup_exists(self):
         """Postcreate script must check if project-setup.sh exists before running."""
