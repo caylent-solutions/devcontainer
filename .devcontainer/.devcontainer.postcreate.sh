@@ -446,10 +446,10 @@ log_info "Running project-specific setup script..."
 if [ -f "${WORK_DIR}/.devcontainer/project-setup.sh" ]; then
   if uname -r | grep -i microsoft > /dev/null; then
     # WSL compatibility: Run directly without sudo -u
-    bash -c "source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
+    bash -c "source '${WORK_DIR}/shell.env' && source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && BASH_ENV='${WORK_DIR}/.devcontainer/devcontainer-functions.sh' bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
   else
     # Non-WSL: Use sudo -u to run as container user
-    sudo -u "${CONTAINER_USER}" bash -c "source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
+    sudo -u "${CONTAINER_USER}" bash -c "source '${WORK_DIR}/shell.env' && source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && BASH_ENV='${WORK_DIR}/.devcontainer/devcontainer-functions.sh' bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
   fi
 else
   log_warn "No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh"
