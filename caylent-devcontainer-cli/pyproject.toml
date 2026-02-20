@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "caylent-devcontainer-cli"
-version = "2.0.3"
+version = "2.0.4"
 description = "CLI tool for managing Caylent devcontainers"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"

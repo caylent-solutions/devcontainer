@@ -2,7 +2,34 @@
 
 
 
+## v2.0.4 (2026-02-20)
+
+### Fix
+
+* fix(project-setup): source shell.env and use BASH_ENV for devcontainer-functions in project-setup execution
+
+* fix(project-setup): source shell.env and use BASH_ENV for devcontainer-functions in project-setup execution
+
+  Source shell.env before asdf.sh when invoking project-setup.sh so project
+  environment variables are available during setup. Pass devcontainer-functions.sh
+  via BASH_ENV so shared functions are available in project-setup.sh without an
+  explicit source call, removing the need for project-setup.sh to know its own
+  location via dirname.
+
+* fix(tests): update functional test to assert BASH_ENV injection of devcontainer-functions.sh
+
+  Replace test_project_setup_sources_devcontainer_functions with
+  test_postcreate_injects_devcontainer_functions_via_bash_env to match
+  the updated mechanism: devcontainer-functions.sh is now injected by the
+  postcreate script via BASH_ENV rather than sourced explicitly in
+  project-setup.sh. ([`404a66c`](https://github.com/caylent-solutions/devcontainer/commit/404a66c73aa17005d53559ca78eebfddfe07f445))
+
+
 ## v2.0.3 (2026-02-18)
+
+### Chore
+
+* chore(release): 2.0.3 ([`5a2987b`](https://github.com/caylent-solutions/devcontainer/commit/5a2987bb4ccfa37f4fbe2781ae547d1b72fc52ee))
 
 ### Fix
 
@@ -12,6 +39,12 @@ Add concurrency group &#39;release-pipeline&#39; with cancel-in-progress: false
 to both main-validation.yml and publish.yml. This serializes pipeline
 runs so multiple merges to main are processed in order, preventing
 duplicate version computation and failed commits. ([`5effca2`](https://github.com/caylent-solutions/devcontainer/commit/5effca2aef60a2100d5f8fc605a4f4eba5b79745))
+
+### Unknown
+
+* Merge pull request #134 from caylent-solutions/release-2.0.3
+
+Release 2.0.3 ([`e712a48`](https://github.com/caylent-solutions/devcontainer/commit/e712a48802a48af08ae2474869535380d2c917fd))
 
 
 ## v2.0.2 (2026-02-18)
