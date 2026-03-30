@@ -285,6 +285,13 @@ Host ${git_provider_url}
 EOF
   chmod 600 "${ssh_dir}/config"
 
+  # Rewrite HTTPS URLs to SSH so tools using HTTPS git URLs authenticate via SSH key
+  local gitconfig="/home/${container_user}/.gitconfig"
+  cat <<EOF >> "${gitconfig}"
+[url "git@${git_provider_url}:"]
+    insteadOf = https://${git_provider_url}/
+EOF
+
   # Fix ownership
   chown -R "${container_user}:${container_user}" "${ssh_dir}"
 

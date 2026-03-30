@@ -85,6 +85,21 @@ class TestDevcontainerJson(TestCase):
         cmd = self.config["postCreateCommand"]
         self.assertIn("tee /tmp/devcontainer-setup.log", cmd)
 
+    def test_git_submodule_detection_enabled(self):
+        """devcontainer.json must enable git submodule detection."""
+        settings = self.config["customizations"]["vscode"]["settings"]
+        self.assertTrue(settings["git.detectSubmodules"])
+
+    def test_git_submodule_limit(self):
+        """devcontainer.json must raise submodule detection limit to 20."""
+        settings = self.config["customizations"]["vscode"]["settings"]
+        self.assertEqual(settings["git.detectSubmodulesLimit"], 20)
+
+    def test_git_repo_scan_depth(self):
+        """devcontainer.json must scan 3 levels deep for nested git repos."""
+        settings = self.config["customizations"]["vscode"]["settings"]
+        self.assertEqual(settings["git.repositoryScanMaxDepth"], 3)
+
 
 class TestPostcreateScript(TestCase):
     """Validate .devcontainer.postcreate.sh content and patterns."""
@@ -324,6 +339,23 @@ class TestDevcontainerFunctions(TestCase):
     def test_git_ssh_checks_permission_denied(self):
         """SSH method must detect permission denied errors."""
         self.assertIn("permission denied", self.content)
+
+    def test_git_ssh_configures_url_rewrite(self):
+        """SSH method must configure HTTPS-to-SSH URL rewrite in .gitconfig."""
+        self.assertIn('[url "git@${git_provider_url}:"]', self.content)
+        self.assertIn("insteadOf = https://${git_provider_url}/", self.content)
+
+    def test_git_ssh_url_rewrite_uses_dynamic_provider(self):
+        """SSH URL rewrite must use git_provider_url variable, not a hardcoded hostname."""
+        self.assertIn("git@${git_provider_url}:", self.content)
+        self.assertIn("https://${git_provider_url}/", self.content)
+
+    def test_git_token_does_not_configure_url_rewrite(self):
+        """Token method must NOT configure HTTPS-to-SSH URL rewrite."""
+        token_fn_pos = self.content.index("configure_git_token()")
+        ssh_fn_pos = self.content.index("configure_git_ssh()")
+        token_section = self.content[token_fn_pos:ssh_fn_pos]
+        self.assertNotIn("insteadOf", token_section)
 
 
 class TestPostcreateGitAuth(TestCase):
