@@ -2,7 +2,34 @@
 
 
 
+## v2.1.0 (2026-03-30)
+
+### Feature
+
+* feat(git-auth): add HTTPS-to-SSH URL rewrite for SSH authentication (#137)
+
+* feat(git-auth): add HTTPS-to-SSH URL rewrite when using SSH authentication
+
+When GIT_AUTH_METHOD=ssh, Git is now configured with url.insteadOf to
+transparently rewrite HTTPS URLs to SSH. This enables tools that use
+HTTPS Git URLs (e.g. RPM, repo tool) to authenticate via the SSH key
+without requiring separate HTTPS credentials.
+
+Also adds VS Code git submodule detection settings, resets Claude Code
+settings to empty defaults, and removes the obsolete test-entry catalog.
+
+* fix(tests): remove test for deleted settings.local.json
+
+The settings.local.json file was removed from root-project-assets in
+the prior commit. Remove the corresponding functional test that asserts
+its existence. ([`6755f00`](https://github.com/caylent-solutions/devcontainer/commit/6755f00e50d0d12a6398b6d2faf3cafc6e062eb6))
+
+
 ## v2.0.4 (2026-02-20)
+
+### Chore
+
+* chore(release): 2.0.4 ([`b8999a7`](https://github.com/caylent-solutions/devcontainer/commit/b8999a7ecfbb21055de1ed43888c83fcc4d71207))
 
 ### Fix
 
@@ -23,6 +50,12 @@
   the updated mechanism: devcontainer-functions.sh is now injected by the
   postcreate script via BASH_ENV rather than sourced explicitly in
   project-setup.sh. ([`404a66c`](https://github.com/caylent-solutions/devcontainer/commit/404a66c73aa17005d53559ca78eebfddfe07f445))
+
+### Unknown
+
+* Merge pull request #136 from caylent-solutions/release-2.0.4
+
+Release 2.0.4 ([`850f868`](https://github.com/caylent-solutions/devcontainer/commit/850f8686f8a63991c160cde6934ffa461eda15f9))
 
 
 ## v2.0.3 (2026-02-18)
