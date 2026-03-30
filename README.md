@@ -221,7 +221,7 @@ The `devcontainer-environment-variables.json` file supports these values (inside
 - `DEFAULT_GIT_BRANCH` (e.g. `main`)
 - `DEVELOPER_NAME` - Your name, used in the devcontainer
 - `EXTRA_APT_PACKAGES` - Space-separated list of extra Ubuntu packages to install
-- `GIT_AUTH_METHOD` (default: `token`) - Choose from: token, ssh
+- `GIT_AUTH_METHOD` (default: `token`) - Choose from: token, ssh. When set to `ssh`, Git is configured to rewrite HTTPS URLs to SSH, enabling tools that use HTTPS Git URLs to authenticate via your SSH key.
 - `GIT_PROVIDER_URL` (default: `github.com`) - Git provider hostname (no protocol prefix)
 - `GIT_TOKEN` - Personal access token (only when `GIT_AUTH_METHOD=token`)
 - `GIT_USER` - Git username
@@ -495,6 +495,13 @@ git ls-remote https://github.com/your-org/your-repo.git
 ```
 
 Or open the Source Control tab in your IDE to confirm the repo is accessible.
+
+If using SSH authentication (`GIT_AUTH_METHOD=ssh`), the devcontainer automatically configures Git to rewrite HTTPS URLs to SSH. Verify the rewrite is active:
+
+```bash
+git config --global --get url."git@github.com:".insteadOf
+# Expected: https://github.com/
+```
 
 ---
 
@@ -878,7 +885,8 @@ catalog-repo/
       wsl-family-os/                   # Host proxy toolkit for Windows/WSL
     root-project-assets/               # Root-level project files (optional)
       CLAUDE.md                        # AI coding standards
-      .claude/                         # Claude Code configuration
+      .claude/                         # Claude Code configuration directory
+        settings.json                  # Claude Code project settings (empty default)
   catalog/
     <entry-name>/
       catalog-entry.json               # Entry metadata (required)

@@ -455,14 +455,6 @@ class TestCommonRootAssetsDirectory(TestCase):
             data = json.load(f)
         self.assertIsInstance(data, dict)
 
-    def test_root_assets_claude_settings_local_json_valid(self):
-        """.claude/settings.local.json must be valid JSON."""
-        filepath = os.path.join(self.root_assets_dir, ".claude", "settings.local.json")
-        self.assertTrue(os.path.isfile(filepath))
-        with open(filepath) as f:
-            data = json.load(f)
-        self.assertIsInstance(data, dict)
-
     def test_root_assets_claude_md_matches_repo_root(self):
         """CLAUDE.md in root-project-assets must match repo root CLAUDE.md."""
         root_claude = os.path.join(self.repo_root, "CLAUDE.md")
