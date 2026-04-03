@@ -2,7 +2,91 @@
 
 
 
+## v2.2.0 (2026-04-03)
+
+### Feature
+
+* feat(cli): add CLAUDE_CODE_ENABLED toggle for Claude Code CLI installation (#142)
+
+Add CLAUDE_CODE_ENABLED environment variable (default: true) to allow
+developers to skip Claude Code CLI installation via their developer
+profile. Follows the same pattern as AWS_CONFIG_ENABLED. The VS Code
+extension remains available regardless of this setting.
+
+This applies to the default catalog only — other catalogs can have
+different common files and behavior. ([`b97084f`](https://github.com/caylent-solutions/devcontainer/commit/b97084f47036c97efc0307333490a8ca73dbe8ea))
+
+### Fix
+
+* fix(ci): prepend newline before GITHUB_OUTPUT writes to prevent corruption (#144)
+
+* fix(ci): prepend newline before GITHUB_OUTPUT writes to prevent corruption
+
+semantic_release version --print writes its own outputs (released,
+version, tag) to GITHUB_OUTPUT without a trailing newline on the last
+line. Our has_release output was concatenated onto the tag line,
+producing &#34;tag=2.2.0has_release=true&#34; which GitHub Actions could not
+parse. Add an explicit newline before our writes in both the validate
+and create-release jobs.
+
+* fix(ci): remove GITHUB_OUTPUT debug logging to prevent secret exposure
+
+Remove cat $GITHUB_OUTPUT debug line added in the previous commit.
+The debug logging served its purpose (identified the missing newline
+root cause) and could expose secrets if semantic_release writes
+token-related outputs to GITHUB_OUTPUT. ([`081c94b`](https://github.com/caylent-solutions/devcontainer/commit/081c94b5d385055d92f4e461719a05b11ed19e53))
+
+* fix(ci): provide GitHub App token to check-release step and add debug logging (#143)
+
+The validate job&#39;s check-release step was running semantic_release
+without a GH_TOKEN, causing the job outputs to not propagate to
+downstream jobs. Add GitHub App token generation to the validate job
+and pass it to the check-release step. Add debug logging to dump
+GITHUB_OUTPUT contents for diagnosability. ([`4bb7357`](https://github.com/caylent-solutions/devcontainer/commit/4bb7357fcdb82238580f110e4bcd464b90143c1a))
+
+* fix(ci): skip release steps when no version-bumping commits detected (#141)
+
+* fix(ci): skip release steps when no version-bumping commits detected
+
+Remove fallback logic from the &#34;Compute next version&#34; step that masked
+the &#34;nothing to release&#34; condition by falling back to the current
+version. The workflow now explicitly detects whether a new version is
+warranted and skips changelog generation, commit, tagging, and publish
+steps when no version-bumping commits (feat, fix, perf, security,
+revert) are present. Update CONTRIBUTING.md to document this behavior.
+
+* fix(ci): gate QA approval on version-bumping commits and document pypi environment
+
+Move release detection into the validate job so non-bumping commits
+(docs, chore, ci, etc.) skip the QA approval gate entirely instead of
+blocking on unnecessary human approval. Add pypi environment approval
+to CONTRIBUTING.md release process documentation.
+
+* fix(tests): use isolated PATH in test_code_command_cursor_ide
+
+Use the same PATH isolation pattern as test_code_command_ide_not_found
+and test_code_command_default_ide. The previous approach prepended an
+empty directory but kept the full original PATH, so cursor was still
+found on machines where it is installed, causing the test to fail
+outside the devcontainer. ([`f77068d`](https://github.com/caylent-solutions/devcontainer/commit/f77068dd6f46a74c31e00be2254040630cbf5b51))
+
+### Unknown
+
+* doc(readme): reframe Copilot removal as optional, clarify default catalog scope (#140)
+
+Move Copilot-disabling steps out of the required VS Code host settings
+prerequisites into a new &#34;Optional: Removing GitHub Copilot&#34; section.
+This clarifies that Copilot removal is only needed when using Claude
+instead of Copilot. Also update the Built-In Tooling section to
+reference the default catalog entry specifically and link to the
+catalog creation guide for custom entries. ([`dd97fc7`](https://github.com/caylent-solutions/devcontainer/commit/dd97fc7bf932bef6482a044361615f9713d6059c))
+
+
 ## v2.1.0 (2026-03-30)
+
+### Chore
+
+* chore(release): 2.1.0 ([`87e9ff5`](https://github.com/caylent-solutions/devcontainer/commit/87e9ff57927565022e9f57656fb3e033d0df2b05))
 
 ### Feature
 
@@ -23,6 +107,12 @@ settings to empty defaults, and removes the obsolete test-entry catalog.
 The settings.local.json file was removed from root-project-assets in
 the prior commit. Remove the corresponding functional test that asserts
 its existence. ([`6755f00`](https://github.com/caylent-solutions/devcontainer/commit/6755f00e50d0d12a6398b6d2faf3cafc6e062eb6))
+
+### Unknown
+
+* Merge pull request #138 from caylent-solutions/release-2.1.0
+
+Release 2.1.0 ([`439ff49`](https://github.com/caylent-solutions/devcontainer/commit/439ff497fe4e04edac46462370ec774cf36edaac))
 
 
 ## v2.0.4 (2026-02-20)
