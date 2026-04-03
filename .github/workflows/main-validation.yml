@@ -14,6 +14,8 @@ jobs:
     name: Validate Main
     if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
     runs-on: ubuntu-24.04
+    outputs:
+      has_release: ${{ steps.check-release.outputs.has_release }}
 
     steps:
       - name: Checkout code
@@ -128,6 +130,25 @@ jobs:
           make coverage-text
         shell: bash
 
+      - name: Check if release is needed
+        id: check-release
+        working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        run: |
+          CURRENT_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('caylent-devcontainer-cli'))")
+          echo "Current version: $CURRENT_VERSION"
+
+          NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
+          echo "Computed version: ${NEW_VERSION:-<none>}"
+
+          if [[ -z "$NEW_VERSION" || "$NEW_VERSION" == "$CURRENT_VERSION" ]]; then
+            echo "No version-bumping commits detected since $CURRENT_VERSION."
+            echo "has_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version bump detected: $CURRENT_VERSION → $NEW_VERSION"
+            echo "has_release=true" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
+
       - name: Send success notification to Slack
         if: success()
         uses: slackapi/slack-github-action@v1.25.0
@@ -223,7 +244,7 @@ jobs:
 
   manual-approval:
     name: Manual QA Approval
-    if: ${{ github.actor != 'caylent-platform-bot[bot]' }}
+    if: ${{ github.actor != 'caylent-platform-bot[bot]' && needs.validate.outputs.has_release == 'true' }}
     needs: [validate, codeql]
     runs-on: ubuntu-24.04
     environment:
@@ -313,18 +334,30 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
+          CURRENT_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('caylent-devcontainer-cli'))")
+          echo "Current version: $CURRENT_VERSION"
+
           NEW_VERSION=$(python -m semantic_release version --print | sed 's/^v//')
-          echo "New version: $NEW_VERSION"
-          # Ensure we have a non-empty version
-          if [[ -z "$NEW_VERSION" ]]; then
-            echo "No new version detected, using current version"
-            NEW_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('caylent-devcontainer-cli'))")
-            echo "Current version: $NEW_VERSION"
+          echo "Computed version: ${NEW_VERSION:-<none>}"
+
+          if [[ -z "$NEW_VERSION" || "$NEW_VERSION" == "$CURRENT_VERSION" ]]; then
+            echo "No version-bumping commits detected since $CURRENT_VERSION. Skipping release."
+            echo "has_release=false" >> "$GITHUB_OUTPUT"
+            echo "version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "New release detected: $CURRENT_VERSION → $NEW_VERSION"
+            echo "has_release=true" >> "$GITHUB_OUTPUT"
+            echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           fi
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Skip release
+        if: steps.semantic-release.outputs.has_release != 'true'
+        run: echo "No version-bumping commits since last release. Skipping release steps."
         shell: bash
 
       - name: Generate changelog and update version files
+        if: steps.semantic-release.outputs.has_release == 'true'
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
@@ -349,6 +382,7 @@ jobs:
         shell: bash
 
       - name: Commit changelog and version bump
+        if: steps.semantic-release.outputs.has_release == 'true'
         id: commit-changes
         working-directory: ${{ github.workspace }}
         env:
@@ -412,6 +446,7 @@ jobs:
         shell: bash
 
       - name: Wait for PR to merge and create Git tag
+        if: steps.semantic-release.outputs.has_release == 'true'
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -457,6 +492,7 @@ jobs:
         shell: bash
 
       - name: Trigger publish workflow
+        if: steps.semantic-release.outputs.has_release == 'true'
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |

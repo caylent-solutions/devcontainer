@@ -196,12 +196,20 @@ def test_code_command_cursor_ide():
     with tempfile.TemporaryDirectory() as temp_dir:
         _, env_overrides = _setup_validation_env(temp_dir, _FULL_CONTAINER_ENV)
 
-        # Create empty directory and put it first in PATH
-        empty_dir = os.path.join(temp_dir, "empty")
-        os.makedirs(empty_dir)
+        import shutil
+        import sys
+
+        isolated_dir = os.path.join(temp_dir, "isolated_bin")
+        os.makedirs(isolated_dir)
+
+        cdevcontainer_path = shutil.which("cdevcontainer")
+        if cdevcontainer_path:
+            shutil.copy2(cdevcontainer_path, os.path.join(isolated_dir, "cdevcontainer"))
+
+        python_dir = os.path.dirname(sys.executable)
 
         env = os.environ.copy()
-        env["PATH"] = empty_dir + ":" + env.get("PATH", "")
+        env["PATH"] = isolated_dir + ":" + python_dir
         env.update(env_overrides)
 
         result = subprocess.run(
