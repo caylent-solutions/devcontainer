@@ -572,7 +572,7 @@ Projects can also customize IDE settings and extensions by modifying the `custom
         "your-project-specific-extension"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.defaultInterpreterPath": "/usr/local/python/current/bin/python3",
         "editor.tabSize": 2,
         "files.exclude": {
           "**/.git": true,
