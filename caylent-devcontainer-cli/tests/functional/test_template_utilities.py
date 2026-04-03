@@ -92,6 +92,7 @@ class TestValidateTemplateEndToEnd:
             "containerEnv": {
                 "AWS_CONFIG_ENABLED": "true",
                 "AWS_DEFAULT_OUTPUT": "json",
+                "CLAUDE_CODE_ENABLED": "true",
                 "DEFAULT_GIT_BRANCH": "main",
                 "DEVELOPER_NAME": "Test Dev",
                 "EXTRA_APT_PACKAGES": "",

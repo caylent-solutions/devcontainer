@@ -20,6 +20,7 @@ from caylent_devcontainer_cli.utils.ui import ask_or_exit, exit_cancelled, exit_
 EXAMPLE_ENV_VALUES = {
     "AWS_CONFIG_ENABLED": "true",
     "AWS_DEFAULT_OUTPUT": "json",
+    "CLAUDE_CODE_ENABLED": "true",
     "DEFAULT_GIT_BRANCH": "main",
     "DEVELOPER_NAME": "Your Name",
     "EXTRA_APT_PACKAGES": "",

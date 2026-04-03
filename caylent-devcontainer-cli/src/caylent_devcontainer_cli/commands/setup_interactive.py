@@ -101,6 +101,12 @@ def prompt_env_values() -> Dict[str, Any]:
     aws_config = ask_or_exit(questionary.select("Enable AWS configuration?", choices=["true", "false"], default="true"))
     env_values["AWS_CONFIG_ENABLED"] = aws_config
 
+    # Claude Code CLI Enabled
+    claude_code = ask_or_exit(
+        questionary.select("Enable Claude Code CLI installation?", choices=["true", "false"], default="true")
+    )
+    env_values["CLAUDE_CODE_ENABLED"] = claude_code
+
     # CICD mode (always false for interactive setup)
     env_values["CICD"] = "false"
 
@@ -454,8 +460,8 @@ def create_template_interactive() -> Dict[str, Any]:
 
     Steps:
     1. AWS config enabled (select)
-    2. Default Git branch (text)
-    3. Default Python version (text)
+    2. Claude Code CLI enabled (select)
+    3. Default Git branch (text)
     4. Developer name (text)
     5. Git provider URL (text, hostname only)
     6. Git authentication method (select)
@@ -490,7 +496,17 @@ def create_template_interactive() -> Dict[str, Any]:
     )
     env_values["AWS_CONFIG_ENABLED"] = aws_config
 
-    # Step 2: Default Git branch
+    # Step 2: Claude Code CLI enabled
+    claude_code_enabled = prompt_with_confirmation(
+        lambda: questionary.select(
+            "Enable Claude Code CLI installation?",
+            choices=["true", "false"],
+            default="true",
+        )
+    )
+    env_values["CLAUDE_CODE_ENABLED"] = claude_code_enabled
+
+    # Step 3: Default Git branch
     git_branch = prompt_with_confirmation(
         lambda: questionary.text(
             "Default Git branch:",

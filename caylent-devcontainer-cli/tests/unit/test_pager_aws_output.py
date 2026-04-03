@@ -18,7 +18,7 @@ def test_prompt_env_values_none_pager(mock_select, mock_text, mock_password):
     """Test prompt_env_values with None response for pager selection."""
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
-    mock_select.return_value.ask.side_effect = ["true", None]
+    mock_select.return_value.ask.side_effect = ["true", "true", None]
     mock_text.return_value.ask.side_effect = [
         "main",
         "Developer",
@@ -40,7 +40,7 @@ def test_prompt_env_values_none_aws_output(mock_select, mock_text, mock_password
     """Test prompt_env_values with None response for AWS output format."""
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
-    mock_select.return_value.ask.side_effect = ["true", "cat", None]
+    mock_select.return_value.ask.side_effect = ["true", "true", "cat", None]
     mock_text.return_value.ask.side_effect = [
         "main",
         "Developer",
@@ -65,7 +65,7 @@ def test_pager_selection_options(mock_select, mock_text, mock_password):
     pager_options = ["cat", "less", "more", "most"]
 
     for pager in pager_options:
-        mock_select.return_value.ask.side_effect = ["false", pager]
+        mock_select.return_value.ask.side_effect = ["false", "true", pager]
         mock_text.return_value.ask.side_effect = [
             "main",
             "Developer",
@@ -90,7 +90,7 @@ def test_aws_output_selection_options(mock_select, mock_text, mock_password):
     aws_output_options = ["json", "table", "text", "yaml"]
 
     for output_format in aws_output_options:
-        mock_select.return_value.ask.side_effect = ["true", "cat", output_format]
+        mock_select.return_value.ask.side_effect = ["true", "true", "cat", output_format]
         mock_text.return_value.ask.side_effect = [
             "main",
             "Developer",
@@ -112,8 +112,8 @@ def test_aws_output_not_prompted_when_aws_disabled(mock_select, mock_text, mock_
     """Test that AWS output format is not prompted when AWS is disabled."""
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
-    # Only two select calls: AWS config (false) and pager (cat)
-    mock_select.return_value.ask.side_effect = ["false", "cat"]
+    # Three select calls: AWS config (false), Claude Code (true), and pager (cat)
+    mock_select.return_value.ask.side_effect = ["false", "true", "cat"]
     mock_text.return_value.ask.side_effect = [
         "main",
         "Developer",
@@ -130,8 +130,8 @@ def test_aws_output_not_prompted_when_aws_disabled(mock_select, mock_text, mock_
     assert result["PAGER"] == "cat"
     assert "AWS_DEFAULT_OUTPUT" not in result
 
-    # Verify that select was only called twice (AWS config and pager)
-    assert mock_select.return_value.ask.call_count == 2
+    # Verify that select was called three times (AWS config, Claude Code, and pager)
+    assert mock_select.return_value.ask.call_count == 3
 
 
 @patch("questionary.password")
@@ -141,8 +141,8 @@ def test_default_values_selection(mock_select, mock_text, mock_password):
     """Test that default values are properly set for pager and AWS output."""
     from caylent_devcontainer_cli.commands.setup_interactive import prompt_env_values
 
-    # Test with AWS enabled - should get both pager and AWS output prompts
-    mock_select.return_value.ask.side_effect = ["true", "cat", "json"]
+    # Test with AWS enabled - should get Claude Code, pager and AWS output prompts
+    mock_select.return_value.ask.side_effect = ["true", "true", "cat", "json"]
     mock_text.return_value.ask.side_effect = [
         "main",
         "Developer",

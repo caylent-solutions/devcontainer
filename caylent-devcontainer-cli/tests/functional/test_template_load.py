@@ -96,6 +96,7 @@ class TestLoadTemplateEndToEnd:
         env = {
             "AWS_CONFIG_ENABLED": "false",
             "AWS_DEFAULT_OUTPUT": "json",
+            "CLAUDE_CODE_ENABLED": "true",
             "DEFAULT_GIT_BRANCH": "main",
             "DEVELOPER_NAME": "Test User",
             "EXTRA_APT_PACKAGES": "",

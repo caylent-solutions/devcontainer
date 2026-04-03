@@ -129,6 +129,18 @@ class TestPostcreateScript(TestCase):
         """CICD must be read from runtime environment, not shell.env."""
         self.assertIn('CICD_VALUE="${CICD:-false}"', self.content)
 
+    def test_claude_code_enabled_default_true(self):
+        """CLAUDE_CODE_ENABLED must default to true from runtime environment."""
+        self.assertIn('CLAUDE_CODE_ENABLED="${CLAUDE_CODE_ENABLED:-true}"', self.content)
+
+    def test_claude_code_install_conditional(self):
+        """Claude Code CLI install must be conditional on CLAUDE_CODE_ENABLED."""
+        self.assertIn('"${CLAUDE_CODE_ENABLED,,}" = "true"', self.content)
+
+    def test_claude_code_skip_log_message(self):
+        """Postcreate must log when Claude Code CLI installation is skipped."""
+        self.assertIn("Claude Code CLI installation disabled", self.content)
+
     def test_no_sleep_commands(self):
         """Postcreate must not contain any sleep commands."""
         for i, line in enumerate(self.content.splitlines(), 1):

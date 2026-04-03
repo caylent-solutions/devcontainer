@@ -344,54 +344,60 @@ fi
 log_info "Installing AWS SSO utilities..."
 install_with_pipx "aws-sso-util"
 
-###################
-# Claude Code CLI #
-###################
-log_info "Installing Claude Code CLI..."
+#####################
+# Claude Code CLI   #
+#####################
+CLAUDE_CODE_ENABLED="${CLAUDE_CODE_ENABLED:-true}"
 
-# Download install script first to ensure it succeeds before piping to bash
-CLAUDE_INSTALL_SCRIPT="/tmp/claude-install-${RANDOM}.sh"
+if [ "${CLAUDE_CODE_ENABLED,,}" = "true" ]; then
+  log_info "Installing Claude Code CLI..."
 
-if ! sudo -u "${CONTAINER_USER}" curl -fsSL https://claude.ai/install.sh -o "${CLAUDE_INSTALL_SCRIPT}"; then
-  exit_with_error "❌ Failed to download Claude Code install script from https://claude.ai/install.sh - check network connectivity and proxy settings"
-fi
+  # Download install script first to ensure it succeeds before piping to bash
+  CLAUDE_INSTALL_SCRIPT="/tmp/claude-install-${RANDOM}.sh"
 
-# Verify script was downloaded and is not empty
-if [ ! -s "${CLAUDE_INSTALL_SCRIPT}" ]; then
-  exit_with_error "❌ Claude Code install script is empty or missing at ${CLAUDE_INSTALL_SCRIPT}"
-fi
-
-# Execute install script
-log_info "Executing Claude Code install script..."
-if uname -r | grep -i microsoft > /dev/null; then
-  # WSL compatibility: Run directly without sudo -u
-  if ! PATH="/home/${CONTAINER_USER}/.local/bin:$PATH" bash "${CLAUDE_INSTALL_SCRIPT}"; then
-    rm -f "${CLAUDE_INSTALL_SCRIPT}"
-    exit_with_error "❌ Failed to execute Claude Code install script"
+  if ! sudo -u "${CONTAINER_USER}" curl -fsSL https://claude.ai/install.sh -o "${CLAUDE_INSTALL_SCRIPT}"; then
+    exit_with_error "❌ Failed to download Claude Code install script from https://claude.ai/install.sh - check network connectivity and proxy settings"
   fi
+
+  # Verify script was downloaded and is not empty
+  if [ ! -s "${CLAUDE_INSTALL_SCRIPT}" ]; then
+    exit_with_error "❌ Claude Code install script is empty or missing at ${CLAUDE_INSTALL_SCRIPT}"
+  fi
+
+  # Execute install script
+  log_info "Executing Claude Code install script..."
+  if uname -r | grep -i microsoft > /dev/null; then
+    # WSL compatibility: Run directly without sudo -u
+    if ! PATH="/home/${CONTAINER_USER}/.local/bin:$PATH" bash "${CLAUDE_INSTALL_SCRIPT}"; then
+      rm -f "${CLAUDE_INSTALL_SCRIPT}"
+      exit_with_error "❌ Failed to execute Claude Code install script"
+    fi
+  else
+    # Non-WSL: Install as container user
+    if ! sudo -u "${CONTAINER_USER}" PATH="/home/${CONTAINER_USER}/.local/bin:$PATH" bash "${CLAUDE_INSTALL_SCRIPT}"; then
+      rm -f "${CLAUDE_INSTALL_SCRIPT}"
+      exit_with_error "❌ Failed to execute Claude Code install script"
+    fi
+  fi
+
+  # Clean up install script
+  rm -f "${CLAUDE_INSTALL_SCRIPT}"
+
+  log_info "Verifying Claude Code CLI installation..."
+  CLAUDE_BIN="/home/${CONTAINER_USER}/.local/bin/claude"
+  if [ ! -f "$CLAUDE_BIN" ]; then
+    exit_with_error "❌ Claude Code binary not found at expected location: $CLAUDE_BIN"
+  fi
+
+  if [ ! -x "$CLAUDE_BIN" ]; then
+    exit_with_error "❌ Claude Code binary exists but is not executable: $CLAUDE_BIN"
+  fi
+
+  CLAUDE_VERSION=$(sudo -u "${CONTAINER_USER}" "${CLAUDE_BIN}" --version 2>&1 || echo "unknown")
+  log_success "Claude Code CLI installed successfully: ${CLAUDE_VERSION}"
 else
-  # Non-WSL: Install as container user
-  if ! sudo -u "${CONTAINER_USER}" PATH="/home/${CONTAINER_USER}/.local/bin:$PATH" bash "${CLAUDE_INSTALL_SCRIPT}"; then
-    rm -f "${CLAUDE_INSTALL_SCRIPT}"
-    exit_with_error "❌ Failed to execute Claude Code install script"
-  fi
+  log_info "Claude Code CLI installation disabled (CLAUDE_CODE_ENABLED=${CLAUDE_CODE_ENABLED})"
 fi
-
-# Clean up install script
-rm -f "${CLAUDE_INSTALL_SCRIPT}"
-
-log_info "Verifying Claude Code CLI installation..."
-CLAUDE_BIN="/home/${CONTAINER_USER}/.local/bin/claude"
-if [ ! -f "$CLAUDE_BIN" ]; then
-  exit_with_error "❌ Claude Code binary not found at expected location: $CLAUDE_BIN"
-fi
-
-if [ ! -x "$CLAUDE_BIN" ]; then
-  exit_with_error "❌ Claude Code binary exists but is not executable: $CLAUDE_BIN"
-fi
-
-CLAUDE_VERSION=$(sudo -u "${CONTAINER_USER}" "${CLAUDE_BIN}" --version 2>&1 || echo "unknown")
-log_success "Claude Code CLI installed successfully: ${CLAUDE_VERSION}"
 
 #################
 # Configure Git #

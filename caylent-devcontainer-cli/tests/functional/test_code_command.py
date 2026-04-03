@@ -9,6 +9,7 @@ import tempfile
 _FULL_CONTAINER_ENV = {
     "AWS_CONFIG_ENABLED": "true",
     "AWS_DEFAULT_OUTPUT": "json",
+    "CLAUDE_CODE_ENABLED": "true",
     "DEFAULT_GIT_BRANCH": "main",
     "DEVELOPER_NAME": "test",
     "EXTRA_APT_PACKAGES": "",
