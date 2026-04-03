@@ -23,6 +23,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Generate token from GitHub App
+        id: generate_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -133,6 +140,8 @@ jobs:
       - name: Check if release is needed
         id: check-release
         working-directory: ${{ github.workspace }}/caylent-devcontainer-cli
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           CURRENT_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('caylent-devcontainer-cli'))")
           echo "Current version: $CURRENT_VERSION"
@@ -147,6 +156,9 @@ jobs:
             echo "Version bump detected: $CURRENT_VERSION → $NEW_VERSION"
             echo "has_release=true" >> "$GITHUB_OUTPUT"
           fi
+
+          echo "GITHUB_OUTPUT contents:"
+          cat "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Send success notification to Slack
