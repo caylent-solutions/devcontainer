@@ -45,17 +45,15 @@ cdevcontainer setup-devcontainer .
 # Follow the prompts with these values:
 # - No saved template
 # - AWS Config: false
+# - Claude Code CLI: true
 # - Git branch: main
 # - Developer name: Test User
 # - Git provider: github.com
-# - Git auth method: token
 # - Git username: testuser
 # - Git email: test@example.com
 # - Git token: test-token
 # - Extra packages: (leave empty)
 # - Pager: cat
-# - Host proxy: false
-# - No custom env vars
 # - Don't save as template
 
 # Verify files were created
@@ -215,6 +213,7 @@ cdevcontainer template create test-template
 
 # Follow the interactive prompts with test values:
 # - AWS Config: false
+# - Claude Code CLI: true
 # - Git branch: main
 # - Developer name: Test User
 # - Git provider: github.com
