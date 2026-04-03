@@ -197,7 +197,9 @@ When adding new features:
 
 ### Automated Release
 
-The release pipeline is fully automated. When changes to CLI files are merged to `main`, the CI pipeline computes the next semantic version, generates the changelog, creates and merges a release PR, tags the release, and triggers the publish workflow. A human approval gate on the `pypi` environment ensures releases are intentional and immutable.
+The release pipeline is fully automated. When changes are merged to `main`, the CI pipeline validates the code, then determines whether a release is needed based on conventional commit types. Only commits that trigger a version bump (`feat`, `fix`, `perf`, `security`, `revert`, or `BREAKING CHANGE`) will produce a release. Commits with non-bumping types (`docs`, `chore`, `ci`, `refactor`, `style`, `test`, `build`) pass validation but skip the release step entirely.
+
+When a release is triggered, the pipeline computes the next semantic version, generates the changelog, creates and merges a release PR, tags the release, and triggers the publish workflow. A human approval gate on the `qa-approval` environment ensures releases are intentional.
 
 Before merging to `main`:
 
@@ -205,4 +207,4 @@ Before merging to `main`:
 2. Perform the [manual tests](MANUAL_TESTING.md) to verify functionality
 3. Use [conventional commits](https://www.conventionalcommits.org/) to control version bumps (see [Commit Message Conventions](#commit-message-conventions))
 
-After merge, the pipeline automatically handles version bumping, changelog generation, tagging, and publishing to PyPI.
+After merge, the pipeline automatically handles version bumping, changelog generation, tagging, and publishing to PyPI. If no version-bumping commits are detected, the release steps are skipped entirely.
