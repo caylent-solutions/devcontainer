@@ -54,16 +54,16 @@ This repository provides the **base development container** configuration used a
 
 ## 💡 Built-In Tooling
 
-The devcontainer installs:
+The [default catalog entry](catalog/default/devcontainer.json) installs:
 
 - ✅ Claude Code extension (AI coding assistant, VS Code/Cursor compatible)
 - ✅ AWS Toolkit (CloudFormation, resource management, SSO integration)
 - ✅ GitLens, YAML, Python, Docker, Makefile Tools
 - ✅ Jinja, spell checking, ESLint, Angular
 
-These extensions are auto-installed on container start and work with both VS Code and Cursor.
+These extensions are auto-installed on container start and work with both VS Code and Cursor. You can create [custom catalog entries](docs/CATALOG_CREATION.md) with different extensions and settings tailored to your team or project.
 
-> ℹ️ **GitHub Copilot is explicitly disabled** in this devcontainer. The configuration sets `github.copilot.enable: false` and `chat.extensionUnification.enabled: false` to prevent Copilot from activating. See [VS Code / Cursor Host Settings](#vs-code--cursor-host-settings) for steps to disable it at the host level too.
+> ℹ️ **GitHub Copilot is disabled by default** in the default catalog entry. The configuration sets `github.copilot.enable: false` and `chat.extensionUnification.enabled: false` to prevent Copilot from activating. If you prefer to use Claude instead of Copilot and want to fully remove Copilot from VS Code, see [Optional: Removing GitHub Copilot](#optional-removing-github-copilot) for host-level steps.
 
 ---
 
@@ -91,7 +91,7 @@ These extensions are auto-installed on container start and work with both VS Cod
 
 ### VS Code / Cursor Host Settings
 
-Before opening any devcontainer, configure these **host-level** settings. Without this, VS Code will forward ports used by internal services and auto-install unwanted extensions.
+Before opening any devcontainer, configure these **host-level** settings. Without this, VS Code will forward ports used by internal services.
 
 1. Open Settings (Cmd/Ctrl + ,)
 2. Search for "Remote" or navigate to **Features > Remote**
@@ -100,17 +100,23 @@ Before opening any devcontainer, configure these **host-level** settings. Withou
    - **Auto Forward Ports Source** — set to `hybrid`
    - **Forward Ports On Open** — uncheck (disable)
    - **Restore Forwarded Ports** — uncheck (disable)
-   - **Default Extensions If Installed Locally** — remove `GitHub.copilot` and `GitHub.copilot-chat` from the list (keep `GitHub.vscode-pull-request-github` if desired)
-4. **Disable built-in Copilot extensions** (VS Code 1.96+ bundles Copilot as a built-in extension):
+
+These settings persist across sessions and only need to be configured once. See [Disabling VS Code Auto Port Forwarding](#-disabling-vs-code-auto-port-forwarding) for details.
+
+### Optional: Removing GitHub Copilot
+
+> This section only applies if you are using Claude instead of Copilot and wish to remove Copilot from VS Code. Copilot is already disabled inside the devcontainer via configuration defaults — these steps remove it from the host IDE as well.
+
+1. Open Settings (Cmd/Ctrl + ,) → search for "Remote" → navigate to **Features > Remote**
+   - **Default Extensions If Installed Locally** — remove `GitHub.copilot` and `GitHub.copilot-chat` from the list (keep `GitHub.vscode-pull-request-github` if desired). These extensions are auto-installed in remote environments when present locally, which causes unwanted Copilot prompts inside devcontainers.
+2. **Disable built-in Copilot extensions** (VS Code 1.96+ bundles Copilot as a built-in extension):
    - Open Extensions sidebar → type `@builtin copilot` in the search bar
    - Disable both **GitHub Copilot** and **GitHub Copilot Chat**
    - This removes the "Finish setup" prompt and Copilot chat panel from VS Code
-5. **Disable Copilot extension unification:**
+3. **Disable Copilot extension unification:**
    - Search for `chat.extensionUnification.enabled` in Settings
    - Uncheck **Chat › Extension Unification: Enabled**
    - This prevents VS Code from merging all Copilot functionality into the chat extension
-
-These settings persist across sessions and only need to be configured once. See [Disabling VS Code Auto Port Forwarding](#-disabling-vs-code-auto-port-forwarding) for details.
 
 ### IDE Command Line Setup
 
@@ -670,9 +676,10 @@ The `devcontainer.json` includes settings to disable this behavior inside the co
    - **Auto Forward Ports Source** — set to `hybrid`
    - **Forward Ports On Open** — uncheck (disable)
    - **Restore Forwarded Ports** — uncheck (disable)
-   - **Default Extensions If Installed Locally** — remove `GitHub.copilot` and `GitHub.copilot-chat` from the list. These extensions are auto-installed in remote environments when present locally, which causes unwanted Copilot prompts inside devcontainers.
 
 These settings persist across VS Code sessions and only need to be configured once.
+
+> ℹ️ To also remove Copilot extensions from remote environments, see [Optional: Removing GitHub Copilot](#optional-removing-github-copilot).
 
 ---
 
