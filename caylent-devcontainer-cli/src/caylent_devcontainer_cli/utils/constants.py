@@ -102,6 +102,7 @@ REQUIRED_TEMPLATE_KEYS = (
 VALID_KEY_VALUES = {
     "AWS_CONFIG_ENABLED": ("true", "false"),
     "AWS_DEFAULT_OUTPUT": ("json", "table", "text", "yaml"),
+    "CLAUDE_CODE_ENABLED": ("true", "false"),
     "GIT_AUTH_METHOD": ("token", "ssh"),
     "HOST_PROXY": ("true", "false"),
     "PAGER": ("cat", "less", "more", "most"),
@@ -141,6 +142,7 @@ KNOWN_KEYS = frozenset(
     {
         "AWS_CONFIG_ENABLED",
         "AWS_DEFAULT_OUTPUT",
+        "CLAUDE_CODE_ENABLED",
         "DEFAULT_GIT_BRANCH",
         "DEVELOPER_NAME",
         "EXTRA_APT_PACKAGES",

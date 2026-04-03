@@ -65,6 +65,8 @@ These extensions are auto-installed on container start and work with both VS Cod
 
 > ℹ️ **GitHub Copilot is disabled by default** in the default catalog entry. The configuration sets `github.copilot.enable: false` and `chat.extensionUnification.enabled: false` to prevent Copilot from activating. If you prefer to use Claude instead of Copilot and want to fully remove Copilot from VS Code, see [Optional: Removing GitHub Copilot](#optional-removing-github-copilot) for host-level steps.
 
+> To skip Claude Code CLI installation in the devcontainer, set `CLAUDE_CODE_ENABLED` to `false` in your developer profile. The Claude Code VS Code extension remains available but the CLI binary will not be installed. This applies to the default catalog — other catalogs may handle this differently.
+
 ---
 
 ## 🖥 Prerequisites

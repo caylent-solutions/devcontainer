@@ -403,6 +403,19 @@ class TestStep0BaseKeyCheck:
 
         assert result.missing_base_keys == {}
 
+    def test_claude_code_enabled_in_known_keys(self):
+        """CLAUDE_CODE_ENABLED must be in KNOWN_KEYS."""
+        from caylent_devcontainer_cli.utils.constants import KNOWN_KEYS
+
+        assert "CLAUDE_CODE_ENABLED" in KNOWN_KEYS
+
+    def test_claude_code_enabled_in_valid_key_values(self):
+        """CLAUDE_CODE_ENABLED must be in VALID_KEY_VALUES with true/false."""
+        from caylent_devcontainer_cli.utils.constants import VALID_KEY_VALUES
+
+        assert "CLAUDE_CODE_ENABLED" in VALID_KEY_VALUES
+        assert VALID_KEY_VALUES["CLAUDE_CODE_ENABLED"] == ("true", "false")
+
 
 # =============================================================================
 # detect_validation_issues — Step 1 tests

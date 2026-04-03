@@ -23,6 +23,7 @@ def _valid_template(**overrides):
         "containerEnv": {
             "AWS_CONFIG_ENABLED": "true",
             "AWS_DEFAULT_OUTPUT": "json",
+            "CLAUDE_CODE_ENABLED": "true",
             "DEFAULT_GIT_BRANCH": "main",
             "DEVELOPER_NAME": "Test Dev",
             "EXTRA_APT_PACKAGES": "",
@@ -299,6 +300,35 @@ class TestKnownKeyValueValidation:
         with patch("questionary.select", return_value=mock_question):
             result = validate_template(template)
         assert result["containerEnv"]["AWS_CONFIG_ENABLED"] == "true"
+
+    def test_claude_code_enabled_valid_true(self):
+        """CLAUDE_CODE_ENABLED=true passes validation without prompts."""
+        template = _valid_template()
+        template["containerEnv"]["CLAUDE_CODE_ENABLED"] = "true"
+        with patch("questionary.select") as mock:
+            result = validate_template(template)
+            mock.assert_not_called()
+        assert result["containerEnv"]["CLAUDE_CODE_ENABLED"] == "true"
+
+    def test_claude_code_enabled_valid_false(self):
+        """CLAUDE_CODE_ENABLED=false passes validation without prompts."""
+        template = _valid_template()
+        template["containerEnv"]["CLAUDE_CODE_ENABLED"] = "false"
+        with patch("questionary.select") as mock:
+            result = validate_template(template)
+            mock.assert_not_called()
+        assert result["containerEnv"]["CLAUDE_CODE_ENABLED"] == "false"
+
+    def test_claude_code_enabled_invalid_prompts(self):
+        """Invalid CLAUDE_CODE_ENABLED prompts for correction."""
+        template = _valid_template()
+        template["containerEnv"]["CLAUDE_CODE_ENABLED"] = "yes"
+
+        mock_question = MagicMock()
+        mock_question.ask.return_value = "true"
+        with patch("questionary.select", return_value=mock_question):
+            result = validate_template(template)
+        assert result["containerEnv"]["CLAUDE_CODE_ENABLED"] == "true"
 
     def test_host_proxy_invalid_prompts(self):
         """Invalid HOST_PROXY prompts for correction."""

@@ -365,16 +365,17 @@ class TestCreateTemplateInteractiveTokenFlow:
         # Steps 1-17 with token auth
         pwc_values = [
             "true" if aws_enabled else "false",  # 1. AWS_CONFIG_ENABLED
-            "main",  # 2. DEFAULT_GIT_BRANCH
-            "Test Developer",  # 3. DEVELOPER_NAME
-            "github.com",  # 4. GIT_PROVIDER_URL
-            "token",  # 5. GIT_AUTH_METHOD
-            "testuser",  # 6. GIT_USER
-            "test@example.com",  # 7. GIT_USER_EMAIL
-            "ghp_test_token_123",  # 8. GIT_TOKEN (password)
-            # Step 9 skipped (token auth, not SSH)
-            "",  # 10. EXTRA_APT_PACKAGES
-            "cat",  # 11. PAGER
+            "true",  # 2. CLAUDE_CODE_ENABLED
+            "main",  # 3. DEFAULT_GIT_BRANCH
+            "Test Developer",  # 4. DEVELOPER_NAME
+            "github.com",  # 5. GIT_PROVIDER_URL
+            "token",  # 6. GIT_AUTH_METHOD
+            "testuser",  # 7. GIT_USER
+            "test@example.com",  # 8. GIT_USER_EMAIL
+            "ghp_test_token_123",  # 9. GIT_TOKEN (password)
+            # Step 10 skipped (token auth, not SSH)
+            "",  # 11. EXTRA_APT_PACKAGES
+            "cat",  # 12. PAGER
         ]
 
         if aws_enabled:
@@ -521,18 +522,19 @@ class TestCreateTemplateInteractiveSshFlow:
 
         pwc_values = [
             "true",  # 1. AWS_CONFIG_ENABLED
-            "main",  # 2. DEFAULT_GIT_BRANCH
-            "Test Developer",  # 3. DEVELOPER_NAME
-            "github.com",  # 4. GIT_PROVIDER_URL
-            "ssh",  # 5. GIT_AUTH_METHOD
-            "testuser",  # 6. GIT_USER
-            "test@example.com",  # 7. GIT_USER_EMAIL
-            # Step 8 skipped (SSH, not token)
-            # Step 9 handled by prompt_ssh_key mock
-            "",  # 10. EXTRA_APT_PACKAGES
-            "cat",  # 11. PAGER
-            "json",  # 12. AWS_DEFAULT_OUTPUT
-            "false",  # 13. HOST_PROXY
+            "true",  # 2. CLAUDE_CODE_ENABLED
+            "main",  # 3. DEFAULT_GIT_BRANCH
+            "Test Developer",  # 4. DEVELOPER_NAME
+            "github.com",  # 5. GIT_PROVIDER_URL
+            "ssh",  # 6. GIT_AUTH_METHOD
+            "testuser",  # 7. GIT_USER
+            "test@example.com",  # 8. GIT_USER_EMAIL
+            # Step 9 skipped (SSH, not token)
+            # Step 10 handled by prompt_ssh_key mock
+            "",  # 11. EXTRA_APT_PACKAGES
+            "cat",  # 12. PAGER
+            "json",  # 13. AWS_DEFAULT_OUTPUT
+            "false",  # 14. HOST_PROXY
         ]
 
         with (
