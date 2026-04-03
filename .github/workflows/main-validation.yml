@@ -161,8 +161,6 @@ jobs:
             echo "has_release=true" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "GITHUB_OUTPUT contents:"
-          cat "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Send success notification to Slack
