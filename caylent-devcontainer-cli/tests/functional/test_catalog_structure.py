@@ -233,8 +233,8 @@ class TestDefaultCatalogEntryJson(TestCase):
         self.assertTrue(len(self.entry_data["tags"]) > 0)
 
     def test_tags_include_expected_values(self):
-        """Tags must include general, multi-language, aws, kubernetes."""
-        expected_tags = {"general", "multi-language", "aws", "kubernetes"}
+        """Tags must include general, multi-language, aws, kubernetes, claude, proxy."""
+        expected_tags = {"general", "multi-language", "aws", "kubernetes", "claude", "proxy"}
         actual_tags = set(self.entry_data["tags"])
         self.assertEqual(expected_tags, actual_tags)
 
