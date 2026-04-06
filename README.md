@@ -91,9 +91,11 @@ These extensions are auto-installed on container start and work with both VS Cod
 >
 > This prevents issues with shell scripts and other text files when running in WSL environments. The devcontainer includes automatic line ending conversion for WSL compatibility.
 
-### VS Code / Cursor Host Settings
+### VS Code / Cursor Host Settings (Proxy Users Only)
 
-Before opening any devcontainer, configure these **host-level** settings. Without this, VS Code will forward ports used by internal services.
+> **This section only applies when using a corporate proxy (`HOST_PROXY=true`).** If you are not behind a proxy, leave auto port forwarding enabled — it is needed for OAuth callbacks, webhook testing, and other development workflows.
+
+If using a proxy, configure these **host-level** settings before opening any devcontainer. Without this, VS Code will forward ports used by the proxy and other internal services, causing conflicts.
 
 1. Open Settings (Cmd/Ctrl + ,)
 2. Search for "Remote" or navigate to **Features > Remote**
@@ -672,11 +674,13 @@ docker swarm init
 
 ## 🔌 Disabling VS Code Auto Port Forwarding
 
-VS Code automatically detects and forwards ports from processes running inside the devcontainer to the host. This includes any listening socket found by VS Code's port scanning. While convenient for web development, this causes port conflicts in environments that use host-side proxies (e.g., tinyproxy for corporate proxy support).
+> **This section only applies when using a corporate proxy (`HOST_PROXY=true`).** If you are not behind a proxy, leave auto port forwarding enabled — it is needed for OAuth callbacks, webhook testing, and other development workflows that rely on port forwarding.
+
+VS Code automatically detects and forwards ports from processes running inside the devcontainer to the host. This includes any listening socket found by VS Code's port scanning. In proxy environments, this causes port conflicts with the host-side proxy (e.g., tinyproxy for corporate proxy support).
 
 The `devcontainer.json` includes settings to disable this behavior inside the container (`remote.autoForwardPorts: false`, `remote.autoForwardPortsSource: "process"`, and `remote.otherPortsAttributes.onAutoForward: "ignore"`). However, VS Code also has **host-level settings** that must be configured before opening any Remote or Dev Container connection.
 
-**Required VS Code Host Settings** (set these on your local machine before connecting):
+**Required VS Code Host Settings for Proxy Users** (set these on your local machine before connecting):
 
 1. Open VS Code Settings (Cmd/Ctrl + ,)
 2. Search for "Remote" or navigate to **Features > Remote**
