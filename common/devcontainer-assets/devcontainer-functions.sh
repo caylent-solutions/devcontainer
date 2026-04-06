@@ -236,6 +236,12 @@ EOF
     helper = store
 EOF
 
+  # Rewrite SSH URLs to HTTPS so tools using SSH git URLs authenticate via token
+  cat <<EOF >> "${gitconfig}"
+[url "https://${git_provider_url}/"]
+    insteadOf = git@${git_provider_url}:
+EOF
+
   log_success "Git token authentication configured"
 }
 
