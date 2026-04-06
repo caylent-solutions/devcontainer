@@ -290,21 +290,6 @@ if [ -d "/home/${CONTAINER_USER}/.asdf/shims" ]; then
   done
 fi
 
-# Install Caylent Devcontainer CLI
-log_info "Installing Caylent Devcontainer CLI..."
-if [ -n "${CLI_VERSION:-}" ]; then
-  if [[ "${CLI_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    log_info "Installing specific CLI version: ${CLI_VERSION}"
-    CLI_INSTALL_CMD="caylent-devcontainer-cli==${CLI_VERSION}"
-  else
-    exit_with_error "Invalid CLI_VERSION format: ${CLI_VERSION}. Expected format: X.Y.Z (e.g., 1.2.3)"
-  fi
-else
-  log_info "Installing latest CLI version"
-  CLI_INSTALL_CMD="caylent-devcontainer-cli"
-fi
-
-install_with_pipx "${CLI_INSTALL_CMD}"
 
 # Verify asdf is working properly (only if tools were configured)
 if [ -f "${WORK_DIR}/.tool-versions" ] && grep -qE '^[a-zA-Z]' "${WORK_DIR}/.tool-versions"; then

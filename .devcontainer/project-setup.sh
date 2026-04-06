@@ -18,12 +18,14 @@ set -euo pipefail
 
 log_info "Running project-specific setup..."
 
-# Add your project setup commands below this line
-# Example:
-# if [ -f "Makefile" ]; then
-#   log_info "Running make configure..."
-#   make configure
-# fi
-log_info "Add project specific setup commands here!"
+log_info "Configuring development environment..."
+if ! make -C "${WORK_DIR}" configure; then
+  exit_with_error "❌ Failed to configure development environment"
+fi
+
+log_info "Installing Caylent Devcontainer CLI from local source..."
+if ! make -C "${WORK_DIR}/caylent-devcontainer-cli" install; then
+  exit_with_error "❌ Failed to install Caylent Devcontainer CLI"
+fi
 
 log_info "Project-specific setup complete"

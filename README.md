@@ -229,7 +229,7 @@ The `devcontainer-environment-variables.json` file supports these values (inside
 - `DEFAULT_GIT_BRANCH` (e.g. `main`)
 - `DEVELOPER_NAME` - Your name, used in the devcontainer
 - `EXTRA_APT_PACKAGES` - Space-separated list of extra Ubuntu packages to install
-- `GIT_AUTH_METHOD` (default: `token`) - Choose from: token, ssh. When set to `ssh`, Git is configured to rewrite HTTPS URLs to SSH, enabling tools that use HTTPS Git URLs to authenticate via your SSH key.
+- `GIT_AUTH_METHOD` (default: `token`) - Choose from: token, ssh. When set to `ssh`, Git is configured to rewrite HTTPS URLs to SSH, enabling tools that use HTTPS Git URLs to authenticate via your SSH key. When set to `token`, Git is configured to rewrite SSH URLs to HTTPS, enabling tools that use SSH Git URLs to authenticate via your token.
 - `GIT_PROVIDER_URL` (default: `github.com`) - Git provider hostname (no protocol prefix)
 - `GIT_TOKEN` - Personal access token (only when `GIT_AUTH_METHOD=token`)
 - `GIT_USER` - Git username
@@ -509,6 +509,13 @@ If using SSH authentication (`GIT_AUTH_METHOD=ssh`), the devcontainer automatica
 ```bash
 git config --global --get url."git@github.com:".insteadOf
 # Expected: https://github.com/
+```
+
+If using token authentication (`GIT_AUTH_METHOD=token`), the devcontainer automatically configures Git to rewrite SSH URLs to HTTPS. Verify the rewrite is active:
+
+```bash
+git config --global --get url."https://github.com/".insteadOf
+# Expected: git@github.com:
 ```
 
 ---
