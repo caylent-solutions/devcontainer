@@ -290,21 +290,6 @@ if [ -d "/home/${CONTAINER_USER}/.asdf/shims" ]; then
   done
 fi
 
-# Install Caylent Devcontainer CLI
-log_info "Installing Caylent Devcontainer CLI..."
-if [ -n "${CLI_VERSION:-}" ]; then
-  if [[ "${CLI_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    log_info "Installing specific CLI version: ${CLI_VERSION}"
-    CLI_INSTALL_CMD="caylent-devcontainer-cli==${CLI_VERSION}"
-  else
-    exit_with_error "Invalid CLI_VERSION format: ${CLI_VERSION}. Expected format: X.Y.Z (e.g., 1.2.3)"
-  fi
-else
-  log_info "Installing latest CLI version"
-  CLI_INSTALL_CMD="caylent-devcontainer-cli"
-fi
-
-install_with_pipx "${CLI_INSTALL_CMD}"
 
 # Verify asdf is working properly (only if tools were configured)
 if [ -f "${WORK_DIR}/.tool-versions" ] && grep -qE '^[a-zA-Z]' "${WORK_DIR}/.tool-versions"; then
@@ -452,10 +437,10 @@ log_info "Running project-specific setup script..."
 if [ -f "${WORK_DIR}/.devcontainer/project-setup.sh" ]; then
   if uname -r | grep -i microsoft > /dev/null; then
     # WSL compatibility: Run directly without sudo -u
-    bash -c "source '${WORK_DIR}/shell.env' && source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && BASH_ENV='${WORK_DIR}/.devcontainer/devcontainer-functions.sh' bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
+    bash -c "export WORK_DIR='${WORK_DIR}' && export PATH='/usr/local/py-utils/bin:/usr/local/python/current/bin:/home/${CONTAINER_USER}/.local/bin:'\"\$PATH\" && source '${WORK_DIR}/shell.env' && source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && BASH_ENV='${WORK_DIR}/.devcontainer/devcontainer-functions.sh' bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
   else
     # Non-WSL: Use sudo -u to run as container user
-    sudo -u "${CONTAINER_USER}" bash -c "source '${WORK_DIR}/shell.env' && source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && BASH_ENV='${WORK_DIR}/.devcontainer/devcontainer-functions.sh' bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
+    sudo -u "${CONTAINER_USER}" bash -c "export WORK_DIR='${WORK_DIR}' && export PATH='/usr/local/py-utils/bin:/usr/local/python/current/bin:/home/${CONTAINER_USER}/.local/bin:'\"\$PATH\" && source '${WORK_DIR}/shell.env' && source /home/${CONTAINER_USER}/.asdf/asdf.sh && cd '${WORK_DIR}' && BASH_ENV='${WORK_DIR}/.devcontainer/devcontainer-functions.sh' bash '${WORK_DIR}/.devcontainer/project-setup.sh'"
   fi
 else
   log_warn "No project-specific setup script found at ${WORK_DIR}/.devcontainer/project-setup.sh"

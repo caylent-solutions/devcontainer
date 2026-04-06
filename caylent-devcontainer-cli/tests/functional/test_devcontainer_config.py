@@ -362,12 +362,34 @@ class TestDevcontainerFunctions(TestCase):
         self.assertIn("git@${git_provider_url}:", self.content)
         self.assertIn("https://${git_provider_url}/", self.content)
 
-    def test_git_token_does_not_configure_url_rewrite(self):
-        """Token method must NOT configure HTTPS-to-SSH URL rewrite."""
+    def test_git_token_configures_ssh_to_https_url_rewrite(self):
+        """Token method must configure SSH-to-HTTPS URL rewrite in .gitconfig."""
         token_fn_pos = self.content.index("configure_git_token()")
         ssh_fn_pos = self.content.index("configure_git_ssh()")
         token_section = self.content[token_fn_pos:ssh_fn_pos]
-        self.assertNotIn("insteadOf", token_section)
+        self.assertIn('[url "https://${git_provider_url}/"]', token_section)
+        self.assertIn("insteadOf = git@${git_provider_url}:", token_section)
+
+    def test_git_token_does_not_configure_https_to_ssh_rewrite(self):
+        """Token method must NOT configure HTTPS-to-SSH URL rewrite (that's SSH method's job)."""
+        token_fn_pos = self.content.index("configure_git_token()")
+        ssh_fn_pos = self.content.index("configure_git_ssh()")
+        token_section = self.content[token_fn_pos:ssh_fn_pos]
+        self.assertNotIn('[url "git@${git_provider_url}:"]', token_section)
+
+    def test_git_token_url_rewrite_uses_dynamic_provider(self):
+        """Token URL rewrite must use git_provider_url variable, not a hardcoded hostname."""
+        token_fn_pos = self.content.index("configure_git_token()")
+        ssh_fn_pos = self.content.index("configure_git_ssh()")
+        token_section = self.content[token_fn_pos:ssh_fn_pos]
+        self.assertIn("https://${git_provider_url}/", token_section)
+        self.assertIn("git@${git_provider_url}:", token_section)
+
+    def test_git_ssh_does_not_configure_reverse_url_rewrite(self):
+        """SSH method must NOT configure SSH-to-HTTPS URL rewrite (that's token method's job)."""
+        ssh_fn_pos = self.content.index("configure_git_ssh()")
+        ssh_section = self.content[ssh_fn_pos:]
+        self.assertNotIn('[url "https://${git_provider_url}/"]', ssh_section)
 
 
 class TestPostcreateGitAuth(TestCase):
