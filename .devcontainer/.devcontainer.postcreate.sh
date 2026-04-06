@@ -340,8 +340,15 @@ if [ "${CLAUDE_CODE_ENABLED,,}" = "true" ]; then
   # Download install script first to ensure it succeeds before piping to bash
   CLAUDE_INSTALL_SCRIPT="/tmp/claude-install-${RANDOM}.sh"
 
-  if ! sudo -u "${CONTAINER_USER}" curl -fsSL https://claude.ai/install.sh -o "${CLAUDE_INSTALL_SCRIPT}"; then
-    exit_with_error "❌ Failed to download Claude Code install script from https://claude.ai/install.sh - check network connectivity and proxy settings"
+  if uname -r | grep -i microsoft > /dev/null; then
+    # WSL compatibility: Run directly without sudo -u
+    if ! curl -fsSL https://claude.ai/install.sh -o "${CLAUDE_INSTALL_SCRIPT}"; then
+      exit_with_error "❌ Failed to download Claude Code install script from https://claude.ai/install.sh - check network connectivity and proxy settings"
+    fi
+  else
+    if ! sudo -u "${CONTAINER_USER}" curl -fsSL https://claude.ai/install.sh -o "${CLAUDE_INSTALL_SCRIPT}"; then
+      exit_with_error "❌ Failed to download Claude Code install script from https://claude.ai/install.sh - check network connectivity and proxy settings"
+    fi
   fi
 
   # Verify script was downloaded and is not empty
@@ -378,7 +385,12 @@ if [ "${CLAUDE_CODE_ENABLED,,}" = "true" ]; then
     exit_with_error "❌ Claude Code binary exists but is not executable: $CLAUDE_BIN"
   fi
 
-  CLAUDE_VERSION=$(sudo -u "${CONTAINER_USER}" "${CLAUDE_BIN}" --version 2>&1 || echo "unknown")
+  if uname -r | grep -i microsoft > /dev/null; then
+    # WSL compatibility: Run directly without sudo -u
+    CLAUDE_VERSION=$(PATH="/home/${CONTAINER_USER}/.local/bin:$PATH" "${CLAUDE_BIN}" --version 2>&1 || echo "unknown")
+  else
+    CLAUDE_VERSION=$(sudo -u "${CONTAINER_USER}" "${CLAUDE_BIN}" --version 2>&1 || echo "unknown")
+  fi
   log_success "Claude Code CLI installed successfully: ${CLAUDE_VERSION}"
 else
   log_info "Claude Code CLI installation disabled (CLAUDE_CODE_ENABLED=${CLAUDE_CODE_ENABLED})"
