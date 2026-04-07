@@ -2,7 +2,89 @@
 
 
 
+## v2.3.0 (2026-04-07)
+
+### Documentation
+
+* docs: fix stale prompt lists, incorrect example path, and step numbering (#146)
+
+Update MANUAL_TESTING.md prompt lists to match actual interactive flows:
+add missing CLAUDE_CODE_ENABLED prompt, remove non-existent prompts
+(Git auth method and Host proxy in setup-devcontainer flow). Fix
+incorrect Python interpreter path in README.md example. Renumber
+duplicate step comments in create_template_interactive(). ([`97a9a46`](https://github.com/caylent-solutions/devcontainer/commit/97a9a4696d42fe711ef33d4d8a33a9e7ce64eef9))
+
+### Feature
+
+* feat: add WSL-conditional paths for Claude Code download and version check (#161)
+
+* fix: add WSL-conditional paths for Claude Code download and version check
+
+The curl download and version check steps used sudo -u unconditionally,
+but sudo -u is unreliable in WSL environments. The execution step already
+had WSL-conditional logic — this applies the same pattern to the download
+and version verification steps.
+
+* refactor: use is_wsl helper for Claude Code WSL detection
+
+Replace inline &#39;uname -r | grep -i microsoft&#39; checks with the existing
+is_wsl() helper function for consistency with the rest of the script.
+
+Changes:
+- Claude Code download step now uses is_wsl
+- Claude Code execution step now uses is_wsl
+- Claude Code version check step now uses is_wsl
+
+This improves maintainability by centralizing WSL detection logic in one
+place and follows the DRY principle. ([`aaee656`](https://github.com/caylent-solutions/devcontainer/commit/aaee6562cfc4a7481d484afc760051ffafc9823d))
+
+* feat: add SSH-to-HTTPS git URL rewriting for token auth (#160)
+
+* feat: add SSH-to-HTTPS git URL rewriting for token auth and install CLI from local source
+
+When GIT_AUTH_METHOD=token, git now rewrites SSH URLs to HTTPS automatically,
+mirroring the existing HTTPS-to-SSH rewrite for SSH auth. This ensures tools
+using SSH-style git URLs work seamlessly with token authentication.
+
+Also removes the pipx CLI install from postcreate in favor of an editable
+install via project-setup.sh (make configure + make install), keeping the
+CLI command in sync with the working tree and making the module importable
+for tests.
+
+* fix: export WORK_DIR and PATH into project-setup.sh subprocess
+
+The project-setup.sh script runs in a subprocess via bash -c and
+sudo -u, which resets the environment. WORK_DIR was undefined
+(causing &#34;unbound variable&#34; with set -u), and pip was not on PATH
+(installed by devcontainer python feature at /usr/local/python/current/bin/).
+
+Export both WORK_DIR and PATH inline in the bash -c invocations on
+both WSL and non-WSL paths so project-setup.sh can find make targets
+and pip.
+
+* feat: sync common catalog assets with token auth and subprocess fixes
+
+Backport branch changes to common/devcontainer-assets/ so all consuming
+projects receive them: SSH-to-HTTPS URL rewrite for token auth, removal
+of unused pipx CLI install block, and WORK_DIR/PATH exports into the
+project-setup.sh subprocess.
+
+* docs: update catalog descriptions and scope port forwarding docs to proxy users
+
+Update catalog entry descriptions to mention Claude Code and corporate
+proxy optimization. Add claude and proxy tags. Clarify in README that
+disabling auto port forwarding only applies when HOST_PROXY=true —
+non-proxy users should leave it enabled for OAuth callbacks and other
+development workflows.
+
+* test: update expected tags to include claude and proxy ([`24bb3c6`](https://github.com/caylent-solutions/devcontainer/commit/24bb3c6d67febd3367e328931c73fdd87f76e96e))
+
+
 ## v2.2.0 (2026-04-03)
+
+### Chore
+
+* chore(release): 2.2.0 ([`094b87b`](https://github.com/caylent-solutions/devcontainer/commit/094b87b22334f0f5cd5dd3617f4ef1516fa22a6b))
 
 ### Feature
 
@@ -71,6 +153,10 @@ found on machines where it is installed, causing the test to fail
 outside the devcontainer. ([`f77068d`](https://github.com/caylent-solutions/devcontainer/commit/f77068dd6f46a74c31e00be2254040630cbf5b51))
 
 ### Unknown
+
+* Merge pull request #145 from caylent-solutions/release-2.2.0
+
+Release 2.2.0 ([`138d876`](https://github.com/caylent-solutions/devcontainer/commit/138d876368c6ab75337eadc7062b7fef33eea0e2))
 
 * doc(readme): reframe Copilot removal as optional, clarify default catalog scope (#140)
 
