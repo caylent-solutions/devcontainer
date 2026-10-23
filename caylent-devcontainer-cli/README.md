@@ -297,6 +297,10 @@ make functional-test-report
 
 - **Unit Tests**: Must maintain at least 90% code coverage
 - **Functional Tests**: Must test CLI commands as they would be used by actual users
+- **Shell Completion**: Functional tests require Bash and exercise generated
+  completion candidates, including catalog prefixes and CLI flags. They do not
+  depend on shtab's generated comments or quoting style. Subprocess timeouts can
+  be set with `TEST_SUBPROCESS_TIMEOUT` (seconds; default: 30).
 - All tests must pass before merging code
 
 ### Code Quality and Validation
