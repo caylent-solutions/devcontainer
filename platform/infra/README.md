@@ -54,6 +54,9 @@ platform/
         main.tf                           # OIDC provider, IAM role, push policy
         variables.tf                      # Module inputs
         outputs.tf                        # Module outputs (role_arn)
+      ecr-public-pull-policy/
+        main.tf                           # Auth-only policy for an existing role
+        variables.tf                      # Role, policy name, expected account
     terragrunt/
       root.hcl                            # Remote state (S3) and provider config
       terragrunt.hcl                      # Sentinel file (stops parent search)
@@ -62,6 +65,8 @@ platform/
           terragrunt.hcl                  # ECR Public repository
         github-actions-ecr-push/
           terragrunt.hcl                  # OIDC + IAM role for GitHub Actions
+        kanon-marketplaces-ci-auth/
+          terragrunt.hcl                  # Import Kanon CI's existing auth policy
 ```
 
 ## Prerequisites
@@ -356,6 +361,47 @@ unset AWS_PROFILE
 ```
 
 ## GitHub Actions Integration
+
+### Kanon Marketplace CI Authentication
+
+The `kanon-marketplaces-ci-auth` leaf manages the `ecr-public-pull` inline policy
+on the existing `kanon-claude-marketplaces-ci` role in account `136685436188`.
+It grants the two permissions required by
+[ECR Public authentication](https://docs.aws.amazon.com/AmazonECRPublic/latest/APIReference/API_GetAuthorizationToken.html):
+`ecr-public:GetAuthorizationToken` and `sts:GetServiceBearerToken`. Both token
+actions require `Resource: "*"`; this policy grants no image-push permissions.
+
+This supports the authenticated base-image pull introduced in
+[kanon-claude-marketplaces #351](https://github.com/caylent/kanon-claude-marketplaces/pull/351).
+Ryan added this policy manually on October 23, 2026. The leaf includes a
+declarative import so Terraform can adopt it without deleting or replacing it.
+The role, its GitHub OIDC trust, and its `ecr-devcontainer-access` private-ECR
+policy remain outside this leaf's ownership. Do not manage this same inline
+policy in another Terraform state.
+
+After authenticating as described above, run from `platform/infra/`:
+
+```bash
+make plan MODULE=kanon-marketplaces-ci-auth
+```
+
+With the existing policy unchanged, the initial plan should report **1 to
+import, 0 to add, 0 to change, 0 to destroy**. Review any difference before
+applying. The module rejects credentials for a different AWS account.
+
+```bash
+make apply MODULE=kanon-marketplaces-ci-auth
+```
+
+Applying records ownership in the existing S3 backend at
+`us-east-1/kanon-marketplaces-ci-auth/terraform.tfstate`. Merging this code does
+not apply the infrastructure. Subsequent plans should report no changes.
+The import is idempotent once the policy is in state; for a new installation
+where the policy does not exist, remove the `import_existing_policy` generation
+block before planning its creation. Destroying this leaf removes the auth
+policy and will break authenticated CI pulls.
+
+### Devcontainer Image Publisher
 
 The mirror workflow (`.github/workflows/mirror-devcontainer-image.yml`) authenticates to AWS via OIDC using the `github-actions-ecr-push` module:
 
